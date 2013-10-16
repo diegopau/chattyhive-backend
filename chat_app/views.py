@@ -10,6 +10,6 @@ def login(request):
     else:
         form = LoginForm()
     #return HttpResponse("Hello, world. You're at the poll index.")
-    return render(request, "CH/login.html", {
+    return render(request, "chat_app/login.html", {
         'form':form
     })
