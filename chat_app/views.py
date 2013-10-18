@@ -18,5 +18,5 @@ def login(request):
 
 def chat(request):
     user=request.session['user']
-    return HttpResponse("hello  " + user + "!")
-    #return render_to_response('chat_app/chat.html')
+    #return HttpResponse("hello  " + user + "!")
+    return render(request, 'chat_app/chat.html', {'user':user})
