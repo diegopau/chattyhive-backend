@@ -2,8 +2,16 @@
 <html>
 <head>
     <title>CHAT</title>
+    <script>
+        function myFunction()
+        {
+            document.getElementById("coment").innerHTML="COMENTS!!!!";
+        }
+    </script>
 </head>
 <body>
-    This will be the chat! {{ user }}
+    <p>This will be the chat {{ user }}!!</p>
+    <p id=coment></p>
+    <button type="button" onclick="myFunction()">Button</button>
 </body>
 </html>
