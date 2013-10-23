@@ -4,6 +4,7 @@
     <title>CHAT</title>
 </head>
 <body>
+    Welcome, {{ user }}!
     <p id=chat_field></p>
     <input id="msg_text" type="text">
     <button type="button" onclick="onClick()">Button</button>
@@ -12,6 +13,7 @@
         num_rep=0;
         user="{{ user }}"
         app_key="{{ app_key }}"
+        key="{{ key }}"
         channel_name="{{ channel }}"
         event_name="{{ event }}"
 
@@ -23,6 +25,7 @@
         channel.bind(event_name, function(data) {
             text_received += data.message + "<br/>";
             write(data.message);
+            alert(data.message);
         });
 
         function onClick()
