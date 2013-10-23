@@ -30,7 +30,7 @@
             var text_sended = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
             write(user, text_sended);
-
+            send_post(text_sended);
         }
 
         function write(name_user, text){
