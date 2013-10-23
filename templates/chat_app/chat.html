@@ -8,7 +8,7 @@
     Welcome, {{ user }}!
     <p id="chat_field"></p>
     <input id="msg_text" type="text">
-    <button type="button" onclick="onClick()">SEND</button>
+    <button type="button" onclick="onClick()">Send</button>
     <script type="text/javascript">
 
         var num_rep=0;
@@ -35,10 +35,10 @@
         function write(name_user, text){
             num_rep ++;
             if (num_rep > 25) {
-                document.getElementById("chat_field").innerHTML = name_user + " dijo: " + text + "<br/>";
+                document.getElementById("chat_field").innerHTML = name_user + " said: " + text + "<br/>";
                 num_rep = 0;
             } else {
-                document.getElementById("chat_field").innerHTML += name_user + " dijo: " + text + "<br/>";
+                document.getElementById("chat_field").innerHTML += name_user + " said: " + text + "<br/>";
             }
         }
     </script>
