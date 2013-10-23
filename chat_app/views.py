@@ -20,8 +20,8 @@ def chat(request):
     user=request.session['user']
     app_key="55129"
     key='f073ebb6f5d1b918e59e'
-    channel="public_test"
-    event="msg"
+    channel='public_test'
+    event='msg'
     return render(request, "chat_app/chat.html", {
         'user': user,
         'app_key': app_key,
