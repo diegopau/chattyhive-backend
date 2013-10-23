@@ -27,9 +27,10 @@
 
         function onClick()
         {
-            text_sended= document.getElementById("msg_text").value;
+            var text_sended = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
-            write(text_sended);
+            write(user, text_sended);
+
         }
 
         function write(name_user, text){
@@ -40,6 +41,17 @@
             } else {
                 document.getElementById("chat_field").innerHTML += name_user + " said: " + text + "<br/>";
             }
+        }
+
+        function send_post(msg_text) {
+            var form = document.createElement("form");
+            form.setAttribute("method","post");
+            form.setAttribute("name","msg");
+            form.setAttribute("action","/chat/");
+            form.setAttribute("user",user);
+            form.setAttribute("value",msg_text);
+            form.appendChild(form);
+            form.submit();
         }
     </script>
 </body>
