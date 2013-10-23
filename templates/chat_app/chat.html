@@ -2,29 +2,27 @@
 <html>
 <head>
     <title>CHAT</title>
+    <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
     <input id="msg_text" type="text">
     <button type="button" onclick="onClick()">SEND</button>
-    <script>
-        src="http://js.pusher.com/2.1/pusher.min.js";
-        num_rep=0;
-        user="{{ user }}";
-        app_key="{{ app_key }}";
-        key="{{ key }}";
-        channel_name="{{ channel }}";
-        event_name="{{ event }}";
+    <script type="text/javascript">
 
-        pusher = new Pusher(app_key);
-        channel = pusher.subscribe(channel_name);
+        var num_rep=0;
+        var user="{{ user }}";
+        var app_key="{{ app_key }}";
+        var key="{{ key }}";
+        var channel_name="{{ channel }}";
+        var event_name="{{ event }}";
 
-        text_received ="";
+        var pusher = new Pusher(key);
+        var channel = pusher.subscribe(channel_name);
 
         channel.bind(event_name, function(data) {
-            //text_received += data.message + "<br/>";
-            write(data.message);
+            write(data.user,data.msg);
         });
 
         function onClick()
@@ -34,16 +32,15 @@
             write(text_sended);
         }
 
-        function write(text){
+        function write(name_user, text){
             num_rep ++;
             if (num_rep > 25) {
-                document.getElementById("chat_field").innerHTML = user + " dijo: " + text + "<br/>";
+                document.getElementById("chat_field").innerHTML = name_user + " dijo: " + text + "<br/>";
                 num_rep = 0;
             } else {
-                document.getElementById("chat_field").innerHTML += user + " dijo: " + text + "<br/>";
+                document.getElementById("chat_field").innerHTML += name_user + " dijo: " + text + "<br/>";
             }
         }
-
     </script>
 </body>
 </html>
