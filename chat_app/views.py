@@ -18,5 +18,12 @@ def login(request):
 
 def chat(request):
     user=request.session['user']
-    #return HttpResponse("hello  " + user + "!")
-    return render(request, 'chat_app/chat.html', {'user':user})
+    app_key="55129"
+    channel="public_test"
+    event="msg"
+    return render(request, "chat_app/chat.html", {
+        'user': user,
+        'app_key': app_key,
+        'channel' : channel,
+        'event' : event
+    })

@@ -4,8 +4,44 @@
     <title>CHAT</title>
 </head>
 <body>
-    This will be the chat!
-    <br>
-    {{ user }}
+    <p id=chat_field></p>
+    <input id="msg_text" type="text">
+    <button type="button" onclick="onClick()">Button</button>
+        <script>
+        src="http://js.pusher.com/2.1/pusher.min.js"
+        num_rep=0;
+        user="{{ user }}"
+        app_key="{{ app_key }}"
+        channel_name="{{ channel }}"
+        event_name="{{ event }}"
+
+        pusher = new Pusher(app_key);
+        channel = pusher.subscribe(channel_name);
+
+        text_received ="";
+
+        channel.bind(event_name, function(data) {
+            text_received += data.message + "<br/>";
+            write(data.message);
+        });
+
+        function onClick()
+        {
+            text_sended= document.getElementById("msg_text").value;
+            document.getElementById("msg_text").value="";
+            write(text_received + text_sended);
+            channel.trigger(event_name, text_sended);
+        }
+
+        function write(text){
+            num_rep ++;
+            if(num_rep>25){
+              document.getElementById("chat_field").innerHTML= user + " dijo: " + text  + "<br/>";
+                num_rep=0;
+            }
+            else document.getElementById("chat_field").innerHTML+=user + " dijo: " + text  + "<br/>";
+        }
+
+    </script>
 </body>
 </html>
