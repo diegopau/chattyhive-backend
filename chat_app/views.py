@@ -24,7 +24,7 @@ def chat(request):
     channel='public_test'
     event='msg'
     if request.method == 'POST':
-        form = forms.Form(request.POST)
+        form = MsgForm(request.POST)
         if form.is_valid():
             msg=form.cleaned_data['value']
             p = pusher.Pusher(
@@ -40,5 +40,5 @@ def chat(request):
             'app_key': app_key,
             'key': key,
             'channel' : channel,
-            'event' : event
+            'event' : event,
         })

@@ -7,7 +7,7 @@
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
-    <form name="send_msg" action="/chat/" method="post">{% csrf_token %}
+    <form action="/chat/" method="post">{% csrf_token %}
     <input id="msg_text" type="text">
     <button type="button" onclick="onClick()">Send</button>
     </form>
@@ -51,7 +51,7 @@
             form.setAttribute("name","msg");
             form.setAttribute("action","/chat/");
             form.setAttribute("user",user);
-            form.setAttribute("value",msg_text);
+            form.setAttribute('value',msg_text);
             //form.append();
             alert(msg_text);
             form.submit();
