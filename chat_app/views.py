@@ -25,13 +25,14 @@ def chat(request):
     event='msg'
     if request.method == 'POST':
         form = forms.Form(request.POST)
-        msg=form.cleaned_data['value']
-        p = pusher.Pusher(
-            app_id=app_key,
-            key=key,
-            secret=secret
-        )
-        p[channel].trigger(event, {"user":user,"msg":msg})
+        if form.is_valid():
+            msg=form.cleaned_data['value']
+            p = pusher.Pusher(
+                app_id=app_key,
+                key=key,
+                secret=secret
+            )
+            p[channel].trigger(event, {"user":user,"msg":msg})
 
     else:
         return render(request, "chat_app/chat.html", {
