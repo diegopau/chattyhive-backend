@@ -7,8 +7,10 @@
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
+    <!--<form name="send_msg" action="/chat/" method="post">{% csrf_token %}-->
     <input id="msg_text" type="text">
     <button type="button" onclick="onClick()">Send</button>
+    <!--</form>-->
     <script type="text/javascript">
 
         var num_rep=0;
@@ -29,6 +31,7 @@
             var text_sended = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
             write(user, text_sended);
+            //document.send_msg.submit();
             send_post(text_sended);
         }
 
@@ -49,7 +52,7 @@
             form.setAttribute("action","/chat/");
             form.setAttribute("user",user);
             form.setAttribute("value",msg_text);
-            form.appendChild(form);
+            //form.append();
             alert(msg_text);
             form.submit();
         }
