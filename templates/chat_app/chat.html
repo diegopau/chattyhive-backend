@@ -25,15 +25,14 @@
             write(data.user,data.msg);
         });
 
-        function onClick()
-        {
+        function onClick() {
             var text_sended = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
             write(user, text_sended);
             send_post(text_sended);
         }
 
-        function write(name_user, text){
+        function write(name_user, text) {
             num_rep ++;
             if (num_rep > 25) {
                 document.getElementById("chat_field").innerHTML = name_user + " said: " + text + "<br/>";
@@ -51,6 +50,7 @@
             form.setAttribute("user",user);
             form.setAttribute("value",msg_text);
             form.appendChild(form);
+            alert(msg_text);
             form.submit();
         }
     </script>
