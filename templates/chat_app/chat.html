@@ -7,9 +7,10 @@
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
-    <form action="/chat/" method="post">{% csrf_token %}
-    <input id="msg_text" type="text">
-    <button type="button" onclick="onClick()">Send</button>
+    <form id="send_msg" action="/chat/" method="post">{% csrf_token %}
+        <input id="msg_text" type="text">
+    <!--<button type="button" onclick="onClick()">Send</button>-->
+        <input type="button" onclick="onClick()" value="Send">
     </form>
     <script type="text/javascript">
 
@@ -20,21 +21,26 @@
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
 
+        // Connecting to pusher
         var pusher = new Pusher(key);
         var channel = pusher.subscribe(channel_name);
 
+        // Listening to the channel
         channel.bind(event_name, function(data) {
             write(data.user,data.msg);
         });
 
+        // Button Send behaviour
         function onClick() {
-            var text_sended = document.getElementById("msg_text").value;
+            var text_sent = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
-            write(user, text_sended);
-            document.send_msg.submit();
-            //send_post(text_sended);
+            write(user, text_sent);
+            document.getElementById('send_msg').submit();
+            alert("Submit realizado");
+//            send_post(text_sent);
         }
 
+        // AJAX method to write chat answers on screen
         function write(name_user, text) {
             num_rep ++;
             if (num_rep > 25) {
@@ -45,17 +51,43 @@
             }
         }
 
+        // TODO that's for creating our own form, not used yet
         function send_post(msg_text) {
-            var form = document.createElement("form");
+            var form = document.createElement("FORM");
+            form.method = 'POST';
+            form.action = '/chat/';
+            form.value = msg_text;
+//            var csrftoken = $.cookie('csrftoken');
+//            var csrftoken = getCookie('csrftoken');
+            /*
             form.setAttribute("method","post");
             form.setAttribute("name","msg");
             form.setAttribute("action","/chat/");
             form.setAttribute("user",user);
             form.setAttribute('value',msg_text);
-            //form.append();
+            */
             alert(msg_text);
             form.submit();
         }
+
+        // using jQuery
+        /*
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }*/
+
     </script>
 </body>
 </html>

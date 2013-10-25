@@ -23,7 +23,9 @@ def chat(request):
     secret ='360b346d88ee47d4c230'
     channel='public_test'
     event='msg'
+    print "entrando..."   # TODO debug print
     if request.method == 'POST':
+        print "metodo post detectado" # TODO debug print for POST
         form = MsgForm(request.POST)
         if form.is_valid():
             msg=form.cleaned_data['value']
@@ -35,6 +37,7 @@ def chat(request):
             p[channel].trigger(event, {"user":user,"msg":msg})
 
     else:
+        print "metodo get detectado" # TODO debug print for GET
         return render(request, "chat_app/chat.html", {
             'user': user,
             'app_key': app_key,
