@@ -8,9 +8,10 @@
     Welcome, {{ user }}!
     <p id="chat_field"></p>
     <form id="send_msg" action="/chat/" method="post">{% csrf_token %}
-        <input id="msg_text" type="text">
-    <!--<button type="button" onclick="onClick()">Send</button>-->
-        <input type="button" onclick="onClick()" value="Send">
+        <!--<input id="msg_text" type="text">-->
+        <!--<button type="button" onclick="onClick()">Send</button>-->
+        {{ form.as_p }}
+        <input type="submit" onclick="onClick()" value="Send">
     </form>
     <script type="text/javascript">
 

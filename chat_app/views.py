@@ -23,11 +23,14 @@ def chat(request):
     secret ='360b346d88ee47d4c230'
     channel='public_test'
     event='msg'
+    form=MsgForm(request.POST)
     print "entrando..."   # TODO debug print
     if request.method == 'POST':
         print "metodo post detectado" # TODO debug print for POST
         form = MsgForm(request.POST)
+        # form =
         if form.is_valid():
+            print "form is_valid() detectado" # TODO debug print for is_valid
             msg=form.cleaned_data['value']
             p = pusher.Pusher(
                 app_id=app_key,
@@ -35,6 +38,15 @@ def chat(request):
                 secret=secret
             )
             p[channel].trigger(event, {"user":user,"msg":msg})
+            print "trigger realizado" # TODO debug print for trigger
+            return render(request, "chat_app/chat.html", {
+            'user': user,
+            'app_key': app_key,
+            'key': key,
+            'channel' : channel,
+            'event' : event,
+            'form' : form,
+        })
 
     else:
         print "metodo get detectado" # TODO debug print for GET
@@ -44,4 +56,5 @@ def chat(request):
             'key': key,
             'channel' : channel,
             'event' : event,
+            'form' : form,
         })
