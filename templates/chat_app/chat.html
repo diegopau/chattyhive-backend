@@ -7,11 +7,13 @@
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
-    <form id="send_msg" action="/chat/" method="post">{% csrf_token %}
+    <!--<form id="send_msg" action="/chat/" method="post">{% csrf_token %}-->
+    <form action="/chat/" method="post">{% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Send">
         <!--<input id="msg_text" type="text">-->
         <!--<button type="button" onclick="onClick()">Send</button>-->
-        {{ form.as_p }}
-        <input type="submit" onclick="onClick()" value="Send">
+        <!--<input type="submit" onclick="onClick()" value="Send">-->
     </form>
     <script type="text/javascript">
 
@@ -21,6 +23,7 @@
         var key="{{ key }}";
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
+        var chat="{{ chat_field }}";
 
         // Connecting to pusher
         var pusher = new Pusher(key);
@@ -32,6 +35,7 @@
         });
 
         // Button Send behaviour
+        // TODO not used now
         function onClick() {
             var text_sent = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
@@ -43,6 +47,8 @@
 
         // AJAX method to write chat answers on screen
         function write(name_user, text) {
+            chat = document.getElementById("chat_field").valueOf(); // TODO trying to store previous messages
+//            alert(chat);
             num_rep ++;
             if (num_rep > 25) {
                 document.getElementById("chat_field").innerHTML = name_user + " said: " + text + "<br/>";
@@ -58,36 +64,9 @@
             form.method = 'POST';
             form.action = '/chat/';
             form.value = msg_text;
-//            var csrftoken = $.cookie('csrftoken');
-//            var csrftoken = getCookie('csrftoken');
-            /*
-            form.setAttribute("method","post");
-            form.setAttribute("name","msg");
-            form.setAttribute("action","/chat/");
-            form.setAttribute("user",user);
-            form.setAttribute('value',msg_text);
-            */
             alert(msg_text);
             form.submit();
         }
-
-        // using jQuery
-        /*
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }*/
 
     </script>
 </body>

@@ -6,4 +6,4 @@ class LoginForm(forms.Form):
     user = forms.CharField(max_length=16)
 
 class MsgForm(forms.Form):
-    value = forms.CharField(max_length=128)
+    write_your_message = forms.CharField(max_length=128)
