@@ -34,24 +34,39 @@ def chat(request):
     chat_field = '' # TODO variable to store previous messages, not working
     # GET vs POST
     if request.method == 'POST':
-        form = MsgForm(request.POST)
-        if form.is_valid():
-            msg = form.cleaned_data['write_your_message']
-            p = pusher.Pusher(
-                app_id=app_key,
-                key=key,
-                secret=secret
-            )
-            p[channel].trigger(event, {"user": user, "msg": msg})
+
+        msg = request.POST.get('msg')
+        p = pusher.Pusher(
+            app_id=app_key,
+            key=key,
+            secret=secret
+        )
+        p[channel].trigger(event, {"user": user, "msg": msg})
+        # ratings = Bewertung.objects.order_by(sortid)
+        # locations = Location.objects.filter(locations_bewertung__in=ratings)
+        # t = loader.get_template('result-page.html')
+        # c = Context({ 'locs': locations })
+        return HttpResponse(msg)
+
+        # form = MsgForm(request.POST)
+        # if form.is_valid():
+        #     msg = form.cleaned_data['write_your_message']
+        #     p = pusher.Pusher(
+        #         app_id=app_key,
+        #         key=key,
+        #         secret=secret
+        #     )
+        #     p[channel].trigger(event, {"user": user, "msg": msg})
 
             # TODO it's to be changed as it reload completely the web-page deleting displayed messages.
             #      Different options under comments
 
+
             # Manually generate the new page
-            response = HttpResponse()
-            response.write(chat_field)
-            response.write(user + " said: " + msg + "<br/>")
-            return response
+            # response = HttpResponse()
+            # response.write(chat_field)
+            # response.write(user + " said: " + msg + "<br/>")
+            # return response
 
             # Reload the template /chat/
             # return HttpResponseRedirect("/chat/")
@@ -76,3 +91,28 @@ def chat(request):
             'form': form,
             'chat_field' : chat_field
         })
+
+
+def chat_send(request):
+    # Variable declaration
+    """
+
+    :param request:
+    :return:
+    """
+    user = request.session['user']
+    app_key = "55129"
+    key = 'f073ebb6f5d1b918e59e'
+    secret = '360b346d88ee47d4c230'
+    channel = 'public_test'
+    event = 'msg'
+
+    # print("chat_send working")
+    msg = request.GET.get('msg')
+    p = pusher.Pusher(
+        app_id=app_key,
+        key=key,
+        secret=secret
+    )
+    p[channel].trigger(event, {"user": user, "msg": msg})
+    return HttpResponse(msg)

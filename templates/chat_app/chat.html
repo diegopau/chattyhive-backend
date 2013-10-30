@@ -3,18 +3,19 @@
 <head>
     <title>CHAT</title>
     <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
+    <script src="jquery-2.0.3.min.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
-    <!--<form id="send_msg" action="/chat/" method="post">{% csrf_token %}-->
-    <form action="/chat/" method="post">{% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Send">
-        <!--<input id="msg_text" type="text">-->
-        <!--<button type="button" onclick="onClick()">Send</button>-->
+{#    <!--<form id="send_msg" action="/chat/" method="post">{% csrf_token %}-->#}
+{#    <form action="/chat/" method="post">{% csrf_token %}#}
+{#        {{ form.as_p }}#}
+{#        <input type="submit" value="Send">#}
+        <input id="msg_text" type="text">
+        <button type="button" onclick="onClick()">Send</button>
         <!--<input type="submit" onclick="onClick()" value="Send">-->
-    </form>
+{#    </form>#}
     <script type="text/javascript">
 
         var num_rep=0;
@@ -40,9 +41,10 @@
             var text_sent = document.getElementById("msg_text").value;
             document.getElementById("msg_text").value="";
             write(user, text_sent);
-            document.getElementById('send_msg').submit();
-            alert("Submit realizado");
-//            send_post(text_sent);
+{#            document.getElementById('send_msg').submit();#}
+{#            alert("Submit realizado");#}
+{#              send_post(text_sent);#}
+            send_jquery(text_sent);
         }
 
         // AJAX method to write chat answers on screen
@@ -66,6 +68,19 @@
             form.value = msg_text;
             alert(msg_text);
             form.submit();
+        }
+
+        function send_jquery(msg_text){
+{#            var sortid = $('#sort').val().toLowerCase();#}
+            $.ajax({
+                type:"GET",
+                url: "/chat/send/",
+                data: {msg: msg_text},
+                success: function(newData){
+                    document.getElementById("chat_field").html('---->ok');
+                }
+            });
+            alert("jquery working");
         }
 
     </script>
