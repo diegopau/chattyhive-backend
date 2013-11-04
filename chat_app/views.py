@@ -34,19 +34,23 @@ def chat(request):
     chat_field = '' # TODO variable to store previous messages, not working
     # GET vs POST
     if request.method == 'POST':
+        print("post")
+        if request.POST.has_key('ajax'):
+            print("ajax")
 
-        msg = request.POST.get('msg')
-        p = pusher.Pusher(
-            app_id=app_key,
-            key=key,
-            secret=secret
-        )
-        p[channel].trigger(event, {"user": user, "msg": msg})
-        # ratings = Bewertung.objects.order_by(sortid)
-        # locations = Location.objects.filter(locations_bewertung__in=ratings)
-        # t = loader.get_template('result-page.html')
-        # c = Context({ 'locs': locations })
-        return HttpResponse(msg)
+            msg = request.POST.get('msg')
+            p = pusher.Pusher(
+                app_id=app_key,
+                key=key,
+                secret=secret
+            )
+            p[channel].trigger(event, {"user": user, "msg": msg})
+            # ratings = Bewertung.objects.order_by(sortid)
+            # locations = Location.objects.filter(locations_bewertung__in=ratings)
+            # t = loader.get_template('result-page.html')
+            # c = Context({ 'locs': locations })
+            return HttpResponse("yep")
+        return HttpResponse("nope")
 
         # form = MsgForm(request.POST)
         # if form.is_valid():
