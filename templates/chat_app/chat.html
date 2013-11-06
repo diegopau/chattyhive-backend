@@ -5,6 +5,7 @@
     <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
     <script src="jquery-2.0.3.min.js" type="text/javascript"></script>
     <script src="functions_ajax.js" type="text/javascript"></script>
+    <script src="cookie.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
@@ -63,8 +64,8 @@
 
         function loadXMLDoc() {
 //            returns 403: forbidden request, think because of the crsf missed
-            var csrftoken = $.cookie('csrftoken');
-            alert('csrf');
+{#            var csrftoken = $.cookie('csrftoken');#}
+{#            alert('csrf');#}
             var xmlhttp;
             if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
                 xmlhttp=new XMLHttpRequest();
