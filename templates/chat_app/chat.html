@@ -4,15 +4,16 @@
     <title>CHAT</title>
     <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
     <script src="jquery-2.0.3.min.js" type="text/javascript"></script>
+    <script src="functions_ajax.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
     <p id="chat_field"></p>
     <form id="send_msg" action="/chat/" method="post">{% csrf_token %}
 {#        {{ form.as_p }}#}
-        <input type="submit" value="Send">
+{#        <input type="submit" value="Send">#}
         <input id="msg_text" type="text">
-{#        <button type="button" onclick="onClick()">Send</button>#}
+        <button type="button" onclick="onClick()">Send</button>
 {#        <input type="submit" onclick="onClick()" value="Send">#}
     </form>
     <script type="text/javascript">
@@ -43,7 +44,8 @@
 {#            document.getElementById('send_msg').submit();#}
 {#            alert("Submit realizado");#}
 {#              send_post(text_sent);#}
-            send_jquery(text_sent);
+{#            send_jquery(text_sent);#}
+            loadXMLDoc();
         }
 
         // AJAX method to write chat answers on screen
@@ -59,28 +61,24 @@
             }
         }
 
-        // TODO that's for creating our own form, not used yet
-        function send_post(msg_text) {
-            var form = document.createElement("FORM");
-            form.method = 'POST';
-            form.action = '/chat/';
-            form.value = msg_text;
-            alert(msg_text);
-            form.submit();
-        }
-
-        function send_jquery(msg_text){
-{#            var sortid = $('#sort').val().toLowerCase();#}
-            alert("send_jquery")
-            $.ajax({
-                type:"POST",
-                url: "/chat/",
-                data: {msg: msg_text},
-                success: function(newData){
-                    document.getElementById("chat_field").html('---->ok');
+        function loadXMLDoc() {
+//            returns 403: forbidden request, think because of the crsf missed
+            var csrftoken = $.cookie('csrftoken');
+            alert('csrf');
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange=function() {
+                if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+                    document.getElementById("chat_field").innerHTML=xmlhttp.responseText;
                 }
-            });
-            alert("jquery working");
+            }
+            xmlhttp.open("POST","/chat/",true);
+            xmlhttp.send();
         }
 
         $(document).ready(function() {
@@ -96,11 +94,13 @@
                     },
                     failure: function(errMsg) {
                         alert(errMsg);
-                    },
+                    }
                 });
                 return false;
             });
         });
+
+
     </script>
 </body>
 </html>
