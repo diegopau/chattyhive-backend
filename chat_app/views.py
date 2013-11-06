@@ -38,18 +38,21 @@ def chat(request):
         # if request.is_ajax():
         #     print("ajax")
 
-        msg = request.POST.get('msg')
+        msg = request.POST.get("msg")
+        loc_user = request.get('user')
         p = pusher.Pusher(
             app_id=app_key,
             key=key,
             secret=secret
         )
-        p[channel].trigger(event, {"user": user, "msg": msg})
+        print(loc_user)
+        print(msg)
+        p[channel].trigger(event, {"user": loc_user, "msg": msg})
             # ratings = Bewertung.objects.order_by(sortid)
             # locations = Location.objects.filter(locations_bewertung__in=ratings)
             # t = loader.get_template('result-page.html')
             # c = Context({ 'locs': locations })
-        return HttpResponse("yep")
+        return HttpResponse("=>sended")
         # return HttpResponse("nope")
 
         # form = MsgForm(request.POST)
