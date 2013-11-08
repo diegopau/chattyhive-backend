@@ -32,3 +32,22 @@
             });
             alert("jquery working");
         }
+
+$(document).ready(function() {
+            $('send_msg').submit(function()
+            {
+                alert("submit_catched")
+                $.ajax({
+                    type: "POST",
+                    url: "/chat/",
+                    data: {msg: msg_text},
+                    success: function(newData){
+                        document.getElementById("chat_field").html('---->ok');
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+        });
