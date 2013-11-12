@@ -4,6 +4,7 @@ __author__ = 'lorenzo'
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from chat_app.models import *
+from django.contrib import auth
 import pusher
 
 
@@ -12,20 +13,20 @@ def login(request):
         form = LoginForm(request.POST)
         if form.is_valid():
             request.session['user'] = form.cleaned_data['user']
-            request.session['active'] = True
-            # request.session.set_expiry(20)
-            # print('one')
+            # request.session['active'] = True
+            request.session.set_expiry(300)
             # print(request.session.get_expiry_age())
             return HttpResponseRedirect("/chat/")
     else:
-        # if 'user' in request.session:
-        if 'active' in request.session and request.session['active']:
-            request.session['active'] = False
-        #     print('two')
-        #     print(request.session.get_expiry_age())
-        #     request.session.set_expiry(20)
+        if 'user' in request.session:
+        # if 'active' in request.session and request.session['active']:
+            # request.session['active'] = False
+            print('one')
+            # print(request.session.get_expiry_age())
+            request.session.set_expiry(300)
             return HttpResponseRedirect("/chat/")
         form = LoginForm()
+        print('two')
         return render(request, "chat_app/login.html", {
             'form': form
         })
@@ -56,6 +57,7 @@ def chat(request):
         # print(loc_user)
         # print(msg)
         p[channel].trigger(event, {"user": user, "msg": msg})
+        request.session.set_expiry(300)
         return HttpResponse("=>sended")
         # return HttpResponse("nope")
 
