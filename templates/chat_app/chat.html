@@ -3,21 +3,15 @@
 <head>
     <title>CHAT</title>
     <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
-    <!--<script src="jquery-2.0.3.min.js" type="text/javascript"></script>-->
-    <script src="functions_ajax.js" type="text/javascript"></script>
-    <script src="cookie.js" type="text/javascript"></script>
-    <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+    <script src="../../static/js/jquery-2.0.3.min.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
+    <button type="button" id="btn_logout" onclick="onLogout()" style="text-align: right">Logout</button>
     <p id="chat_field"></p>
-    <form id="send_msg" action="/chat/" method="post">{% csrf_token %}
-<!--{#        {{ form.as_p }}#}-->
-<!--{#        <input type="submit" value="Send">#}-->
-        <input id="msg_text" type="text">
-        <button type="button" onclick="onClick()">Send</button>
-<!--{#        <input type="submit" onclick="onClick()" value="Send">#}-->
-    </form>
+    <input id="msg_text" type="text">
+    <button type="button" id="btn_send" onclick="onClick()">Send</button>
+
     <script type="text/javascript">
 
         var num_rep=0;
@@ -38,31 +32,33 @@
         });
 
         // Button Send behaviour
-        // TODO not used now
         function onClick() {
-            var text_sent = document.getElementById("msg_text").value;
-            document.getElementById("msg_text").value="";
+            var text_sent = $("#msg_text").val();
+            $("#msg_text").val("");
             write(user, text_sent);
-//{#            document.getElementById('send_msg').submit();#}
-//{#            alert("Submit realizado");#}
-//{#              send_post(text_sent);#}
-//{#            send_jquery(text_sent);#}
             loadXMLDoc(text_sent);
+        }
+
+        // Button Logout behaviour
+        function onLogout() {
+            // TODO cookies deleted locally, still should send some POST for the server to update
+            deleteAllCookies();
+            location.href="/";
         }
 
         // AJAX method to write chat answers on screen
         function write(name_user, text) {
-            chat = document.getElementById("chat_field").valueOf(); // TODO trying to store previous messages
-//            alert(chat);
+            chat = $('#chat_field').html();
             num_rep ++;
             if (num_rep > 25) {
-                document.getElementById("chat_field").innerHTML ="<br/>" + name_user + " said: " + text;
+                $('#chat_field').text(name_user + " said: " + text);
                 num_rep = 0;
             } else {
-                document.getElementById("chat_field").innerHTML +="<br/>" + name_user + " said: " + text;
+                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text);
             }
         }
 
+        // Gets the cookie or creates a new one if it doesn't exist
         function getCookie(name) {
             var cookieValue = null;
             if (document.cookie && document.cookie != '') {
@@ -79,10 +75,20 @@
             return cookieValue;
         }
 
+        // Deletes all the content of the cookie and sets expire-date already expired
+        function deleteAllCookies() {
+            var cookies = document.cookie.split(";");
 
+            for (var i = 0; i < cookies.length; i++) {
+    	        var cookie = cookies[i];
+    	        var eqPos = cookie.indexOf("=");
+    	        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    	        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            }
+        }
+
+        // Loads part of the webpage - AJAX
         function loadXMLDoc(text_sent) {
-//            returns 403: forbidden request, think because of the crsf missed
-
             var csrftoken = getCookie('csrftoken');
 //            var csrftoken = $.cookie('csrftoken');
             var xmlhttp;
@@ -101,28 +107,11 @@
             xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
 //            xmlhttp.setRequestHeader("user",user);
 //            xmlhttp.setRequestHeader("msg",text_sent);
-            xmlhttp.send("user="+user+"&msg="+text_sent);
+//            xmlhttp.send("user="+user+"&msg="+text_sent);
+            xmlhttp.send('{"user":"'+user+'","msg":"'+text_sent+'"}');
 //            xmlhttp.ajaxSend() fixme
         }
 
-        $(document).ready(function() {
-            $('send_msg').submit(function()
-            {
-                alert("submit_catched")
-                $.ajax({
-                    type: "POST",
-                    url: "/chat/",
-                    data: {msg: msg_text},
-                    success: function(newData){
-                        document.getElementById("chat_field").html('---->ok');
-                    },
-                    failure: function(errMsg) {
-                        alert(errMsg);
-                    }
-                });
-                return false;
-            });
-        });
 
 
     </script>
