@@ -19,7 +19,7 @@ def login(request):
         else:
             HttpResponse("ERROR, invalid form")
     else:
-        print("21 /b",request.session['active'])
+        # print("21 /b",request.session['active'])
         if 'user' in request.session and request.session['active']==True:
             print('one')
             request.session.set_expiry(300)
@@ -53,7 +53,7 @@ def chat(request):
             )
             p[channel].trigger(event, {"user": user, "msg": msg})
             request.session.set_expiry(300)
-            return HttpResponse("=>sended")
+            return HttpResponse("Server Ok")
         else:
 
             form = MsgForm()
@@ -71,7 +71,7 @@ def chat(request):
 
 def logout(request):
     print("logout")
-    print("11 /b",request.session['active'])
+    # print("11 /b",request.session['active'])
     request.session['active'] = False
-    print("12 /b",request.session['active'])
+    # print("12 /b",request.session['active'])
     return HttpResponse("logged out")
