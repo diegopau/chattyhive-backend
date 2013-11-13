@@ -43,6 +43,9 @@
         function onLogout() {
             // TODO cookies deleted locally, still should send some POST for the server to update
             deleteAllCookies();
+            xmlhttp.open("POST","/logout/",true);
+            xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
+            xmlhttp.send('');
             location.href="/";
         }
 
@@ -78,14 +81,18 @@
         // Deletes all the content of the cookie and sets expire-date already expired
         function deleteAllCookies() {
             var cookies = document.cookie.split(";");
-
+//            alert(cookies.length);
             for (var i = 0; i < cookies.length; i++) {
     	        var cookie = cookies[i];
+//                alert(cookie);
     	        var eqPos = cookie.indexOf("=");
     	        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
     	        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
             }
+//            alert("bu");
         }
+
+
 
         // Loads part of the webpage - AJAX
         function loadXMLDoc(text_sent) {
