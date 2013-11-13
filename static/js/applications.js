@@ -8,7 +8,7 @@
 
     src = '';
 
-    /*
+
     var num_rep = 0;
     var user = $.parseJSON('{{ user }}');
     var app_key = $.parseJSON('{{ app_key }}');
@@ -16,7 +16,6 @@
     var channel_name = $.parseJSON('{{ channel }}');
     var event_name = $.parseJSON('{{ event }}');
     var chat = $.parseJSON('{{ chat_field }}');
-    */
 
     // Connecting to pusher
     var pusher = new Pusher(key);

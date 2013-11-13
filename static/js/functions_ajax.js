@@ -33,7 +33,104 @@
             alert("jquery working");
         }
 
-$(document).ready(function() {
+        /*
+        // Gets the cookie or creates a new one if it doesn't exist
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        */
+
+        // Deletes all the content of the cookie and sets expire-date already expired
+        function deleteAllCookies() {
+            //$.removeCookie();
+            /*
+            var cookies = document.cookie.split(";");
+//            alert(cookies.length);
+            for (var i = 0; i < cookies.length; i++) {
+    	        var cookie = cookies[i];
+//                alert(cookie);
+    	        var eqPos = cookie.indexOf("=");
+    	        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    	        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            }
+            */
+            //alert("bu");
+        }
+
+        /*
+        // Loads part of the webpage - AJAX
+        function loadXMLDoc(text_sent) {
+
+            var csrftoken = $.cookie('csrftoken');
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange=function() {
+                if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+                    document.getElementById("chat_field").innerHTML+=xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("POST","/chat/",true);
+            xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
+//            xmlhttp.setRequestHeader("user",user);
+//            xmlhttp.setRequestHeader("msg",text_sent);
+//            xmlhttp.send("user="+user+"&msg="+text_sent);
+            xmlhttp.send('{"user":"'+user+'","msg":"'+text_sent+'"}');
+//            xmlhttp.ajaxSend() fixme
+        }
+        */
+
+        /*
+        // Button Send behaviour
+        function onClick() {
+            //var text_sent = $("#msg_text").val();
+            //$("#msg_text").val("");
+            //write(user, text_sent);
+            //loadXMLDoc(text_sent);
+        }
+        */
+
+                // Deletes all the content of the cookie and sets expire-date already expired
+        function deleteAllCookies_jQuery() {
+            $.removeCookie();
+        }
+
+        /*
+        // Button Logout behaviour
+        function onLogout() {
+            // TODO cookies deleted locally, still should send some POST for the server to update
+            var csrftoken = $.cookie('csrftoken');
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.open("POST","/logout/",true);
+            xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
+            xmlhttp.send('');
+            deleteAllCookies_jQuery();
+            location.href="/";
+        }*/
+
+        $(document).ready(function() {
             $('send_msg').submit(function()
             {
                 alert("submit_catched")

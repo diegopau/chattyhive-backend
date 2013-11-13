@@ -4,13 +4,15 @@
     <title>CHAT</title>
     <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
     <script src="{{ STATIC_URL }}js/jquery-2.0.3.min.js" type="text/javascript"></script>
+    <script src="{{ STATIC_URL }}js/jquery.cookie.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
-    <button type="button" id="btn_logout" onclick="onLogout()" style="text-align: right">Logout</button>
+    <button type="button" id="btn_logout" style="text-align: right">Logout</button>
     <p id="chat_field"></p>
     <input id="msg_text" type="text">
-    <button type="button" id="btn_send" onclick="onClick()">Send</button>
+    <button type="button" id="btn_send">Send</button>
+    <p id="status"></p>
 
     <script type="text/javascript">
 
@@ -31,33 +33,6 @@
             if(data.user!=user) write(data.user,data.msg);
         });
 
-        // Button Send behaviour
-        function onClick() {
-            var text_sent = $("#msg_text").val();
-            $("#msg_text").val("");
-            write(user, text_sent);
-            loadXMLDoc(text_sent);
-        }
-
-        // Button Logout behaviour
-        function onLogout() {
-            // TODO cookies deleted locally, still should send some POST for the server to update
-            deleteAllCookies();
-            var csrftoken = getCookie('csrftoken');
-//            var csrftoken = $.cookie('csrftoken');
-            var xmlhttp;
-            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
-                xmlhttp=new XMLHttpRequest();
-            }
-            else {// code for IE6, IE5
-                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-            }
-            xmlhttp.open("POST","/logout/",true);
-            xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
-            xmlhttp.send('');
-            location.href="/";
-        }
-
         // AJAX method to write chat answers on screen
         function write(name_user, text) {
             chat = $('#chat_field').html();
@@ -70,75 +45,51 @@
             }
         }
 
-        // Gets the cookie or creates a new one if it doesn't exist
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+        // Buttons behaviour
+        $(document).ready(function() {
+            // Button send behaviour when clicked
+            $('#btn_send').on('click', function()
+            {
+                var text_sent = $("#msg_text").val();
+                $("#msg_text").val("");
+                var csrftoken = $.cookie('csrftoken');
+                $.ajax({
+                    type: "POST",
+                    url: "/chat/",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: {msg:text_sent},
+                    success: function(newData){
+                        $("#status").html(newData);
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
                     }
-                }
-            }
-            return cookieValue;
-        }
+                });
+                write(user, text_sent);
+                return false;
+            });
 
-        // Deletes all the content of the cookie and sets expire-date already expired
-        function deleteAllCookies() {
-            var cookies = document.cookie.split(";");
-//            alert(cookies.length);
-            for (var i = 0; i < cookies.length; i++) {
-    	        var cookie = cookies[i];
-//                alert(cookie);
-    	        var eqPos = cookie.indexOf("=");
-    	        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-    	        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-            }
-//            alert("bu");
-        }
-
-        // Deletes all the content of the cookie and sets expire-date already expired
-        function deleteAllCookies_jQuery() {
-            var cookies = $.cookie.split(";");
-//            alert(cookies.length);
-            for (var i = 0; i < cookies.length; i++) {
-    	        var cookie = cookies[i];
-//                alert(cookie);
-    	        var eqPos = cookie.indexOf("=");
-    	        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-    	        $.removeCookie() = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-            }
-//            alert("bu");
-        }
-
-        // Loads part of the webpage - AJAX
-        function loadXMLDoc(text_sent) {
-            var csrftoken = getCookie('csrftoken');
-//            var csrftoken = $.cookie('csrftoken');
-            var xmlhttp;
-            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
-                xmlhttp=new XMLHttpRequest();
-            }
-            else {// code for IE6, IE5
-                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-            }
-            xmlhttp.onreadystatechange=function() {
-                if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-                    document.getElementById("chat_field").innerHTML+=xmlhttp.responseText;
-                }
-            }
-            xmlhttp.open("POST","/chat/",true);
-            xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
-//            xmlhttp.setRequestHeader("user",user);
-//            xmlhttp.setRequestHeader("msg",text_sent);
-//            xmlhttp.send("user="+user+"&msg="+text_sent);
-            xmlhttp.send('{"user":"'+user+'","msg":"'+text_sent+'"}');
-//            xmlhttp.ajaxSend() fixme
-        }
+            // Button logout behaviour when clicked
+            $('#btn_logout').on('click', function()
+            {
+                var csrftoken = $.cookie('csrftoken');
+                $.ajax({
+                    type: "POST",
+                    url: "/logout/",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        alert(newData);
+                        //$.removeCookie(); TODO toggle to remove browser cookies
+                        location.href="/";
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+        });
 
 
 
