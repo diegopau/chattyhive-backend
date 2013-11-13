@@ -3,7 +3,7 @@
 <head>
     <title>CHAT</title>
     <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
-    <script src="../../static/js/jquery-2.0.3.min.js" type="text/javascript"></script>
+    <script src="{{ STATIC_URL }}js/jquery-2.0.3.min.js" type="text/javascript"></script>
 </head>
 <body>
     Welcome, {{ user }}!
@@ -43,6 +43,15 @@
         function onLogout() {
             // TODO cookies deleted locally, still should send some POST for the server to update
             deleteAllCookies();
+            var csrftoken = getCookie('csrftoken');
+//            var csrftoken = $.cookie('csrftoken');
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
             xmlhttp.open("POST","/logout/",true);
             xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
             xmlhttp.send('');
@@ -92,7 +101,19 @@
 //            alert("bu");
         }
 
-
+        // Deletes all the content of the cookie and sets expire-date already expired
+        function deleteAllCookies_jQuery() {
+            var cookies = $.cookie.split(";");
+//            alert(cookies.length);
+            for (var i = 0; i < cookies.length; i++) {
+    	        var cookie = cookies[i];
+//                alert(cookie);
+    	        var eqPos = cookie.indexOf("=");
+    	        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    	        $.removeCookie() = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            }
+//            alert("bu");
+        }
 
         // Loads part of the webpage - AJAX
         function loadXMLDoc(text_sent) {
