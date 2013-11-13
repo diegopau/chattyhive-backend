@@ -4,7 +4,6 @@ __author__ = 'lorenzo'
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from chat_app.models import *
-from django.contrib import auth
 import pusher
 
 
@@ -13,16 +12,11 @@ def login(request):
         form = LoginForm(request.POST)
         if form.is_valid():
             request.session['user'] = form.cleaned_data['user']
-            # request.session['active'] = True
             request.session.set_expiry(300)
-            # print(request.session.get_expiry_age())
             return HttpResponseRedirect("/chat/")
     else:
         if 'user' in request.session:
-        # if 'active' in request.session and request.session['active']:
-            # request.session['active'] = False
             print('one')
-            # print(request.session.get_expiry_age())
             request.session.set_expiry(300)
             return HttpResponseRedirect("/chat/")
         form = LoginForm()
@@ -43,23 +37,16 @@ def chat(request):
 
     # GET vs POST
     if request.method == 'POST':
-        # print("post")
-        # if request.is_ajax():
-        #     print("ajax")
 
         msg = request.POST.get("msg")
-        # loc_user = request.get('user')
         p = pusher.Pusher(
             app_id=app_key,
             key=key,
             secret=secret
         )
-        # print(loc_user)
-        # print(msg)
         p[channel].trigger(event, {"user": user, "msg": msg})
         request.session.set_expiry(300)
         return HttpResponse("=>sended")
-        # return HttpResponse("nope")
 
     else:
 
@@ -72,3 +59,7 @@ def chat(request):
             'event': event,
             'form': form,
         })
+
+def logout(request):
+    request.session.clear()
+    return HttpResponse("loged out")
