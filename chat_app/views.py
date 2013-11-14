@@ -45,13 +45,14 @@ def chat(request):
         # GET vs POST
         if request.method == 'POST':
 
-            msg = request.POST.get("msg")
+            msg = request.POST.get("message")
+            timestamp = request.POST.get("timestamp")
             p = pusher.Pusher(
                 app_id=app_key,
                 key=key,
                 secret=secret
             )
-            p[channel].trigger(event, {"user": user, "msg": msg})
+            p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
             request.session.set_expiry(300)
             return HttpResponse("Server Ok")
         else:

@@ -12,6 +12,7 @@
     <p id="chat_field"></p>
     <input id="msg_text" type="text">
     <button type="button" id="btn_send">Send</button>
+    <p id="time"></p>
     <p id="status"></p>
 
     <script type="text/javascript">
@@ -30,18 +31,20 @@
 
         // Listening to the channel
         channel.bind(event_name, function(data) {
-            if(data.user!=user) write(data.user,data.msg);
+            if(data.username!=user) write(data.username, data.message, data.timestamp);
         });
 
         // AJAX method to write chat answers on screen
-        function write(name_user, text) {
+        function write(name_user, text, timestamp) {
             chat = $('#chat_field').html();
             num_rep ++;
             if (num_rep > 25) {
-                $('#chat_field').text(name_user + " said: " + text);
+                $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp;  on: " + timestamp);
+                $('#time').text("Last message on " + timestamp);
                 num_rep = 0;
             } else {
-                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text);
+                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp;   on: " + timestamp);
+                $('#time').text("Last message: " + timestamp);
             }
         }
 
@@ -52,12 +55,14 @@
             {
                 var text_sent = $("#msg_text").val();
                 $("#msg_text").val("");
+                var d = new Date();
+                var timestamp = d.toTimeString();
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
                     url: "/chat/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {msg:text_sent},
+                    data: {username:user, timestamp:timestamp, message:text_sent},
                     success: function(newData){
                         $("#status").html(newData);
                     },
@@ -65,7 +70,7 @@
                         alert(errMsg);
                     }
                 });
-                write(user, text_sent);
+                write(user, text_sent, timestamp);
                 return false;
             });
 
