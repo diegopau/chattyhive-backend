@@ -1,1 +1,1 @@
-web: gunicorn CH.wsgi
+web: gunicorn chattyhive.wsgi
