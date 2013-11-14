@@ -3,5 +3,4 @@ venv
 *.pot
 *.pyc
 .idea/*
-staticfiles
 local_settings.py
