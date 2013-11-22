@@ -124,7 +124,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'chat_app',
-    'chat_androidAPI'
+    'chat_androidAPI',
+    'social.apps.django_app.default',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
