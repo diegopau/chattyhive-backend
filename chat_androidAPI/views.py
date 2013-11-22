@@ -1,24 +1,26 @@
+from django.views.decorators.csrf import csrf_exempt
+
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 import pusher
 
+@csrf_exempt
 def login(request):
     if request.method == 'POST':
         print("if")
-        # form = LoginForm(request.POST)
-        # if form.is_valid():
-        #     status="LOGGED"
-        #     return HttpResponse({"status": status})
-        # else:
-        #     status="ERROR"
-        #     return HttpResponse({"status": status})
-
+        request.session['user'] = request.POST.get["username"]
+        request.session['active'] = True
+        request.session.set_expiry(300)
+        session_id=request.session.session_key
+        status="LOGGED"
+        return HttpResponse({"status": status, "session": session_id})
     else:
         status="ERROR"
         return HttpResponse({"status": status})
 
+@csrf_exempt
 def chat(request):
     # Variable declaration
     if 'user' in request.session and request.session['active']:
@@ -32,13 +34,14 @@ def chat(request):
         # GET vs POST
         if request.method == 'POST':
 
-            msg = request.POST.get("msg")
+            msg = request.POST.get("message")
+            timestamp = request.POST.get("timestamp")
             p = pusher.Pusher(
                 app_id=app_key,
                 key=key,
                 secret=secret
             )
-            p[channel].trigger(event, {"user": user, "msg": msg})
+            p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
             request.session.set_expiry(300)
             status="RECEIVED"
             return HttpResponse({"status": status})
@@ -46,5 +49,5 @@ def chat(request):
             status="ERROR"
             return HttpResponse({"status": status})
     else:
-        status="NOLOGGED"
+        status="EXPIRED"
         return HttpResponse({"status": status})
