@@ -141,6 +141,7 @@ AUTHENTICATION_BACKENDS = (
     'social.backends.google.GoogleOAuth2',
     'social.backends.google.GoogleOAuth',
     'social.backends.twitter.TwitterOAuth',
+    'social.backends.facebook.FacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
 
@@ -157,7 +158,7 @@ SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/new-association-redirect-url/'
 SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 
-SOCIAL_AUTH_USER_MODEL = 'foo.bar.User'
+# SOCIAL_AUTH_USER_MODEL = 'chat_app.User'
 
 #==============================================================================
 

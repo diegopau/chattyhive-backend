@@ -11,3 +11,4 @@ urlpatterns = patterns('',
 
     url('', include('social.apps.django_app.urls', namespace='social'))
 )
+

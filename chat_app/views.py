@@ -4,6 +4,7 @@ __author__ = 'lorenzo'
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from chat_app.models import *
+from social.apps.django_app import default
 import pusher
 
 
