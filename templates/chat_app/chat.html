@@ -63,7 +63,12 @@
                     headers: {"X-CSRFToken":csrftoken},
                     data: {username:user, timestamp:timestamp, message:text_sent},
                     success: function(newData){
-                        $("#status").html(newData);
+                        if(newData=="Server Ok") {
+                            $("#status").html(newData);
+                        } else {
+                            alert(newData);
+                            location.href="/";
+                        }
                     },
                     failure: function(errMsg) {
                         alert(errMsg);

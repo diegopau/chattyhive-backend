@@ -53,7 +53,7 @@ def chat(request):
                 secret=secret
             )
             p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
-            request.session.set_expiry(300)
+            request.session.set_expiry(20)
             return HttpResponse("Server Ok")
         else:
 
@@ -67,7 +67,8 @@ def chat(request):
                 'form': form,
             })
     else:
-        return HttpResponseRedirect("/")
+        # return HttpResponseRedirect("/")
+        return HttpResponse("Session Expired")
 
 
 def logout(request):
