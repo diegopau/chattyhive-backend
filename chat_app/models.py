@@ -15,9 +15,11 @@ class MsgForm(forms.Form):
 
 
 class ChUser(AbstractBaseUser):
-    # username = models.CharField(unique=True, max_length=45, db_index=True)
-    # email = models.EmailField(unique=True)
+    username = models.CharField(unique=True, max_length=45, db_index=True)
+    email = models.EmailField(unique=True)
     # is_authenticated = models.BooleanField(default=False)
     # is_active = models.BooleanField(default=False)
     Name = models.CharField(max_length=45, db_index=True)
     LastName = models.CharField(max_length=45, db_index=True)
+
+    USERNAME_FIELD = 'username'
