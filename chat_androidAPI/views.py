@@ -19,6 +19,7 @@ def login(request, user):
         csrf=django.middleware.csrf.get_token(request)
         status="LOGGED"
         print(status)
+
         return HttpResponse({
                 'status': status,
                 'csrf': csrf,
