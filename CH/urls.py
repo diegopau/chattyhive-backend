@@ -5,7 +5,7 @@ urlpatterns = patterns('',
     url(r'^$', 'chat_app.views.login', name='login'),
     url(r'^chat/', 'chat_app.views.chat', name='chat'),
     url(r'^logout/', 'chat_app.views.logout', name='logout'),
-    url(r'^android.login/','chat_androidAPI.views.login', name='login'),
+    url(r'^android.login/(?P<user>[a-zA-Z]+)/','chat_androidAPI.views.login', name='login'),
     url(r'^android.chat/','chat_androidAPI.views.chat', name='chat'),
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
 )

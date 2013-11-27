@@ -6,21 +6,24 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 import pusher
 
-@csrf_exempt
-def login(request):
-    if request.method == 'POST':
+# @csrf_exempt
+def login(request, user):
+    if request.method == 'GET':
         print("if")
-        request.session['user'] = request.POST.get["username"]
+        # request.session['user'] = request.POST.get["username"]
+        request.session['user'] = user
         request.session['active'] = True
         request.session.set_expiry(300)
-        session_id=request.session.session_key
+        # session_id=request.session.session_key
         status="LOGGED"
-        return HttpResponse({"status": status, "session": session_id})
+        print(status)
+        return HttpResponse({"status": status})
     else:
         status="ERROR"
+        print(status)
         return HttpResponse({"status": status})
 
-@csrf_exempt
+# @csrf_exempt
 def chat(request):
     # Variable declaration
     if 'user' in request.session and request.session['active']:
