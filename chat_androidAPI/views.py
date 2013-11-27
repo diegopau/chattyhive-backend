@@ -19,7 +19,6 @@ def login(request, user):
         csrf=django.middleware.csrf.get_token(request)
         status="LOGGED"
         print(status)
-        # return render(request, "chat_androidAPI/login.html", {
         return HttpResponse({
                 'status': status,
                 'csrf': csrf,
