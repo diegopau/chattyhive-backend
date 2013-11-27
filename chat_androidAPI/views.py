@@ -1,3 +1,4 @@
+import django
 from django.views.decorators.csrf import csrf_exempt
 
 __author__ = 'lorenzo'
@@ -14,10 +15,16 @@ def login(request, user):
         request.session['user'] = user
         request.session['active'] = True
         request.session.set_expiry(300)
-        # session_id=request.session.session_key
+        session_id=request.session.session_key
+        csrf=django.middleware.csrf.get_token(request)
         status="LOGGED"
         print(status)
-        return HttpResponse({"status": status})
+        # return render(request, "chat_androidAPI/login.html", {
+        return HttpResponse({
+                'status': status,
+                'csrf': csrf,
+                'session_id': session_id
+            })
     else:
         status="ERROR"
         print(status)
