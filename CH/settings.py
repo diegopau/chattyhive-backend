@@ -159,6 +159,7 @@ SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 
 # SOCIAL_AUTH_USER_MODEL = 'chat_app.User'
+# AUTH_USER_MODEL = 'chat_app.ChUser'
 
 #==============================================================================
 

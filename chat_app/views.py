@@ -4,6 +4,8 @@ __author__ = 'lorenzo'
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from chat_app.models import *
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
 from social.apps.django_app import default
 import pusher
 
@@ -13,12 +15,22 @@ def login(request):
         print("if")
         form = LoginForm(request.POST)
         if form.is_valid():
-            request.session['user'] = form.cleaned_data['user']
-            request.session['active'] = True
+            # request.session['user'] = form.cleaned_data['user']
+            # request.session['active'] = True
+            username = form.cleaned_data['user']
+            password = form.cleaned_data['password']
             request.session.set_expiry(300)
-            return HttpResponseRedirect("/chat/")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if user.is_active:
+                    login(request, user)
+                    return HttpResponseRedirect("/chat/")
+                else:
+                    return HttpResponse("ERROR, inactive user")
+            else:
+                return HttpResponse("ERROR, incorrect password or login")
         else:
-            HttpResponse("ERROR, invalid form")
+            return HttpResponse("ERROR, invalid form")
     else:
         # print("21 /b",request.session['active'])
         if 'user' in request.session and request.session['active']==True:
