@@ -1,4 +1,4 @@
-import django
+import django, json
 from django.views.decorators.csrf import csrf_exempt
 
 __author__ = 'lorenzo'
@@ -19,12 +19,8 @@ def login(request, user):
         csrf=django.middleware.csrf.get_token(request)
         status="LOGGED"
         print(status)
-
-        return HttpResponse({
-                'status': status,
-                'csrf': csrf,
-                'session_id': session_id
-            })
+        # j=json.load()
+        return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}), mimetype="application/json")
     else:
         status="ERROR"
         print(status)
