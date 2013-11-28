@@ -11,7 +11,6 @@ import pusher
 def login(request, user):
     if request.method == 'GET':
         print("if")
-        # request.session['user'] = request.POST.get["username"]
         request.session['user'] = user
         request.session['active'] = True
         request.session.set_expiry(300)
@@ -19,12 +18,11 @@ def login(request, user):
         csrf=django.middleware.csrf.get_token(request)
         status="LOGGED"
         print(status)
-        # j=json.load()
         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}), mimetype="application/json")
     else:
         status="ERROR"
         print(status)
-        return HttpResponse({"status": status})
+        return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
 
 # @csrf_exempt
 def chat(request):
