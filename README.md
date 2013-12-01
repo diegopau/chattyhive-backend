@@ -3,5 +3,8 @@ chattyhive
 
 ChattyHive back-end repository
 
-[TODO back-end](https://github.com/diegopau/chattyhive/wiki/TODO-back-end)  
-[Tags changelog & goals] (https://github.com/diegopau/chattyhive/wiki/Tags-changelog-&-goals)
+[Back-end TODO](https://github.com/diegopau/chattyhive/wiki/TODO-back-end)  
+[Android TODO] (https://github.com/diegopau/chattyhive-android/wiki/TODO-android)  
+
+[Back-end tags changelog & goals] (https://github.com/diegopau/chattyhive/wiki/Tags-changelog-&-goals)  
+[Android tags changelog & goals] (https://github.com/diegopau/chattyhive-android/wiki/Tags-changelog-&-goals-Android)  
