@@ -4,6 +4,7 @@ __author__ = 'lorenzo'
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from chat_app.models import *
+import os
 import pusher
 
 
@@ -20,7 +21,7 @@ def login(request):
             HttpResponse("ERROR, invalid form")
     else:
         # print("21 /b",request.session['active'])
-        if 'user' in request.session and request.session['active']==True:
+        if 'user' in request.session and request.session['active'] == True:
             print('one')
             request.session.set_expiry(300)
             return HttpResponseRedirect("/chat/")
@@ -47,13 +48,20 @@ def chat(request):
 
             msg = request.POST.get("message")
             timestamp = request.POST.get("timestamp")
+            # os.environ['TZ']
+            # tz = datetime.time.tzinfo
+            # timestamp_server = datetime.datetime.now().strftime("%xT%X%Z")
+            timestamp_server = datetime.datetime.utcnow().isoformat()
+            print timestamp_server
+            print os.environ['TZ']
             p = pusher.Pusher(
                 app_id=app_key,
                 key=key,
                 secret=secret
             )
-            p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
-            request.session.set_expiry(20)
+            p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp,
+                                       "timestamp_server": timestamp_server})
+            request.session.set_expiry(300)
             return HttpResponse("Server Ok")
         else:
 

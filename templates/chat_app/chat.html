@@ -30,20 +30,20 @@
 
         // Listening to the channel
         channel.bind(event_name, function(data) {
-            if(data.username!=user) write(data.username, data.message, data.timestamp);
+            if(data.username!=user) write(data.username, data.message, data.timestamp, data.timestamp_server);
         });
 
         // AJAX method to write chat answers on screen
-        function write(name_user, text, timestamp) {
+        function write(name_user, text, timestamp, timestamp_server) {
             chat = $('#chat_field').html();
             num_rep ++;
             if (num_rep > 25) {
                 $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp;  on: " + timestamp);
-                $('#time').text("Last message on " + timestamp);
+                $('#time').text("Last message on " + timestamp + " &nbsp;&mbsp;&nbsp;&nbsp;&nbsp; Received on server on " + timestamp_server);
                 num_rep = 0;
             } else {
                 $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp;   on: " + timestamp);
-                $('#time').text("Last message: " + timestamp);
+                $('#time').text("Last message: " + timestamp + "   Received on server on " + timestamp_server);
             }
         }
 
@@ -56,12 +56,13 @@
                 $("#msg_text").val("");
                 var d = new Date();
                 var timestamp = d.toTimeString();
+                var timestamp_server = null;
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
                     url: "/chat/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {username:user, timestamp:timestamp, message:text_sent},
+                    data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);
@@ -74,7 +75,7 @@
                         alert(errMsg);
                     }
                 });
-                write(user, text_sent, timestamp);
+                write(user, text_sent, timestamp, timestamp_server);
                 return false;
             });
 
