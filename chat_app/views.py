@@ -48,10 +48,8 @@ def chat(request):
 
             msg = request.POST.get("message")
             timestamp = request.POST.get("timestamp")
-            # os.environ['TZ']
-            # tz = datetime.time.tzinfo
-            # timestamp_server = datetime.datetime.now().strftime("%xT%X%Z")
-            timestamp_server = datetime.datetime.utcnow().isoformat()
+            timestamp_server = datetime.datetime.utcnow().isoformat() # TODO isoformat gives 6 decimal seconds. Only 3 needed
+            # timestamp_server
             print timestamp_server
             print os.environ['TZ']
             p = pusher.Pusher(
