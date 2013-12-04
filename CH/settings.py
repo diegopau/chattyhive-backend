@@ -127,7 +127,7 @@ INSTALLED_APPS = (
     'chat_app',
     'chat_androidAPI',
     # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
+    'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
@@ -148,6 +148,7 @@ AUTHENTICATION_BACKENDS = (
 TEMPLATE_CONTEXT_PROCESSORS = (
     'social.apps.django_app.context_processors.backends',
     'social.apps.django_app.context_processors.login_redirect',
+    'django.contrib.auth.context_processors.auth',
 )
 
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/logged-in/'
@@ -158,7 +159,9 @@ SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/new-association-redirect-url/'
 SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 
-SOCIAL_AUTH_USER_MODEL = 'chat_app.ChUser'
+LOGIN_URL = '/'
+
+# SOCIAL_AUTH_USER_MODEL = 'chat_app.ChUser'
 AUTH_USER_MODEL = 'chat_app.ChUser'
 
 #==============================================================================
