@@ -4,11 +4,12 @@ __author__ = 'lorenzo'
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from chat_app.models import *
+from login.models import *
 import os
 import pusher
 
 
-def login(request):
+def login_view(request):
     if request.method == 'POST':
         print("if")
         form = LoginForm(request.POST)
@@ -18,7 +19,7 @@ def login(request):
             request.session.set_expiry(300)
             return HttpResponseRedirect("/chat/")
         else:
-            HttpResponse("ERROR, invalid form")
+            return HttpResponse("ERROR, invalid form")
     else:
         # print("21 /b",request.session['active'])
         if 'user' in request.session and request.session['active'] == True:
@@ -77,7 +78,7 @@ def chat(request):
         return HttpResponse("Session Expired")
 
 
-def logout(request):
+def logout_view(request):
     print("logout")
     # print("11 /b",request.session['active'])
     request.session['active'] = False
