@@ -13,7 +13,7 @@ def chat(request):
     # Variable declaration
     # if 'user' in request.session and request.session['active']:
     # user = request.session['user']
-    user = 'user'
+    user = request.user.get_username()
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
