@@ -16,11 +16,11 @@ def login_view(request):
             # request.session['active'] = True
             username = form.cleaned_data['user']
             password = form.cleaned_data['password']
-            request.session.set_expiry(300)
+            # request.session.set_expiry(300)
             user = authenticate(username=username, password=password)
             if user is not None:
                 if user.is_active:
-                    # login(request, user)
+                    login(request, user)
                     if not user.is_authenticated():
                         print("nope")
                     else:
@@ -34,13 +34,21 @@ def login_view(request):
             return HttpResponse("ERROR, invalid form")
     else:
         # print("21 /b",request.session['active'])
-        if 'user' in request.session and request.session['active']==True:
-            print('one')
-            request.session.set_expiry(300)
-            return HttpResponseRedirect("/chat/")
-        else:
-            form = LoginForm()
-            print('two')
-            return render(request, "chat_app/login.html", {
-                'form': form
-            })
+        # if 'user' in request.session and request.session['active']==True:
+        #     print('one')
+        #     request.session.set_expiry(300)
+        #     return HttpResponseRedirect("/chat/")
+        # else:
+        form = LoginForm()
+        print('two')
+        return render(request, "chat_app/login.html", {
+            'form': form
+        })
+
+def logout_view(request):
+    print("logout")
+    logout(request)
+    # print("11 /b",request.session['active'])
+    request.session['active'] = False
+    # print("12 /b",request.session['active'])
+    return HttpResponse("logged out")

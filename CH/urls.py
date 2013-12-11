@@ -11,9 +11,9 @@ urlpatterns = patterns('',
     # Uncomment the admin/doc line below to enable admin documentation:
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
-    url(r'^$', 'chat_app.views.login_view', name='login'),
+    url(r'^$', 'login.views.login_view', name='login'),
     url(r'^chat/', 'chat_app.views.chat', name='chat'),
-    url(r'^logout/', 'chat_app.views.logout_view', name='logout'),
+    url(r'^logout/', 'login.views.logout_view', name='logout'),
     url(r'^android.login/(?P<user>[a-zA-Z]+)/','chat_androidAPI.views.login', name='login'),
     url(r'^android.chat/','chat_androidAPI.views.chat', name='chat'),
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
