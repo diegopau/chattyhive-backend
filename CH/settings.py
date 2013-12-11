@@ -125,6 +125,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'chat_app',
     'chat_androidAPI',
+    'core',
+    'login',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
@@ -161,7 +163,7 @@ SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 LOGIN_URL = '/'
 
 # SOCIAL_AUTH_USER_MODEL = 'chat_app.ChUser'
-AUTH_USER_MODEL = 'chat_app.ChUser'
+AUTH_USER_MODEL = 'core.ChUser'
 
 #==============================================================================
 
