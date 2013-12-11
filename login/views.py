@@ -2,9 +2,10 @@ __author__ = 'lorenzo'
 
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
-# from core.models import *
+from core.models import *
 from login.models import *
 from django.contrib.auth import authenticate, login, logout
+# from core.models import ChUserManager
 
 
 def login_view(request):
@@ -37,7 +38,36 @@ def login_view(request):
         # else:
         form = LoginForm()
         print('two')
-        return render(request, "chat_app/login.html", {
+        return render(request, "login/login.html", {
+            'form': form
+        })
+
+def create_user_view(request):
+    if request.method == 'POST':
+        print("if")
+        form = CreateUserForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+
+            manager = ChUserManager()
+            manager.create_user(manager, username, "", password) #TODO not working yet, says 5 arguments given
+
+            # request.session.set_expiry(300)
+            user2 = authenticate(username=username, password=password)
+            if user2 is not None:
+                if user2.is_active:
+                    login(request, user2)
+                    return HttpResponseRedirect("/chat/")
+                else:
+                    return HttpResponse("ERROR, inactive user")
+            # else:
+            #     return HttpResponse("ERROR, incorrect password or login")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        form = CreateUserForm()
+        return render(request, "login/create_user.html", {
             'form': form
         })
 

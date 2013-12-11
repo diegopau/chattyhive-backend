@@ -12,6 +12,7 @@ urlpatterns = patterns('',
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     url(r'^$', 'login.views.login_view', name='login'),
+    url(r'^create_user/$', 'login.views.create_user_view', name='create_user'),
     url(r'^chat/', 'chat_app.views.chat', name='chat'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
     url(r'^android.login/(?P<user>[a-zA-Z]+)/','chat_androidAPI.views.login', name='login'),
