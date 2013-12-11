@@ -21,10 +21,6 @@ def login_view(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
-                    if not user.is_authenticated():
-                        print("nope")
-                    else:
-                        print("yep")
                     return HttpResponseRedirect("/chat/")
                 else:
                     return HttpResponse("ERROR, inactive user")

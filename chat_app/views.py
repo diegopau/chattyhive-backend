@@ -20,11 +20,6 @@ def chat(request):
     channel = 'public_test'
     event = 'msg'
 
-    if not request.user.is_authenticated():
-        print("nope")
-    else:
-        print("yep")
-
     # GET vs POST
     if request.method == 'POST':
 
