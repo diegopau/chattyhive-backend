@@ -57,7 +57,7 @@ def create_user_view(request):
         #     'form': form
         # })
         return render(request, "login/registration.html", { #fixme only for test, use the lines above
-            # 'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', None)
+            'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         })
 
 def logout_view(request):
