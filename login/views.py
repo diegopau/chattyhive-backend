@@ -6,7 +6,7 @@ from core.models import *
 from login.models import *
 from CH import settings
 from django.contrib.auth import authenticate, login, logout
-# from core.models import ChUserManager
+from social.backends.google import GooglePlusAuth
 
 
 def login_view(request):

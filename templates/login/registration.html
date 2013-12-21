@@ -40,7 +40,7 @@
 <script type="text/javascript">
   var signInCallback = function (result) {
       if (result['error']) {
-        alert('An error happened:', result['error']);
+        alert('An error happened:'+result['error']);
       } else {
         $('#code').attr('value', result['code']);
         $('#at').attr('value', result['access_token']);
