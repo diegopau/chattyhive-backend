@@ -165,6 +165,14 @@ LOGIN_URL = '/'
 # SOCIAL_AUTH_USER_MODEL = 'chat_app.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 
+# SOCIAL_AUTH_GOOGLE_PLUS_KEY = ''
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'AIzaSyBAFsnD6wLheFwrn7mp1fqSedHA8dHF6pc'
+# SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
+SOCIAL_AUTH_GOOGLE_OAUTH_SCOPE = [
+    'https://www.googleapis.com/auth/userinfo.profile'
+]
+
 #==============================================================================
 
 # A sample logging configuration. The only tangible logging
