@@ -6,8 +6,6 @@ from core.models import *
 from login.models import *
 from CH import settings
 from django.contrib.auth import authenticate, login, logout
-from social.backends.google import GooglePlusAuth
-
 
 def login_view(request):
     if request.method == 'POST':
@@ -40,7 +38,7 @@ def create_user_view(request):
             password = form.cleaned_data['password']
 
             manager = ChUserManager()
-            manager.create_user(manager, username, "", password) #TODO not working yet, says 5 arguments given
+            user =manager.create_user(username, "", password)
 
             user2 = authenticate(username=username, password=password)
             if user2 is not None:
@@ -52,7 +50,7 @@ def create_user_view(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = CreateUserForm()
+        # form = CreateUserForm()
         # return render(request, "login/create_user.html", {
         #     'form': form
         # })

@@ -4,8 +4,14 @@ from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
 class ChUserManager(UserManager):
-    def create_user(self, username, email, password):
-        user = self.model(username=username)
+    def create_user(self, username, email, password, *args, **kwargs):
+        print('user')
+        print(username)
+        print('email')
+        print(email)
+        print('pass')
+        print(password)
+        user = ChUser(username=username)    #TODO it works, but, it's correct?
         user.email = email
         user.set_password(password)
         user.save(using=self._db)
