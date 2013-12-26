@@ -7,6 +7,7 @@ from login.models import *
 from CH import settings
 from django.contrib.auth import authenticate, login, logout
 
+
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -30,6 +31,7 @@ def login_view(request):
             'form': form
         })
 
+
 def create_user_view(request):
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
@@ -38,25 +40,62 @@ def create_user_view(request):
             password = form.cleaned_data['password']
 
             manager = ChUserManager()
-            user =manager.create_user(username, "", password)
+            manager.create_user(username, "", password)
 
-            user2 = authenticate(username=username, password=password)
-            if user2 is not None:
-                if user2.is_active:
-                    login(request, user2)
-                    return HttpResponseRedirect("/chat/")
-                else:
-                    return HttpResponse("ERROR, inactive user")
+            return HttpResponseRedirect("/create_user/register1/")
+
+            # user2 = authenticate(username=username, password=password)
+            # if user2 is not None:
+            #     if user2.is_active:
+            #         login(request, user2)
+            #         return HttpResponseRedirect("/chat/")
+            #     else:
+            #         return HttpResponse("ERROR, inactive user")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        # form = CreateUserForm()
-        # return render(request, "login/create_user.html", {
-        #     'form': form
-        # })
-        return render(request, "login/registration.html", { #fixme only for test, use the lines above
+        form = CreateUserForm()
+        return render(request, "login/create_user.html", {
+            'form': form,
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         })
+        # return render(request, "login/registration.html", { #fixme only for test, use the lines above
+        #     'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
+        # })
+
+
+def register_one(request):
+    if request.method == 'POST':
+        form = RegistrationFormOne(request.POST, instance=request.user)
+        if form.is_valid():
+            print('form is valid')
+            form.save()
+            return HttpResponseRedirect("/create_user/register2/")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        form = RegistrationFormOne()
+        return render(request, "login/registration_1.html", {
+            'form': form
+        })
+        # return HttpResponse("ERROR, invalid form 2")
+
+
+def register_two(request):
+    if request.method == 'POST':
+        form = RegistrationFormTwo(request.POST, instance=request.user)
+        if form.is_valid():
+            print('form is valid')
+            form.save()
+            return HttpResponseRedirect("/chat/")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        form = RegistrationFormTwo()
+        return render(request, "login/registration_2.html", {
+            'form': form
+        })
+
 
 def logout_view(request):
     print("logout")

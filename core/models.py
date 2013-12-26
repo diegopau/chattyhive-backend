@@ -3,6 +3,7 @@ __author__ = 'lorenzo'
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
+
 class ChUserManager(UserManager):
     def create_user(self, username, email, password, *args, **kwargs):
         print('user')
@@ -53,3 +54,23 @@ class ChUser(AbstractUser):
 
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
+
+
+class ChProfile(models.Model):
+    user = models.OneToOneField(ChUser, unique=True, related_name='profile') # TODO Here it's defined the relation between profiles & users
+    SEX = (
+        ('male', 'Male'),
+        ('female', 'Female')
+    )
+    LANGUAGE_CHOICES = (
+        ('es-es', 'Spanish'),
+        ('en-gb', 'English')
+    )
+    first_name = models.CharField(max_length=20)
+    last_name = models.CharField(max_length=40)
+    sex = models.CharField(max_length=10, choices=SEX, default='male')
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='es-es')
+    timezone = models.DateField(auto_now=True, auto_now_add=True)
+    cb_show_age = models.BooleanField()
+    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
+    location = models.TextField()

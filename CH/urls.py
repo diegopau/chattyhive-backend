@@ -13,6 +13,8 @@ urlpatterns = patterns('',
 
     url(r'^$', 'login.views.login_view', name='login'),
     url(r'^create_user/$', 'login.views.create_user_view', name='create_user'),
+    url(r'^create_user/register1/$', 'login.views.register_one', name='register_step_one'),
+    url(r'^create_user/register2/$', 'login.views.register_two', name='register_step_one'),
     url(r'^chat/', 'chat_app.views.chat', name='chat'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
     url(r'^android.login/(?P<user>[a-zA-Z]+)/','chat_androidAPI.views.login', name='login'),
