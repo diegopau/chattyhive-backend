@@ -12,7 +12,7 @@ class ChUserManager(UserManager):
         print(email)
         print('pass')
         print(password)
-        user = ChUser(username=username)    #TODO it works, but, it's correct?
+        user = ChUser(username=username)    # TODO it works, but, it's correct?
         user.email = email
         user.set_password(password)
         user.save(using=self._db)
@@ -57,7 +57,9 @@ class ChUser(AbstractUser):
 
 
 class ChProfile(models.Model):
-    user = models.OneToOneField(ChUser, unique=True, related_name='profile') # TODO Here it's defined the relation between profiles & users
+    user = models.OneToOneField(ChUser, unique=True,
+                                related_name='profile')  # TODO Here it's defined the relation between profiles & users
+    # user = models.ForeignKey(ChUser, unique=True)
     SEX = (
         ('male', 'Male'),
         ('female', 'Female')
@@ -74,3 +76,7 @@ class ChProfile(models.Model):
     cb_show_age = models.BooleanField()
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     location = models.TextField()
+
+    def __unicode__(self):
+        return u"%s" % self.user
+    # AbstractUser.profile = property(lambda u: ChProfile.objects.get_or_create(user=u)[0])

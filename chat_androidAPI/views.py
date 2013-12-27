@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 import pusher
 
+
 # @csrf_exempt
 def login(request, user):
     if request.method == 'GET':
@@ -14,15 +15,17 @@ def login(request, user):
         request.session['user'] = user
         request.session['active'] = True
         request.session.set_expiry(300)
-        session_id=request.session.session_key
-        csrf=django.middleware.csrf.get_token(request)
-        status="LOGGED"
+        session_id = request.session.session_key
+        csrf = django.middleware.csrf.get_token(request)
+        status = "LOGGED"
         print(status)
-        return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
+                            mimetype="application/json")
     else:
-        status="ERROR"
+        status = "ERROR"
         print(status)
         return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
+
 
 # @csrf_exempt
 def chat(request):
@@ -47,11 +50,11 @@ def chat(request):
             )
             p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
             request.session.set_expiry(300)
-            status="RECEIVED"
+            status = "RECEIVED"
             return HttpResponse({"status": status})
         else:
-            status="ERROR"
+            status = "ERROR"
             return HttpResponse({"status": status})
     else:
-        status="EXPIRED"
+        status = "EXPIRED"
         return HttpResponse({"status": status})

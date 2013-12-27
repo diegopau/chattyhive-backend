@@ -40,7 +40,15 @@ def create_user_view(request):
             password = form.cleaned_data['password']
 
             manager = ChUserManager()
-            manager.create_user(username, "", password)
+            user = manager.create_user(username, "", password)
+
+            # Let's try to create a linked profile here
+            profile = ChProfile(user=user)
+            profile.save()
+
+            # Let's try to save the user in a cookie
+            # request.session['user'] = user.username
+            request.session['user'] = profile.user.username
 
             return HttpResponseRedirect("/create_user/register1/")
 
@@ -59,14 +67,20 @@ def create_user_view(request):
             'form': form,
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         })
-        # return render(request, "login/registration.html", { #fixme only for test, use the lines above
+        # return render(request, "login/registration.html", {  # fixme only for test, use the lines above
         #     'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         # })
 
 
 def register_one(request):
     if request.method == 'POST':
-        form = RegistrationFormOne(request.POST, instance=request.user)
+        user = request.session['user']
+        prueba = ChProfile.objects.all()
+        print(user)
+        print(prueba)
+        # profile = ChProfile.objects.get(user=request.user_pk=2)
+        profile = ChProfile.objects.get(user__username=user)
+        form = RegistrationFormOne(request.POST, instance=profile)
         if form.is_valid():
             print('form is valid')
             form.save()
