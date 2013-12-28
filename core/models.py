@@ -57,9 +57,11 @@ class ChUser(AbstractUser):
 
 
 class ChProfile(models.Model):
-    user = models.OneToOneField(ChUser, unique=True,
-                                related_name='profile')  # TODO Here it's defined the relation between profiles & users
+    # TODO Here it's defined the relation between profiles & users
+    user = models.OneToOneField(ChUser, unique=True, related_name='profile')
     # user = models.ForeignKey(ChUser, unique=True)
+
+    # Here are the choices definitions
     SEX = (
         ('male', 'Male'),
         ('female', 'Female')
@@ -68,15 +70,20 @@ class ChProfile(models.Model):
         ('es-es', 'Spanish'),
         ('en-gb', 'English')
     )
+
+    # All the fields for the model Profile
+    public_name = models.CharField(max_length=30)
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
     language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='es-es')
     timezone = models.DateField(auto_now=True, auto_now_add=True)
-    cb_show_age = models.BooleanField()
-    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     location = models.TextField()
+    cb_show_age = models.BooleanField(default=True)
+    show_age = models.BooleanField(default=False)
+    show_location = models.BooleanField(default=False)
+    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
+    # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
     def __unicode__(self):
         return u"%s" % self.user
-    # AbstractUser.profile = property(lambda u: ChProfile.objects.get_or_create(user=u)[0])
