@@ -37,8 +37,9 @@ def create_user_view(request):
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
+            # username = form.cleaned_data['username']
             email = form.cleaned_data['email']
+            username = email  # TODO temporal solution, should be changed
             password = form.cleaned_data['password']
             password2 = form.cleaned_data['password2']
 

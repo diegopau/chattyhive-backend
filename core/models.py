@@ -45,6 +45,7 @@ class ChUser(AbstractUser):
 
     # REQUIRED_FIELDS = ['email', 'Name', 'LastName']
     USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = 'email'
 
     # def get_full_name(self):
     #     return "% % %"(self.username)
@@ -86,4 +87,4 @@ class ChProfile(models.Model):
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
     def __unicode__(self):
-        return u"%s" % self.user
+        return u"%s - Private Profile" % self.user
