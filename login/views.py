@@ -68,13 +68,13 @@ def create_user_view(request):
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateUserForm()
-        return render(request, "login/create_user.html", {
-            'form': form,
-            'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
-        })
-        # return render(request, "login/registration.html", {  # fixme only for test, use the lines above
+        # return render(request, "login/create_user.html", {
+        #     'form': form,
             # 'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         # })
+        return render(request, "login/registration.html", {  # fixme only for test, use the lines above
+            'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
+        })
 
 
 def register_one(request):

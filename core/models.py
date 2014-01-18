@@ -1,3 +1,7 @@
+from social.apps.django_app.default.fields import JSONField
+from social.apps.django_app.default.models import UID_LENGTH
+from social.storage.base import UserMixin, CLEAN_USERNAME_REGEX
+
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -34,7 +38,7 @@ class ChUser(AbstractUser):
     #****************Info Fields****************#
     # first_name = AbstractUser
     # last_name = AbstractUser
-    birth_date = models.DateField(null=True, auto_now=False, auto_now_add=False)
+    # birth_date = models.DateField(null=True, auto_now=False, auto_now_add=False)
     # sex =
     # language =
     # timezone =
@@ -47,14 +51,90 @@ class ChUser(AbstractUser):
     USERNAME_FIELD = 'username'
     # REQUIRED_FIELDS = ['email']
 
-    # def get_full_name(self):
-    #     return "% % %"(self.username)
-
-    # def get_short_name(self):
-    #     return "% % %"(self.username)
-
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
+
+    provider = models.CharField(max_length=32)
+    uid = models.CharField(max_length=UID_LENGTH)
+    extra_data = JSONField()
+
+    class Meta:
+        """Meta data"""
+        unique_together = ('provider', 'uid')
+        db_table = 'social_auth_usersocialauth'
+
+    # @classmethod
+    def changed(cls, user):
+        print('changed')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def get_username(cls, user):
+        print('get_username')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def user_model(cls):
+        print('user_model')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def username_max_length(cls):
+        print('username_max_length')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def clean_username(cls, value):
+        print('clean_username')
+        return CLEAN_USERNAME_REGEX.sub('', value)
+
+    # @classmethod
+    def allowed_to_disconnect(cls, user, backend_name, association_id=None):
+        print('allowed_to_disconnect')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def disconnect(cls, entry):
+        print('disconnect')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def user_exists(cls, *args, **kwargs):
+        print('user_exists')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def create_user(cls, *args, **kwargs):
+        print('create_user')
+        # manager = ChUserManager()
+        # user = manager.create_user(username, email, password)
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def get_user(cls, pk):
+        print('get_user')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def get_users_by_email(cls, email):
+        print('get_users_by_email')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def get_social_auth(cls, provider, uid):
+        print('get_social_auth')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def get_social_auth_for_user(cls, user, provider=None, id=None):
+        print('get_social_auth_for_user')
+        raise NotImplementedError('Implement in subclass')
+
+    # @classmethod
+    def create_social_auth(cls, user, uid, provider):
+        print('create_social_auth')
+        raise NotImplementedError('Implement in subclass')
+
 
 
 class ChProfile(models.Model):
