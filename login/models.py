@@ -31,3 +31,12 @@ class RegistrationFormTwo(forms.ModelForm):
     class Meta:
         model = ChProfile
         fields = ('public_name', 'show_age', 'show_location')
+
+def print_ln(strategy, user=None, social=None, *args, **kwargs):
+    print(strategy)
+    print(user)
+    print(social)
+    for name, value in kwargs.items():
+        print '{0} = {1}'.format(name, value)
+    return
+

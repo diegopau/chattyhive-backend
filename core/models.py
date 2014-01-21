@@ -1,5 +1,7 @@
+import datetime
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
+from social.backends.utils import get_backend
 from social.storage.base import UserMixin, CLEAN_USERNAME_REGEX
 
 __author__ = 'lorenzo'
@@ -54,6 +56,70 @@ class ChUser(AbstractUser):
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
 
+    # ==============================================================
+    user = ''
+    provider = ''
+    uid = None
+    extra_data = None
+
+    def get_backend(self, strategy):
+        return get_backend(strategy.backends, self.provider)
+
+    @property
+    def tokens(self):
+        """Return access_token stored in extra_data or None"""
+        return self.extra_data.get('access_token')
+
+    def refresh_token(self, strategy, *args, **kwargs):
+        token = self.extra_data.get('refresh_token') or self.extra_data.get('access_token')
+        backend = self.get_backend(strategy)
+        if token and backend and hasattr(backend, 'refresh_token'):
+            backend = backend(strategy=strategy)
+            response = backend.refresh_token(token, *args, **kwargs)
+            access_token = response.get('access_token')
+            refresh_token = response.get('refresh_token')
+
+            if access_token or refresh_token:
+                if access_token:
+                    self.extra_data['access_token'] = access_token
+                if refresh_token:
+                    self.extra_data['refresh_token'] = refresh_token
+                self.save()
+
+    def expiration_datetime(self):
+        """Return provider session live seconds. Returns a timedelta ready to
+        use with session.set_expiry().
+
+        If provider returns a timestamp instead of session seconds to live, the
+        timedelta is inferred from current time (using UTC timezone). None is
+        returned if there's no value stored or it's invalid.
+        """
+        if self.extra_data and 'expires' in self.extra_data:
+            try:
+                expires = int(self.extra_data.get('expires'))
+            except (ValueError, TypeError):
+                return None
+
+            now = datetime.utcnow()
+
+            # Detect if expires is a timestamp
+            if expires > datetime.time.mktime(now.timetuple()):
+                # expires is a datetime
+                return datetime.fromtimestamp(expires) - now
+            else:
+                # expires is a timedelta
+                return datetime.timedelta(seconds=expires)
+
+    def set_extra_data(self, extra_data=None):
+        if extra_data and self.extra_data != extra_data:
+            if self.extra_data:
+                self.extra_data.update(extra_data)
+            else:
+                self.extra_data = extra_data
+            return True
+
+    # ==============================================================
+
     provider = models.CharField(max_length=32)
     uid = models.CharField(max_length=UID_LENGTH)
     user_id = models.IntegerField(null=True)
@@ -69,10 +135,10 @@ class ChUser(AbstractUser):
         print('changed')
         raise NotImplementedError('Implement in subclass')
 
-    # @classmethod
-    # def get_username(cls, user):
-    #     print('get_username')
-    #     raise NotImplementedError('Implement in subclass')
+    @classmethod
+    def get_username(cls, user):
+        print('get_username')
+        raise NotImplementedError('Implement in subclass')
 
     @classmethod
     def user_model(cls):
@@ -135,6 +201,8 @@ class ChUser(AbstractUser):
     def create_social_auth(cls, user, uid, provider):
         print('create_social_auth')
         raise NotImplementedError('Implement in subclass')
+
+    # ==============================================================
 
 
 
