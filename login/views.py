@@ -19,7 +19,7 @@ def login_view(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
-                    return HttpResponseRedirect("/chat/")
+                    return HttpResponseRedirect("/home/")
                 else:
                     return HttpResponse("ERROR, inactive user")
             else:
@@ -153,4 +153,18 @@ def create_hive(request):
         form = CreateHiveForm()
         return render(request, "login/create_hive.html", {
             'form': form
+        })
+
+
+def home(request):
+    if request.method == 'POST':
+        form = CreateHiveForm(request.POST)
+        if form.is_valid():
+            print('form is valid')
+            form.save()
+            return HttpResponseRedirect("/create_hive/create/")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        return render(request, "chat_app/home.html", {
         })
