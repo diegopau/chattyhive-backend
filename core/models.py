@@ -88,3 +88,35 @@ class ChProfile(models.Model):
 
     def __unicode__(self):
         return u"%s - Private Profile" % self.user
+
+
+class ChHive(models.Model):
+    # Category definitions
+    CATEGORY = (
+        ('sports', 'Sports'),
+        ('science', 'Science'),
+        ('free-time', 'Free Time')
+    )
+
+    # Attributes of the Hive TODO now Hive = Chat
+    # message = models.CharField(max_length=300)
+    name = models.CharField(max_length=60)
+    description = models.TextField()
+    category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
+    creation_date = models.DateField(auto_now=True)
+
+
+class ChMessage(models.Model):
+    # Relations of a message. It belongs to a hive and to a profile at the same time
+    profile = models.ForeignKey(ChProfile)
+    hive = models.ForeignKey(ChHive)
+
+    # Attributes of the message
+    content = models.CharField(max_length=300)
+    date = models.DateTimeField(auto_now=True)
+
+
+class ChSubscription(models.Model):
+    # Subscription object which relates Profiles with Hives
+    profile = models.ForeignKey(ChProfile)
+    hive = models.ForeignKey(ChHive)
