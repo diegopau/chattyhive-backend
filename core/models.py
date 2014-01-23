@@ -87,7 +87,7 @@ class ChProfile(models.Model):
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
     def __unicode__(self):
-        return u"%s - Private Profile" % self.user
+        return u"%s - Personal Profile" % self.user
 
 
 class ChHive(models.Model):
@@ -99,11 +99,13 @@ class ChHive(models.Model):
     )
 
     # Attributes of the Hive TODO now Hive = Chat
-    # message = models.CharField(max_length=300)
-    name = models.CharField(max_length=60)
+    name = models.CharField(max_length=60, unique=True)
     description = models.TextField()
     category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     creation_date = models.DateField(auto_now=True)
+
+    def __unicode__(self):
+        return u"%s" % self.name
 
 
 class ChMessage(models.Model):

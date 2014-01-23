@@ -138,3 +138,19 @@ def logout_view(request):
     logout(request)
     request.session['active'] = False
     return HttpResponse("logged out")
+
+
+def create_hive(request):
+    if request.method == 'POST':
+        form = CreateHiveForm(request.POST)
+        if form.is_valid():
+            print('form is valid')
+            form.save()
+            return HttpResponseRedirect("/create_hive/create/")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        form = CreateHiveForm()
+        return render(request, "login/create_hive.html", {
+            'form': form
+        })
