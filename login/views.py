@@ -159,7 +159,7 @@ def create_hive(request):
 def home(request):
     if request.method == 'GET':
         # print(STATIC_URL)
-        return render(request, "chat_app/home.html")
+        return render(request, "login/home.html")
     # if request.method == 'POST':
     #     form = CreateHiveForm(request.POST)
     #     if form.is_valid():
