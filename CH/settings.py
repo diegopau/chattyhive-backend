@@ -73,7 +73,7 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    os.path.join('/home/lorenzo/PycharmProjects/chattyhive/', 'static'),
+    # os.path.join('/home/xurxo/PycharmProjects/chattyhive/chattyhive', 'static'),
 )
 
 # List of finder classes that know how to find static files in
@@ -82,7 +82,7 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
-)
+   )
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'f9g4g)3h#j5!!utp0xvgpx6-&-h(ats@1l_j79wz4peaj)%qw1'

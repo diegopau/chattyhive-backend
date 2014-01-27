@@ -157,14 +157,17 @@ def create_hive(request):
 
 
 def home(request):
-    if request.method == 'POST':
-        form = CreateHiveForm(request.POST)
-        if form.is_valid():
-            print('form is valid')
-            form.save()
-            return HttpResponseRedirect("/create_hive/create/")
-        else:
-            return HttpResponse("ERROR, invalid form")
-    else:
-        return render(request, "chat_app/home.html", {
-        })
+    if request.method == 'GET':
+        # print(STATIC_URL)
+        return render(request, "chat_app/home.html")
+    # if request.method == 'POST':
+    #     form = CreateHiveForm(request.POST)
+    #     if form.is_valid():
+    #         print('form is valid')
+    #         form.save()
+    #         return HttpResponseRedirect("/create_hive/create/")
+    #     else:
+    #         return HttpResponse("ERROR, invalid form")
+    # else:
+    #     return render(request, "chat_app/home.html", {
+    #     })

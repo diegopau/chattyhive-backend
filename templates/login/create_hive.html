@@ -4,9 +4,11 @@
     <title></title>
 </head>
 <body>
-<form action="/create_hive/" method="post">{% csrf_token %}
-        {{ form.as_p }}
-    <input type="submit" value="Create" />
-</form>
+    <a href="/home/">Home</a>
+    </br>
+    <form action="/create_hive/" method="post">{% csrf_token %}
+            {{ form.as_p }}
+        <input type="submit" value="Create" />
+    </form>
 </body>
 </html>
