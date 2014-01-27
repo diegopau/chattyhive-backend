@@ -12,7 +12,9 @@
   <input id="code" type="hidden" name="code" value="" />
 
   <div id="signinButton">
-    <span class="g-signin" data-scope="{{ plus_scope }}"
+    <span class="g-signin"
+{#                           data-scope="{{ plus_scope }}"#}
+                           data-scope="https://www.googleapis.com/auth/plus.login"
                            data-clientid="{{ plus_id }}"
                            data-redirecturi="postmessage"
                            data-accesstype="offline"
@@ -50,6 +52,6 @@
 </script>
 {% endblock %}
 {#{% endcomment %}#}
-
+{#<a href="{% url 'social:begin' 'twitter' %}">Twitter OAuth1</a> <br />#}
 </body>
 </html>

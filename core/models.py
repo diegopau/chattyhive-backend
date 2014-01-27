@@ -18,6 +18,10 @@ class ChUserManager(UserManager):
         print(email)
         print('pass')
         print(password)
+
+        for name, value in kwargs.items():
+            print '{0} = {1}'.format(name, value)
+
         user = ChUser(username=username)    # TODO it works, but, it's correct?
         user.email = email
         user.set_password(password)

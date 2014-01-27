@@ -150,17 +150,17 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 SOCIAL_AUTH_PIPELINE = (
-    # 'login.models.print_ln',
+    'login.models.print_ln',
     'social.pipeline.social_auth.social_details',
     'social.pipeline.social_auth.social_uid',
     'social.pipeline.social_auth.auth_allowed',
-    'social.pipeline.social_auth.social_user', #TODO database error?
-    'social.pipeline.social_auth.associate_by_email',
+    'social.pipeline.social_auth.social_user',
     'social.pipeline.user.get_username',
-    'social.pipeline.user.create_user',
+    # 'social.pipeline.user.create_user',
+    'login.models.create_user',
     'social.pipeline.social_auth.associate_user',
     'social.pipeline.social_auth.load_extra_data',
-    'social.pipeline.user.user_details',
+    'social.pipeline.user.user_details'
 )
 
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/logged-in/'
@@ -177,8 +177,6 @@ SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
 
 LOGIN_URL = '/'
 
-# SOCIAL_AUTH_USER_MODEL = 'login.ChSocialAuthUser'
-# SOCIAL_AUTH_USER_MODEL ='foo.bar.User'
 SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'

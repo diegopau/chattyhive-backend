@@ -1,8 +1,6 @@
-from social.apps.django_app.default.fields import JSONField
-from social.apps.django_app.default.models import USER_MODEL, UID_LENGTH
-from social.storage.base import UserMixin, CLEAN_USERNAME_REGEX
-from core.models import ChProfile, ChUser
-from django.db import models
+
+from social.pipeline.user import USER_FIELDS
+from core.models import ChProfile
 
 __author__ = 'lorenzo'
 
@@ -32,6 +30,7 @@ class RegistrationFormTwo(forms.ModelForm):
         model = ChProfile
         fields = ('public_name', 'show_age', 'show_location')
 
+
 def print_ln(strategy, user=None, social=None, *args, **kwargs):
     print(strategy)
     print(user)
@@ -39,4 +38,29 @@ def print_ln(strategy, user=None, social=None, *args, **kwargs):
     for name, value in kwargs.items():
         print '{0} = {1}'.format(name, value)
     return
+
+
+def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
+    if user:
+        return
+
+    fields = dict((name, kwargs.get(name) or details.get(name))
+                  for name in strategy.setting('USER_FIELDS',
+                                               USER_FIELDS))
+    if not fields:
+        return
+
+    username = fields['username']
+    email = fields['email']
+    password = '1234'
+    print(username)
+    print(email)
+    print(fields)
+    fieldspwd = {'username': username, 'email': email, 'password': password, 'uid':uid}
+    print(fieldspwd)
+
+    return {
+        'is_new': True,
+        'user': strategy.create_user(**fieldspwd)
+    }
 
