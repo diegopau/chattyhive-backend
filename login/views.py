@@ -6,6 +6,7 @@ from core.models import *
 from login.models import *
 from CH import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -138,36 +139,3 @@ def logout_view(request):
     logout(request)
     request.session['active'] = False
     return HttpResponse("logged out")
-
-
-def create_hive(request):
-    if request.method == 'POST':
-        form = CreateHiveForm(request.POST)
-        if form.is_valid():
-            print('form is valid')
-            form.save()
-            return HttpResponseRedirect("/create_hive/create/")
-        else:
-            return HttpResponse("ERROR, invalid form")
-    else:
-        form = CreateHiveForm()
-        return render(request, "login/create_hive.html", {
-            'form': form
-        })
-
-
-def home(request):
-    if request.method == 'GET':
-        # print(STATIC_URL)
-        return render(request, "login/home.html")
-    # if request.method == 'POST':
-    #     form = CreateHiveForm(request.POST)
-    #     if form.is_valid():
-    #         print('form is valid')
-    #         form.save()
-    #         return HttpResponseRedirect("/create_hive/create/")
-    #     else:
-    #         return HttpResponse("ERROR, invalid form")
-    # else:
-    #     return render(request, "chat_app/home.html", {
-    #     })

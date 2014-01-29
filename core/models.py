@@ -2,6 +2,7 @@ __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django import forms
 
 
 class ChUserManager(UserManager):
@@ -90,6 +91,18 @@ class ChProfile(models.Model):
         return u"%s - Personal Profile" % self.user
 
 
+class ChChat(models.Model):
+    # Relations between chat and its users
+    user1 = models.ForeignKey(ChUser, related_name="user_1")
+    user2 = models.ForeignKey(ChUser, related_name="user_2")
+
+    # Attributes of the Chat
+    date = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        return self.user1.username + " - Chats with - " + self.user2.username
+
+
 class ChHive(models.Model):
     # Category definitions
     CATEGORY = (
@@ -111,14 +124,45 @@ class ChHive(models.Model):
 class ChMessage(models.Model):
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
-    hive = models.ForeignKey(ChHive)
+    hive = models.ForeignKey(ChHive, null=True, blank=True)
+    chat = models.ForeignKey(ChChat, null=True, blank=True)
 
     # Attributes of the message
     content = models.CharField(max_length=300)
     date = models.DateTimeField(auto_now=True)
 
+    def __unicode__(self):
+        return self.profile.first_name + " said: " + self.content
+
 
 class ChSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives
-    profile = models.ForeignKey(ChProfile)
-    hive = models.ForeignKey(ChHive)
+    # Subscription object which relates Profiles with Hives/Chats
+    profile = models.ForeignKey(ChProfile, unique=False)
+    hive = models.ForeignKey(ChHive, null=True, blank=True)
+    chat = models.ForeignKey(ChChat, null=True, blank=True)
+
+    def set_chat(self, chat):
+        self.chat = chat
+        return
+
+    def set_profile(self, profile):
+        self.profile = profile
+        return
+
+    def set_hive(self, hive):
+        self.hive = hive
+        return
+
+    def __unicode__(self):
+        return self.profile.first_name + " links with"
+
+
+### ==========================================================
+###                          FORMS
+### ==========================================================
+
+
+class CreateHiveForm(forms.ModelForm):
+    class Meta:
+        model = ChHive
+        fields = ('name', 'category', 'description')

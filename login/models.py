@@ -27,9 +27,3 @@ class RegistrationFormTwo(forms.ModelForm):
     class Meta:
         model = ChProfile
         fields = ('public_name', 'show_age', 'show_location')
-
-
-class CreateHiveForm(forms.ModelForm):
-    class Meta:
-        model = ChHive
-        fields = ('name', 'category', 'description')

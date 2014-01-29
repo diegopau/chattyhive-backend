@@ -17,10 +17,16 @@ urlpatterns = patterns('',
     url(r'^create_user/$', 'login.views.create_user_view', name='create_user'),
     url(r'^create_user/register1/$', 'login.views.register_one', name='register_step_one'),
     url(r'^create_user/register2/$', 'login.views.register_two', name='register_step_one'),
-    url(r'^create_hive/$', 'login.views.create_hive', name='create_hive'),
-    url(r'^home/$', 'login.views.home', name='home'),
+    url(r'^create_hive/$', 'core.views.create_hive', name='create_hive'),
+    url(r'^create_hive/create/$', 'core.views.create_hive_created', name='create_hive_created'),
+    url(r'^home/$', 'core.views.home', name='home'),
     url(r'^chat/', 'chat_app.views.chat', name='chat'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
+
+    ### ======================================================== ###
+    ###                     Android - URLS                       ###
+    ### ======================================================== ###
+
     url(r'^android.login/(?P<user>[a-zA-Z]+)/','chat_androidAPI.views.login', name='login'),
     url(r'^android.chat/','chat_androidAPI.views.chat', name='chat'),
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
