@@ -20,10 +20,10 @@ class CreateUserForm(forms.Form):
 class RegistrationFormOne(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('first_name', 'last_name', 'sex', 'language', 'cb_show_age', 'location')
+        fields = ('first_name', 'last_name', 'sex', 'language', 'private_show_age', 'location')
 
 
 class RegistrationFormTwo(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('public_name', 'show_age', 'show_location')
+        fields = ('public_name', 'public_show_age', 'show_location')

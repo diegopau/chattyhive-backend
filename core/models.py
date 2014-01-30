@@ -81,26 +81,14 @@ class ChProfile(models.Model):
     language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='es-es')
     timezone = models.DateField(auto_now=True, auto_now_add=True)
     location = models.TextField()
-    cb_show_age = models.BooleanField(default=True)
-    show_age = models.BooleanField(default=False)
+    private_show_age = models.BooleanField(default=True)
+    public_show_age = models.BooleanField(default=False)
     show_location = models.BooleanField(default=False)
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
     def __unicode__(self):
         return u"%s - Personal Profile" % self.user
-
-
-class ChChat(models.Model):
-    # Relations between chat and its users
-    user1 = models.ForeignKey(ChUser, related_name="user_1")
-    user2 = models.ForeignKey(ChUser, related_name="user_2")
-
-    # Attributes of the Chat
-    date = models.DateTimeField(auto_now=True)
-
-    def __unicode__(self):
-        return self.user1.username + " - Chats with - " + self.user2.username
 
 
 class ChHive(models.Model):
@@ -119,6 +107,31 @@ class ChHive(models.Model):
 
     def __unicode__(self):
         return u"%s" % self.name
+
+
+class ChChat(models.Model):
+    # Relation between chat and hive
+    hive = models.OneToOneField(ChHive, related_name="hive", null=True, blank=True)
+
+    # Relations between chat and its users
+    user1 = models.ForeignKey(ChUser, related_name="user_1", null=True, blank=True)
+    user2 = models.ForeignKey(ChUser, related_name="user_2", null=True, blank=True)
+
+    # Attributes of the Chat
+    date = models.DateTimeField(auto_now=True)
+
+    def set_hive(self, hive):
+        self.hive = hive
+        return
+
+    def join(self, profile):
+        subscription = ChSubscription()
+        subscription.set_profile(profile)
+        subscription.set_chat(self)
+        return
+
+    # def __unicode__(self):
+    #     return self.user1.username + " - Chats with - " + self.user2.username
 
 
 class ChMessage(models.Model):
