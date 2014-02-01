@@ -30,7 +30,7 @@ class RegistrationFormTwo(forms.ModelForm):
         model = ChProfile
         fields = ('public_name', 'show_age', 'show_location')
 
-
+# todo delete this
 def print_ln(strategy, user=None, social=None, *args, **kwargs):
     print(strategy)
     print(user)
@@ -39,11 +39,11 @@ def print_ln(strategy, user=None, social=None, *args, **kwargs):
         print '{0} = {1}'.format(name, value)
     return
 
-
+# overwrite for the social's create_user default function
 def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     if user:
         return
-
+    # get user fields from "pipeline flow"
     fields = dict((name, kwargs.get(name) or details.get(name))
                   for name in strategy.setting('USER_FIELDS',
                                                USER_FIELDS))
@@ -52,10 +52,9 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
 
     username = fields['username']
     email = fields['email']
+    #todo create random hex pwd "uuid4().hex"
     password = '1234'
-    print(username)
-    print(email)
-    print(fields)
+    #todo create provider?
     fieldspwd = {'username': username, 'email': email, 'password': password, 'uid':uid}
     print(fieldspwd)
 

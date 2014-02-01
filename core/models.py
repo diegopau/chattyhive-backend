@@ -1,3 +1,4 @@
+# coding=utf-8
 import datetime
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
@@ -22,7 +23,7 @@ class ChUserManager(UserManager):
         for name, value in kwargs.items():
             print '{0} = {1}'.format(name, value)
 
-        user = ChUser(username=username)    # TODO it works, but, it's correct?
+        user = ChUser(username=username)
         user.email = email
         user.set_password(password)
         user.save(using=self._db)
@@ -38,6 +39,8 @@ class ChUserManager(UserManager):
 
 
 class ChUser(AbstractUser):
+    #todo inherit from AbstractBaseUser and copy the methods in
+    # django.contrib.auth.models for AbstractUser
     ##****************Key Fields****************#
     # username = AbstractUser
     # email = AbstractUser
@@ -60,11 +63,8 @@ class ChUser(AbstractUser):
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
 
+    # code from user mixin
     # ==============================================================
-    user = ''
-    provider = ''
-    uid = None
-    extra_data = None
 
     def get_backend(self, strategy):
         return get_backend(strategy.backends, self.provider)
@@ -122,6 +122,7 @@ class ChUser(AbstractUser):
                 self.extra_data = extra_data
             return True
 
+    # code from social auth "must have"¿?
     # ==============================================================
 
     provider = models.CharField(max_length=32)
@@ -133,7 +134,7 @@ class ChUser(AbstractUser):
         """Meta data"""
         unique_together = ('provider', 'uid')
         db_table = 'social_auth_usersocialauth'
-
+'''
     @classmethod
     def changed(cls, user):
         print('changed')
@@ -205,7 +206,7 @@ class ChUser(AbstractUser):
     def create_social_auth(cls, user, uid, provider):
         print('create_social_auth')
         raise NotImplementedError('Implement in subclass')
-
+'''
     # ==============================================================
 
 

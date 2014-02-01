@@ -5,7 +5,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
+# ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS
@@ -13,12 +13,12 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'chattytestdb',   # Or path to database file if using sqlite3.
+        'NAME': 'chattytestdb', # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
         'USER': 'chattytestuser',
         'PASSWORD': 'chattytestpass',
-        'HOST': '',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'PORT': '',                      # Set to empty string for default.
+        'HOST': '', # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'PORT': '', # Set to empty string for default.
     }
 }
 
@@ -81,7 +81,7 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # Make this unique, and don't share it with anybody.
@@ -91,7 +91,7 @@ SECRET_KEY = 'f9g4g)3h#j5!!utp0xvgpx6-&-h(ats@1l_j79wz4peaj)%qw1'
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
+    #     'django.template.loaders.eggs.Loader',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -150,7 +150,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 SOCIAL_AUTH_PIPELINE = (
-    'login.models.print_ln',
+    # 'login.models.print_ln',
     'social.pipeline.social_auth.social_details',
     'social.pipeline.social_auth.social_uid',
     'social.pipeline.social_auth.auth_allowed',
@@ -166,14 +166,14 @@ SOCIAL_AUTH_PIPELINE = (
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/logged-in/'
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'
 SOCIAL_AUTH_LOGIN_URL = '/login-url/'
-SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/new-users-redirect-url/'
+SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/new-users-redirect-url/'               #todo change to /create_user/
 SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/new-association-redirect-url/'
 SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 SOCIAL_AUTH_SANITIZE_REDIRECTS = False
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
-SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
-SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
+# SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
+# SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
 
 LOGIN_URL = '/'
 
@@ -181,8 +181,13 @@ SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 
+#GOOGLE
 SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
 SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
+#TWITTER
+SOCIAL_AUTH_TWITTER_KEY = 'zR7b8yKKUIaH9nGTtboWA'
+SOCIAL_AUTH_TWITTER_SECRET = 'daurvmqCNoDQ9HGO7fJDVxjYUof9DtM3aArWHD02LNI'
+#FACEBOOCK
 
 #==============================================================================
 
@@ -218,7 +223,8 @@ LOGGING = {
 # Parse database configuration from $DATABASE_URL
 import dj_database_url
 #DATABASES['default'] =  dj_database_url.config()
-DATABASES = {'default': dj_database_url.config(default='postgres://chattytestuser:chattytestpass@localhost/chattytestdb')}
+DATABASES = {
+    'default': dj_database_url.config(default='postgres://chattytestuser:chattytestpass@localhost/chattytestdb')}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -228,6 +234,7 @@ ALLOWED_HOSTS = ['*']
 
 # Static asset configuration
 import os
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
