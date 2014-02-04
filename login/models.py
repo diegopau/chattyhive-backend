@@ -93,7 +93,7 @@ def social_usuario(strategy, uid, user=None, *args, **kwargs):
     print('entra')
     provider = strategy.backend.name
     social = strategy.storage.user.get_social_auth(provider, uid)
-    print(social.user)
+    print(social)
     if social:
         if user and social.user != user:
             msg = 'This {0} account is already in use.'.format(provider)
