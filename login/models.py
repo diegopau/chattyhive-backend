@@ -90,6 +90,7 @@ def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
                     'new_association': True}
 
 def social_usuario(strategy, uid, user=None, *args, **kwargs):
+    print('entra')
     provider = strategy.backend.name
     social = strategy.storage.user.get_social_auth(provider, uid)
     print(social.user)
