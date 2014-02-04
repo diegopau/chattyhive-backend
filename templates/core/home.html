@@ -16,13 +16,10 @@
     <a href="/explore/">Explore</a>
     <a href="/create_hive/">New Hive</a>
     <a href="/chat_test/">Chat</a>
-    </br>
-    </br>
+    <br />
+    <br />
     My Hives
-    </br>
-{#    {% with subscription|first as obj %}#}
-{#        <div class="title">{% get_verbose_name obj %}</div>#}
-{#    {% endwith %}#}
+    <br />
     {% for data in hives %}
       <li>
         <a href="/chat/{{ data }}">{{ data }}</a>

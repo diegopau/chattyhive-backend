@@ -53,7 +53,7 @@ def create_hive_created(request):
     subscription.set_chat(chat=chat)
     subscription.save()
 
-    return render(request, "core/home.html")
+    return HttpResponseRedirect("/home/")
 
 
 @login_required
@@ -62,6 +62,31 @@ def home(request):
         username = request.user
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
+        try:
+            # subscriptions = ChSubscription.objects.get(profile=profile)  # TODO receiving more than 1 object
+            subscriptions = ChSubscription.objects.all()
+            subscriptions = subscriptions.filter(profile=profile)
+            # hives = ChSubscription.hive.objects.all()
+            hives = []
+            for subscription in subscriptions:
+                hives.append(subscription.hive)
+                print(hives)
+            # hives = subscription.all()
+            # subscription.hostdata_set.all()
+        except ChSubscription.DoesNotExist:
+            subscriptions, subscription = None
+        print(subscriptions)
+        return render(request, "core/home.html", {
+            'hives': hives
+        })
+
+
+@login_required
+def explore(request):
+    if request.method == 'GET':
+        username = request.user
+        user = ChUser.objects.get(username=username)
+        # profile = ChProfile.objects.get(user=user)
         try:
             # subscription = ChSubscription.objects.get(profile=profile)  # TODO receiving more than 1 object
             subscriptions = ChSubscription.objects.all()
@@ -75,7 +100,7 @@ def home(request):
         except ChSubscription.DoesNotExist:
             subscriptions, subscription = None
         print(subscriptions)
-        return render(request, "core/home.html", {
+        return render(request, "core/explore.html", {
             'hives': hives
         })
 

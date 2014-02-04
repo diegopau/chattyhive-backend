@@ -63,7 +63,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/chat/",
+                    url: "/chat_test/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
                     success: function(newData){
