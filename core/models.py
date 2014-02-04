@@ -13,15 +13,15 @@ from django.db import models
 
 class ChUserManager(UserManager):
     def create_user(self, username, email, password, *args, **kwargs):
-        print('user')
-        print(username)
-        print('email')
-        print(email)
-        print('pass')
-        print(password)
+        # print('user')
+        # print(username)
+        # print('email')
+        # print(email)
+        # print('pass')
+        # print(password)
 
-        for name, value in kwargs.items():
-            print '{0} = {1}'.format(name, value)
+        # for name, value in kwargs.items():
+        #     print '{0} = {1}'.format(name, value)
 
         user = ChUser(username=username)
         user.email = email

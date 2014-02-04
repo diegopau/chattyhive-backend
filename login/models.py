@@ -57,7 +57,7 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     #todo create provider?
     provider = strategy.backend.name
     fieldspwd = {'username': username, 'email': email, 'password': password, 'uid':uid, 'provider':provider}
-    print(fieldspwd)
+    # print(fieldspwd)
 
     return {
         'is_new': True,
