@@ -73,9 +73,10 @@ def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
                 user, uid, strategy.backend.name
             )
         except Exception as err:
-            print('entra 1.2')
+            print('strategy' + strategy)
+            print('uid' + uid)
+            print('user' + user)
             if not strategy.storage.is_integrity_error(err):
-                print('entra 1.2.1')
                 raise
             # Protect for possible race condition, those bastard with FTL
             # clicking capabilities, check issue #131:
