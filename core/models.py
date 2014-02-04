@@ -26,6 +26,8 @@ class ChUserManager(UserManager):
         user = ChUser(username=username)
         user.email = email
         user.set_password(password)
+        user.uid = kwargs.get('uid')
+        user.provider = kwargs.get('provider',"chattyhive") #ch default
         user.save(using=self._db)
         return user
 
