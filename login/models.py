@@ -1,4 +1,5 @@
 from uuid import uuid4
+from social.pipeline.social_auth import social_user
 from social.pipeline.user import USER_FIELDS
 from core.models import ChProfile
 
@@ -63,3 +64,25 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
         'user': strategy.create_user(**fieldspwd)
     }
 
+def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
+    if user and not social:
+        print('entra 1')
+        try:
+            print('entra 1.1')
+            social = strategy.storage.user.create_social_auth(
+                user, uid, strategy.backend.name
+            )
+        except Exception as err:
+            print('entra 1.2')
+            if not strategy.storage.is_integrity_error(err):
+                print('entra 1.2.1')
+                raise
+            # Protect for possible race condition, those bastard with FTL
+            # clicking capabilities, check issue #131:
+            #   https://github.com/omab/django-social-auth/issues/131
+            return social_user(strategy, uid, user, *args, **kwargs)
+        else:
+            print('entra 1.3')
+            return {'social': social,
+                    'user': social.user,
+                    'new_association': True}
