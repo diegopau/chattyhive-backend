@@ -1,3 +1,5 @@
+from distutils.command import register
+
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -165,6 +167,10 @@ class ChSubscription(models.Model):
     def set_hive(self, hive):
         self.hive = hive
         return
+
+    # @register.simple_tag
+    # def get_verbose_name(self):
+        # return object._meta.verbose_name
 
     def __unicode__(self):
         return self.profile.first_name + " links with"

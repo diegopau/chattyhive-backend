@@ -9,15 +9,15 @@
 </head>
 <body>
     <a href="/home/">Home</a>
-    </br>
+    <br />
     Welcome, {{ user }}!
-    <button type="button" id="btn_logout" style="text-align: right">Logout</button>
+    <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
+    Hive: {{ channel }}<br />
     <p id="chat_field"></p>
-    <input id="msg_text" type="text">
+    <label for="msg_text"></label><input id="msg_text" type="text">
     <button type="button" id="btn_send">Send</button>
     <p id="time"></p>
     <p id="status"></p>
-
     <script type="text/javascript">
 
         var num_rep=0;
@@ -33,6 +33,7 @@
 
         // Listening to the channel
         channel.bind(event_name, function(data) {
+
             if(data.username!=user) write(data.username, data.message, data.timestamp, data.timestamp_server);
         });
 
@@ -63,7 +64,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/chat/",
+                    url: "/chat/" + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
                     success: function(newData){

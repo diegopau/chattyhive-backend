@@ -1,6 +1,8 @@
+from chat_app.models import MsgForm
+
 __author__ = 'lorenzo'
 
-from django.shortcuts import render
+from django.shortcuts import render, render_to_response
 from django.http import HttpResponseRedirect, HttpResponse
 from core.models import *
 from django.contrib.auth.decorators import login_required
@@ -60,13 +62,26 @@ def home(request):
         username = request.user
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
-        subscription = ChSubscription.objects.get(profile=profile)  # TODO receiving more than 1 object
-        print(subscription)
-        return render(request, "core/home.html")
+        try:
+            # subscription = ChSubscription.objects.get(profile=profile)  # TODO receiving more than 1 object
+            subscriptions = ChSubscription.objects.all()
+            # hives = ChSubscription.hive.objects.all()
+            hives = []
+            for subscription in subscriptions:
+                hives.append(subscription.hive)
+                print(hives)
+            # hives = subscription.all()
+            # subscription.hostdata_set.all()
+        except ChSubscription.DoesNotExist:
+            subscriptions, subscription = None
+        print(subscriptions)
+        return render(request, "core/home.html", {
+            'hives': hives
+        })
 
 
 @login_required
-def chat(request):
+def chat(request, hive):
     # Variable declaration
     # if 'user' in request.session and request.session['active']:
     # user = request.session['user']
@@ -74,8 +89,9 @@ def chat(request):
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
-    channel = request.session['hive'] + '_public'
     event = 'msg'
+    channel = hive
+    print(channel)
 
     # GET vs POST
     if request.method == 'POST':
@@ -87,13 +103,16 @@ def chat(request):
             key=key,
             secret=secret
         )
+        print(channel + " aqui se envia")
         p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
         # request.session.set_expiry(300)
         return HttpResponse("Server Ok")
     else:
 
+        channel = hive + '_public'
+        print(channel)
         form = MsgForm()
-        return render(request, "chat_app/chat.html", {
+        return render(request, "core/chat_hive.html", {
             'user': user,
             'app_key': app_key,
             'key': key,

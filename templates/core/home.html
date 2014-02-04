@@ -15,7 +15,21 @@
     <a href="/public_profile/">Profile</a>
     <a href="/explore/">Explore</a>
     <a href="/create_hive/">New Hive</a>
-    <a href="/chat/">Chat</a>
+    <a href="/chat_test/">Chat</a>
+    </br>
+    </br>
+    My Hives
+    </br>
+{#    {% with subscription|first as obj %}#}
+{#        <div class="title">{% get_verbose_name obj %}</div>#}
+{#    {% endwith %}#}
+    {% for data in hives %}
+      <li>
+        <a href="/chat/{{ data }}">{{ data }}</a>
+        leave
+      </li>
+    {% endfor %}
+
 
 {#    <script type="text/javascript">#}
 {#        // Buttons behaviour#}

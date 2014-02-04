@@ -20,7 +20,8 @@ urlpatterns = patterns('',
     url(r'^create_hive/$', 'core.views.create_hive', name='create_hive'),
     url(r'^create_hive/create/$', 'core.views.create_hive_created', name='create_hive_created'),
     url(r'^home/$', 'core.views.home', name='home'),
-    url(r'^chat/', 'chat_app.views.chat', name='chat'),
+    url(r'^chat_test/', 'chat_app.views.chat', name='chat'),
+    url(r'^chat/(?P<hive>[a-zA-Z_]+)/', 'core.views.chat', name='chat_hive'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
 
     ### ======================================================== ###

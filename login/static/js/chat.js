@@ -40,6 +40,7 @@ $(document).ready(function() {
     // Button send behaviour when clicked
     $('#btn_send').on('click', function()
     {
+        alert(channel_name);
         var text_sent = $("#msg_text").val();
         $("#msg_text").val("");
         var d = new Date();
@@ -48,7 +49,7 @@ $(document).ready(function() {
         var csrftoken = $.cookie('csrftoken');
         $.ajax({
             type: "POST",
-            url: "/chat/",
+            url: "/chat/" + channel_name + "/",
             headers: {"X-CSRFToken":csrftoken},
             data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
             success: function(newData){
