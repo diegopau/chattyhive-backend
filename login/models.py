@@ -92,8 +92,9 @@ def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
 def social_usuario(strategy, uid, user=None, *args, **kwargs):
     print('entra')
     provider = strategy.backend.name
+    print(strategy.storage.user.get_social_auth)
     social = strategy.storage.user.get_social_auth(provider, uid)
-    print(social)
+    print('a')
     if social:
         if user and social.user != user:
             msg = 'This {0} account is already in use.'.format(provider)
