@@ -1,4 +1,4 @@
-
+from uuid import uuid4
 from social.pipeline.user import USER_FIELDS
 from core.models import ChProfile
 
@@ -53,8 +53,7 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     username = fields['username']
     email = fields['email']
     #todo create random hex pwd "uuid4().hex"
-    password = '1234'
-    #todo create provider?
+    password = uuid4().hex
     provider = strategy.backend.name
     fieldspwd = {'username': username, 'email': email, 'password': password, 'uid':uid, 'provider':provider}
     # print(fieldspwd)
