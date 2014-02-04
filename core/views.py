@@ -57,6 +57,31 @@ def create_hive_created(request):
 
 
 @login_required
+def join(request, hive_name):
+    # Getting needed information
+    username = request.user
+    user = ChUser.objects.get(username=username)
+    profile = ChProfile.objects.get(user=user)
+    aux = profile.location
+    print(aux)
+    # hive_name = request.session['hive']
+    hive = ChHive.objects.get(name=hive_name)
+
+    # Getting public chat of hive
+    chat = ChChat.objects.get(hive=hive)
+    # chat.join(profile)
+
+    # Creating subscription
+    subscription = ChSubscription()
+    subscription.set_hive(hive=hive)
+    subscription.set_profile(profile=profile)
+    subscription.set_chat(chat=chat)
+    subscription.save()
+
+    return HttpResponseRedirect("/home/")
+
+
+@login_required
 def home(request):
     if request.method == 'GET':
         username = request.user
@@ -84,25 +109,38 @@ def home(request):
 @login_required
 def explore(request):
     if request.method == 'GET':
-        username = request.user
-        user = ChUser.objects.get(username=username)
-        # profile = ChProfile.objects.get(user=user)
         try:
-            # subscription = ChSubscription.objects.get(profile=profile)  # TODO receiving more than 1 object
-            subscriptions = ChSubscription.objects.all()
-            # hives = ChSubscription.hive.objects.all()
-            hives = []
-            for subscription in subscriptions:
-                hives.append(subscription.hive)
-                print(hives)
-            # hives = subscription.all()
-            # subscription.hostdata_set.all()
-        except ChSubscription.DoesNotExist:
-            subscriptions, subscription = None
-        print(subscriptions)
+            hives = ChHive.objects.all()
+        except ChHive.DoesNotExist:
+            hives = None
         return render(request, "core/explore.html", {
             'hives': hives
         })
+
+
+@login_required
+def profile(request, private):
+    if request.method == 'GET':
+        username = request.user
+        try:
+            user = ChUser.objects.get(username=username)
+            profile = ChProfile.objects.get(user=user)
+        except ChProfile.DoesNotExist, ChUser.DoesNotExist:
+            profile, user = None
+        if private == "private":
+            data = {"First name": profile.first_name, "Surname": profile.last_name, "Language": profile.language,
+                    "Sex": profile.sex}
+            return render(request, "core/private_profile.html", {
+                "profile": data
+            })
+        elif private == "public":
+            data = {"Public name": profile.public_name, "Language": profile.language,
+                    "Show age": profile.public_show_age}
+            return render(request, "core/public_profile.html", {
+                "profile": data
+            })
+        else:
+            return HttpResponse("Error")
 
 
 @login_required

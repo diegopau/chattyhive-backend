@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Private Profile</title>
+</head>
+<body>
+    <a href="/home/">Home</a><br />
+    Private  <a href="/profile/public/">Public</a>
+    <br />
+    <br />
+    Info
+    <br />
+    {% for data in profile %}
+      <li>
+        {{ data }}
+      </li>
+    {% endfor %}
+</body>
+</html>
