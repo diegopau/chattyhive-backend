@@ -77,8 +77,8 @@ def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
             print(strategy)
             print(uid)
             print(user)
-            if not strategy.storage.is_integrity_error(err):
-                raise
+            # if not strategy.storage.is_integrity_error(err):
+                # raise
             # Protect for possible race condition, those bastard with FTL
             # clicking capabilities, check issue #131:
             #   https://github.com/omab/django-social-auth/issues/131
