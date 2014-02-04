@@ -1,4 +1,5 @@
 from uuid import uuid4
+from social.exceptions import AuthAlreadyAssociated
 from social.pipeline.social_auth import social_user
 from social.pipeline.user import USER_FIELDS
 from core.models import ChProfile
@@ -81,9 +82,23 @@ def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
             # Protect for possible race condition, those bastard with FTL
             # clicking capabilities, check issue #131:
             #   https://github.com/omab/django-social-auth/issues/131
-            return social_user(strategy, uid, user, *args, **kwargs)
+            return social_usuario(strategy, uid, user, *args, **kwargs)
         else:
             print('entra 1.3')
             return {'social': social,
                     'user': social.user,
                     'new_association': True}
+
+def social_usuario(strategy, uid, user=None, *args, **kwargs):
+    provider = strategy.backend.name
+    social = strategy.storage.user.get_social_auth(provider, uid)
+    if social:
+        if user and social.user != user:
+            msg = 'This {0} account is already in use.'.format(provider)
+            raise AuthAlreadyAssociated(strategy.backend, msg)
+        elif not user:
+            user = social.user
+    return {'social': social,
+            'user': user,
+            'is_new': user is None,
+            'new_association': False}
