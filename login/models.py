@@ -73,9 +73,9 @@ def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
                 user, uid, strategy.backend.name
             )
         except Exception as err:
-            print('strategy' + strategy)
-            print('uid' + uid)
-            print('user' + user)
+            print(strategy)
+            print(uid)
+            print(user)
             if not strategy.storage.is_integrity_error(err):
                 raise
             # Protect for possible race condition, those bastard with FTL
