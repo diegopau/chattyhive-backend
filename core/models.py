@@ -44,7 +44,7 @@ class ChUser(AbstractUser):
     #todo inherit from AbstractBaseUser and copy the methods in
     # django.contrib.auth.models for AbstractUser
     ##****************Key Fields****************#
-    username = AbstractUser
+    # username = AbstractUser
     # email = AbstractUser
     #****************Info Fields****************#
     # first_name = AbstractUser
@@ -145,7 +145,7 @@ class ChUser(AbstractUser):
     @classmethod
     def get_username(cls, user=None):
         print('get_username')
-        return AbstractUser.get_username(cls);
+        return AbstractUser.get_username(cls.super)
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
