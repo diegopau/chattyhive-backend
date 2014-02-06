@@ -124,7 +124,7 @@ def register_two(request):
                 else:
                     return HttpResponse("ERROR, inactive user")
 
-            return HttpResponseRedirect("/chat/")
+            return HttpResponseRedirect("/home/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
