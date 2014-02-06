@@ -10,10 +10,10 @@
     <br />
     Info
     <br />
-    {% for data in profile %}
+{#    {% for data in profile %}#}
       <li>
-        {{ data }}
-      </li>
-    {% endfor %}
+        Public Name: {{ profile.public_name }}
+      </li><li>Language: {{ profile.language }}</li><li>Show Age: {{ profile.show_age }}</li>
+{#    {% endfor %}#}
 </body>
 </html>

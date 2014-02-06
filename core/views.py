@@ -62,21 +62,46 @@ def join(request, hive_name):
     username = request.user
     user = ChUser.objects.get(username=username)
     profile = ChProfile.objects.get(user=user)
-    aux = profile.location
-    print(aux)
-    # hive_name = request.session['hive']
-    hive = ChHive.objects.get(name=hive_name)
+    hive_joining = ChHive.objects.get(name=hive_name)
 
-    # Getting public chat of hive
-    chat = ChChat.objects.get(hive=hive)
-    # chat.join(profile)
+    # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
+    try:
+        subscriptions = ChSubscription.objects.all()
+        subscriptions = subscriptions.filter(profile=profile)
+        hives = []
+        for subscription in subscriptions:
+            # Excluding duplicated hives
+            hive_appeared = False
+            for hive in hives:
+                if subscription.hive == hive:
+                    hive_appeared = True
+            if not hive_appeared:
+                # Adding the hive to the hives array (only hives subscribed)
+                hives.append(subscription.hive)
+    except ChSubscription.DoesNotExist:
+        return HttpResponse("You've no subscriptions yet!")
 
-    # Creating subscription
-    subscription = ChSubscription()
-    subscription.set_hive(hive=hive)
-    subscription.set_profile(profile=profile)
-    subscription.set_chat(chat=chat)
-    subscription.save()
+    # print(hives)
+    # print("====================")
+    # print(hive_joining)
+    hive_appeared = False
+    for hive_aux in hives:
+        if hive_aux == hive_joining:
+            hive_appeared = True
+
+    if not hive_appeared:
+        # Getting public chat of hive
+        chat = ChChat.objects.get(hive=hive_joining)
+
+        # Creating subscription
+        subscription = ChSubscription()
+        subscription.set_hive(hive=hive_joining)
+        subscription.set_profile(profile=profile)
+        subscription.set_chat(chat=chat)
+        subscription.save()
+
+    else:
+        return HttpResponse("You're already subscribed to this hive")
 
     return HttpResponseRedirect("/home/")
 
@@ -84,23 +109,28 @@ def join(request, hive_name):
 @login_required
 def home(request):
     if request.method == 'GET':
+        # Getting needed info
         username = request.user
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
+
+        # Trying to get all the subscriptions of this profile
         try:
-            # subscriptions = ChSubscription.objects.get(profile=profile)  # TODO receiving more than 1 object
             subscriptions = ChSubscription.objects.all()
             subscriptions = subscriptions.filter(profile=profile)
-            # hives = ChSubscription.hive.objects.all()
             hives = []
             for subscription in subscriptions:
-                hives.append(subscription.hive)
-                print(hives)
-            # hives = subscription.all()
-            # subscription.hostdata_set.all()
+                # Excluding duplicated hives
+                hive_appeared = False
+                for hive in hives:
+                    if subscription.hive == hive:
+                        hive_appeared = True
+                if not hive_appeared:
+                    # Adding the hive to the home view
+                    hives.append(subscription.hive)
         except ChSubscription.DoesNotExist:
             subscriptions, subscription = None
-        print(subscriptions)
+        # print(subscriptions)
         return render(request, "core/home.html", {
             'hives': hives
         })
@@ -109,6 +139,7 @@ def home(request):
 @login_required
 def explore(request):
     if request.method == 'GET':
+        # Returns all the hives (subscribed and not subscribed)
         try:
             hives = ChHive.objects.all()
         except ChHive.DoesNotExist:
@@ -128,14 +159,14 @@ def profile(request, private):
         except ChProfile.DoesNotExist, ChUser.DoesNotExist:
             profile, user = None
         if private == "private":
-            data = {"First name": profile.first_name, "Surname": profile.last_name, "Language": profile.language,
-                    "Sex": profile.sex}
+            data = {"first_name": profile.first_name, "surname": profile.last_name, "language": profile.language,
+                    "sex": profile.sex}
             return render(request, "core/private_profile.html", {
                 "profile": data
             })
         elif private == "public":
-            data = {"Public name": profile.public_name, "Language": profile.language,
-                    "Show age": profile.public_show_age}
+            data = {"public_name": profile.public_name, "language": profile.language,
+                    "show_age": profile.public_show_age}
             return render(request, "core/public_profile.html", {
                 "profile": data
             })
@@ -146,8 +177,6 @@ def profile(request, private):
 @login_required
 def chat(request, hive):
     # Variable declaration
-    # if 'user' in request.session and request.session['active']:
-    # user = request.session['user']
     user = request.user.get_username()
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'

@@ -10,10 +10,12 @@
     <br />
     Info
     <br />
-    {% for data in profile %}
+{#    {% for data in profile %}#}
       <li>
-        {{ data }}
+{#        {{ data|value }}#}
+          First Name: {{ profile.first_name }}
       </li>
-    {% endfor %}
+    <li>Surname: {{ profile.surname }}</li><li>Language: {{ profile.language }}</li><li>Sex: {{ profile.sex }}</li>
+{#    {% endfor %}#}
 </body>
 </html>
