@@ -1,11 +1,10 @@
 from uuid import uuid4
+from django.db import models
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
 from social.exceptions import AuthAlreadyAssociated
-from social.pipeline.social_auth import social_user
 from social.pipeline.user import USER_FIELDS
 from social.storage.base import UserMixin, CLEAN_USERNAME_REGEX
-from core import models
 from core.models import ChProfile
 
 __author__ = 'lorenzo'
@@ -111,7 +110,7 @@ def social_usuario(strategy, uid, user=None, *args, **kwargs):
             'new_association': False}
 
 class ChSocialUser(UserMixin):
-    # code from social auth "must have"¿?
+    # code from social auth "must have"
     # ==============================================================
     username = models.CharField(max_length=32)
     provider = models.CharField(max_length=32)
