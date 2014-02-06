@@ -50,21 +50,15 @@ def print_test(*args, **kwargs):
     return
 
 def social_user(strategy, uid, user=None, *args, **kwargs):
-    print("1")
     provider = strategy.backend.name
-    print("2")
+    print(strategy.storage.user.get_social_auth)
     social = strategy.storage.user.get_social_auth(provider, uid)
-    print("3")
     if social:
-        print("3.1")
         if user and social.user != user:
-            print("3.1.1")
             msg = 'This {0} account is already in use.'.format(provider)
             raise AuthAlreadyAssociated(strategy.backend, msg)
         elif not user:
-            print("3.1.1")
             user = social.user
-    print("4")
     return {'social': social,
             'user': user,
             'is_new': user is None,
