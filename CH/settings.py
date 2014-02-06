@@ -158,7 +158,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social.pipeline.social_auth.auth_allowed',
     'login.models.print_test',
     # 'social.pipeline.social_auth.social_user',
-    'login.models.social_user'
+    'login.models.social_user',
     'login.models.print_test',
     'social.pipeline.user.get_username',
     # 'social.pipeline.user.create_user',
