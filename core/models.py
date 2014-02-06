@@ -142,10 +142,11 @@ class ChUser(AbstractUser):
         print('changed')
         raise NotImplementedError('Implement in subclass')
 
-    # @classmethod
-    # def get_username(cls, user):
-    #     print('get_username')
-    #     raise NotImplementedError('Implement in subclass')
+    @classmethod
+    def get_username(cls, user=None):
+        print('get_username')
+        return getattr(cls, cls.USERNAME_FIELD)
+        raise NotImplementedError('Implement in subclass')
 
     @classmethod
     def user_model(cls):
