@@ -136,7 +136,7 @@ class ChUser(AbstractUser):
         """Meta data"""
         unique_together = ('provider', 'uid')
         db_table = 'social_auth_usersocialauth'
-'''
+
     @classmethod
     def changed(cls, user):
         print('changed')
@@ -208,7 +208,7 @@ class ChUser(AbstractUser):
     def create_social_auth(cls, user, uid, provider):
         print('create_social_auth')
         raise NotImplementedError('Implement in subclass')
-'''
+
     # ==============================================================
 
 
