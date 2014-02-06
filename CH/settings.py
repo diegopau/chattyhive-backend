@@ -150,7 +150,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 SOCIAL_AUTH_PIPELINE = (
-    # 'login.models.print_ln',
+    'login.models.print_ln',
     'social.pipeline.social_auth.social_details',
     'social.pipeline.social_auth.social_uid',
     'social.pipeline.social_auth.auth_allowed',
