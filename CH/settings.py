@@ -131,12 +131,12 @@ INSTALLED_APPS = (
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
 #==============================================================================
-# AUTHENTICATION_BACKENDS = (
-#     'social.backends.google.GooglePlusAuth',
-#     'social.backends.twitter.TwitterOAuth',
-#     'social.backends.facebook.FacebookOAuth2',
-#     'django.contrib.auth.backends.ModelBackend',
-# )
+AUTHENTICATION_BACKENDS = (
+    'social.backends.google.GooglePlusAuth',
+    'social.backends.twitter.TwitterOAuth',
+    'social.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
 #
 # TEMPLATE_CONTEXT_PROCESSORS = (
 #     'social.apps.django_app.context_processors.backends',
@@ -172,9 +172,9 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 #
 # LOGIN_URL = '/'
 #
-# SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
-# AUTH_USER_MODEL = 'core.ChUser'
-# AUTH_PROFILE_MODULE = 'core.ChProfile'
+SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
+AUTH_USER_MODEL = 'core.ChUser'
+AUTH_PROFILE_MODULE = 'core.ChProfile'
 #
 # SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
 # SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
