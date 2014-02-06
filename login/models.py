@@ -49,27 +49,19 @@ def print_test(*args, **kwargs):
     print("==========================================")
     return
 
-# overwrite for the social's create_user default function
-def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
-    if user:
-        return
-    # get user fields from "pipeline flow"
-    fields = dict((name, kwargs.get(name) or details.get(name))
-                  for name in strategy.setting('USER_FIELDS',
-                                               USER_FIELDS))
-    if not fields:
-        return
-
-    username = fields['username']
-    email = fields['email']
+def social_user(strategy, uid, user=None, *args, **kwargs):
     provider = strategy.backend.name
-    fieldspwd = {'username': username, 'email': email, 'uid':uid, 'provider':provider}
-    # print(fieldspwd)
-
-    return {
-        'is_new': True,
-        'user': strategy.create_user(**fieldspwd)
-    }
+    social = strategy.storage.user.get_social_auth(provider, uid)
+    if social:
+        if user and social.user != user:
+            msg = 'This {0} account is already in use.'.format(provider)
+            raise AuthAlreadyAssociated(strategy.backend, msg)
+        elif not user:
+            user = social.user
+    return {'social': social,
+            'user': user,
+            'is_new': user is None,
+            'new_association': False}
 
 def associate_user(strategy, uid, user=None, social=None, *args, **kwargs):
     if user and not social:
@@ -111,6 +103,28 @@ def social_usuario(strategy, uid, user=None, *args, **kwargs):
             'user': user,
             'is_new': user is None,
             'new_association': False}
+
+# overwrite for the social's create_user default function
+def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
+    if user:
+        return
+    # get user fields from "pipeline flow"
+    fields = dict((name, kwargs.get(name) or details.get(name))
+                  for name in strategy.setting('USER_FIELDS',
+                                               USER_FIELDS))
+    if not fields:
+        return
+
+    username = fields['username']
+    email = fields['email']
+    provider = strategy.backend.name
+    fieldspwd = {'username': username, 'email': email, 'uid':uid, 'provider':provider}
+    # print(fieldspwd)
+
+    return {
+        'is_new': True,
+        'user': strategy.create_user(**fieldspwd)
+    }
 
 class ChSocialUserManager(UserManager):
     def create_user(self, username, email, *args, **kwargs):
