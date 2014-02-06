@@ -35,5 +35,5 @@ urlpatterns = patterns('',
     url(r'^android.chat/','chat_androidAPI.views.chat', name='chat'),
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
 
-    url('', include('social.apps.django_app.urls', namespace='social'))
+    # url('', include('social.apps.django_app.urls', namespace='social'))
 )
