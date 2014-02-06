@@ -113,7 +113,7 @@ def social_usuario(strategy, uid, user=None, *args, **kwargs):
 class ChSocialUser(UserMixin):
     # code from social auth "must have"¿?
     # ==============================================================
-
+    username = models.CharField(max_length=32)
     provider = models.CharField(max_length=32)
     uid = models.CharField(max_length=UID_LENGTH)
     user_id = models.IntegerField(null=True)
