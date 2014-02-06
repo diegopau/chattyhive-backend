@@ -178,7 +178,7 @@ SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 
 LOGIN_URL = '/'
 
-SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
+SOCIAL_AUTH_USER_MODEL = 'core.ChSocialUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 
