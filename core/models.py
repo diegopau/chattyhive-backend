@@ -145,7 +145,7 @@ class ChUser(AbstractUser):
     @classmethod
     def get_username(cls, user=None):
         print('get_username')
-        return AbstractUser.get_username(cls.super)
+        return super(ChUser, cls).get_username();
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
