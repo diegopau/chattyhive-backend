@@ -1,4 +1,5 @@
 from uuid import uuid4
+from django.contrib.auth.models import UserManager
 from django.db import models
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
@@ -57,10 +58,8 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
 
     username = fields['username']
     email = fields['email']
-    #todo create random hex pwd "uuid4().hex"
-    password = uuid4().hex
     provider = strategy.backend.name
-    fieldspwd = {'username': username, 'email': email, 'password': password, 'uid':uid, 'provider':provider}
+    fieldspwd = {'username': username, 'email': email, 'uid':uid, 'provider':provider}
     # print(fieldspwd)
 
     return {
@@ -109,14 +108,30 @@ def social_usuario(strategy, uid, user=None, *args, **kwargs):
             'is_new': user is None,
             'new_association': False}
 
+class ChSocialUserManager(UserManager):
+    def create_user(self, username, email, *args, **kwargs):
+        print('create')
+        user = ChSocialUser(username=username)
+        user.email = email
+        # user.set_password(password)
+        user.uid = kwargs.get('uid')
+        user.provider = kwargs.get('provider',"chattyhive") #ch default
+        user.save(using=self._db)
+        return user
+
 class ChSocialUser(UserMixin):
     # code from social auth "must have"
     # ==============================================================
     username = models.CharField(max_length=32)
     provider = models.CharField(max_length=32)
     uid = models.CharField(max_length=UID_LENGTH)
-    user_id = models.IntegerField(null=True)
+    # user_id = models.IntegerField(null=True)
     extra_data = JSONField()
+    email = models.EmailField(null=True)
+
+    objects = ChSocialUserManager()
+
+    USERNAME_FIELD = 'username'
 
     class Meta:
         """Meta data"""
