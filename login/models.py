@@ -45,6 +45,10 @@ def print_ln(strategy, user=None, social=None, *args, **kwargs):
         print '{0} = {1}'.format(name, value)
     return
 
+def print_test(*args, **kwargs):
+    print("==========================================")
+    return
+
 # overwrite for the social's create_user default function
 def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     if user:
