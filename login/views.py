@@ -14,7 +14,7 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['user']
+            username = form.cleaned_data['email']
             password = form.cleaned_data['password']
             user = authenticate(username=username, password=password)
             if user is not None:
@@ -60,7 +60,7 @@ def create_user_view(request):
             profile.save()
 
             # Let's try to save the user in a cookie
-            request.session['user'] = profile.user.username
+            request.session['email'] = profile.user.username
             request.session['pass'] = password
 
             return HttpResponseRedirect("/create_user/register1/")
@@ -80,7 +80,7 @@ def create_user_view(request):
 
 def register_one(request):
     if request.method == 'POST':
-        user = request.session['user']
+        user = request.session['email']
         prueba = ChProfile.objects.all()
         print(user)
         print(prueba)
@@ -103,7 +103,7 @@ def register_one(request):
 
 def register_two(request):
     if request.method == 'POST':
-        user = request.session['user']
+        user = request.session['email']
         profile = ChProfile.objects.get(user__username=user)
         form = RegistrationFormTwo(request.POST, instance=profile)
         if form.is_valid():
@@ -120,7 +120,7 @@ def register_two(request):
                 if user2.is_active:
                     login(request, user2)
                     print("Login successful")
-                    return HttpResponseRedirect("/chat/")
+                    return HttpResponseRedirect("/home/")
                 else:
                     return HttpResponse("ERROR, inactive user")
 

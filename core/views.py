@@ -15,8 +15,10 @@ def create_hive(request):
         form = CreateHiveForm(request.POST)
         if form.is_valid():
             print('form is valid')
-            form.save()
             hive = form.cleaned_data['name']
+            hive = hive.replace(" ", "_")
+            form.cleaned_data['name'] = hive
+            form.save()
             print(hive)
             request.session['hive'] = hive
             return HttpResponseRedirect("/create_hive/create/")
@@ -38,6 +40,7 @@ def create_hive_created(request):
     aux = profile.location
     print(aux)
     hive_name = request.session['hive']
+    hive_name = hive_name.replace("_", " ")
     hive = ChHive.objects.get(name=hive_name)
 
     # Creating public chat of hive
@@ -166,7 +169,7 @@ def profile(request, private):
             })
         elif private == "public":
             data = {"public_name": profile.public_name, "language": profile.language,
-                    "show_age": profile.public_show_age}
+                    "location": profile.location, "show_age": profile.public_show_age}
             return render(request, "core/public_profile.html", {
                 "profile": data
             })
@@ -182,6 +185,7 @@ def chat(request, hive):
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
     event = 'msg'
+    hive = hive.replace(" ", "_")
     channel = hive
     print(channel)
 
