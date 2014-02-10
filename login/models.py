@@ -104,7 +104,7 @@ def social_usuario(strategy, uid, user=None, *args, **kwargs):
             'user': user,
             'is_new': user is None,
             'new_association': False}
-
+#======================================================================
 # overwrite for the social's create_user default function
 def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     if user:
