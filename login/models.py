@@ -6,7 +6,8 @@ from social.apps.django_app.default.models import UID_LENGTH
 from social.exceptions import AuthAlreadyAssociated
 from social.pipeline.user import USER_FIELDS
 from social.storage.base import UserMixin, CLEAN_USERNAME_REGEX
-from core.models import ChProfile
+from social.storage.django_orm import DjangoUserMixin
+from core.models import ChProfile, ChUser
 
 __author__ = 'lorenzo'
 
@@ -127,6 +128,7 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
         'user': strategy.create_user(**fieldspwd)
     }
 
+
 class ChSocialUserManager(UserManager):
     def create_user(self, username, email, *args, **kwargs):
         print('create')
@@ -134,14 +136,16 @@ class ChSocialUserManager(UserManager):
         user.email = email
         # user.set_password(password)
         user.uid = kwargs.get('uid')
-        user.provider = kwargs.get('provider',"chattyhive") #ch default
+        user.provider = kwargs.get('provider', 'chattyhive')  # ch default
         user.save(using=self._db)
         return user
 
-class ChSocialUser(UserMixin):
+
+class ChSocialUser(DjangoUserMixin):
     # code from social auth "must have"
     # ==============================================================
-    username = models.CharField(max_length=32)
+    # username = models.CharField(max_length=32, unique=True)
+    user = models.ForeignKey(ChUser, related_name='social_auth')
     provider = models.CharField(max_length=32)
     uid = models.CharField(max_length=UID_LENGTH)
     # user_id = models.IntegerField(null=True)
@@ -150,7 +154,7 @@ class ChSocialUser(UserMixin):
 
     objects = ChSocialUserManager()
 
-    USERNAME_FIELD = 'username'
+    # USERNAME_FIELD = 'username'
 
     class Meta:
         """Meta data"""
@@ -158,18 +162,8 @@ class ChSocialUser(UserMixin):
         db_table = 'social_auth_usersocialauth'
 
     @classmethod
-    def changed(cls, user):
-        print('changed')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
     def get_username(cls, user=None):
         print('get_username')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def user_model(cls):
-        print('user_model')
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
@@ -178,18 +172,13 @@ class ChSocialUser(UserMixin):
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
-    def clean_username(cls, value):
-        print('clean_username')
-        return CLEAN_USERNAME_REGEX.sub('', value)
-
-    @classmethod
-    def allowed_to_disconnect(cls, user, backend_name, association_id=None):
-        print('allowed_to_disconnect')
+    def user_model(cls):
+        print('user_model')
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
-    def disconnect(cls, entry):
-        print('disconnect')
+    def changed(cls, user):
+        print('changed')
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
@@ -205,16 +194,6 @@ class ChSocialUser(UserMixin):
         raise NotImplementedError('Implement in subclass')
 
     @classmethod
-    def get_user(cls, pk):
-        print('get_user')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def get_users_by_email(cls, email):
-        print('get_users_by_email')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
     def get_social_auth(cls, provider, uid):
         print('get_social_auth')
         raise NotImplementedError('Implement in subclass')
@@ -227,6 +206,31 @@ class ChSocialUser(UserMixin):
     @classmethod
     def create_social_auth(cls, user, uid, provider):
         print('create_social_auth')
+        raise NotImplementedError('Implement in subclass')
+
+    @classmethod
+    def allowed_to_disconnect(cls, user, backend_name, association_id=None):
+        print('allowed_to_disconnect')
+        raise NotImplementedError('Implement in subclass')
+
+    @classmethod
+    def disconnect(cls, entry):
+        print('disconnect')
+        raise NotImplementedError('Implement in subclass')
+
+    @classmethod
+    def clean_username(cls, value):
+        print('clean_username')
+        return CLEAN_USERNAME_REGEX.sub('', value)
+
+    @classmethod
+    def get_user(cls, pk):
+        print('get_user')
+        raise NotImplementedError('Implement in subclass')
+
+    @classmethod
+    def get_users_by_email(cls, email):
+        print('get_users_by_email')
         raise NotImplementedError('Implement in subclass')
 
     # ==============================================================
