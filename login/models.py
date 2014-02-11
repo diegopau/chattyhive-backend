@@ -120,7 +120,7 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     username = fields['username']
     email = fields['email']
     provider = strategy.backend.name
-    fieldspwd = {'username': username, 'email': email, 'uid':uid, 'provider':provider}
+    fieldspwd = {'username': username, 'uid':uid, 'provider':provider, 'email': email,}
     # print(fieldspwd)
 
     return {
@@ -130,22 +130,23 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
 
 
 class ChSocialUserManager(UserManager):
-    def create_user(self, username, email, *args, **kwargs):
+    def create_user(self, uid, provider, *args, **kwargs):
         print('create')
-        user = ChSocialUser(username=username)
-        user.email = email
+        user = ChSocialUser(uid=uid)
+        # user.email = email
         # user.set_password(password)
-        user.uid = kwargs.get('uid')
-        user.provider = kwargs.get('provider', 'chattyhive')  # ch default
+        # user.uid = kwargs.get('uid')
+        user.extra_data = kwargs;
+        user.provider = provider
         user.save(using=self._db)
         return user
 
 
-class ChSocialUser(DjangoUserMixin):
+class ChSocialUser(models.Model, DjangoUserMixin):
     # code from social auth "must have"
     # ==============================================================
     # username = models.CharField(max_length=32, unique=True)
-    user = models.ForeignKey(ChUser, related_name='social_auth')
+    user = models.ForeignKey(ChUser, related_name='social_auth', null=True)
     provider = models.CharField(max_length=32)
     uid = models.CharField(max_length=UID_LENGTH)
     # user_id = models.IntegerField(null=True)
@@ -154,7 +155,7 @@ class ChSocialUser(DjangoUserMixin):
 
     objects = ChSocialUserManager()
 
-    # USERNAME_FIELD = 'username'
+    USERNAME_FIELD = 'uid'
 
     class Meta:
         """Meta data"""

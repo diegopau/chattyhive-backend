@@ -167,8 +167,8 @@ SOCIAL_AUTH_PIPELINE = (
     'social.pipeline.social_auth.associate_user',
     # 'login.models.print_test',
     # 'login.models.associate_user',
-    # 'social.pipeline.social_auth.load_extra_data',
-    # 'social.pipeline.user.user_details'
+    'social.pipeline.social_auth.load_extra_data',
+    'social.pipeline.user.user_details'
 )
 
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/logged-in/'
@@ -180,12 +180,12 @@ SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 SOCIAL_AUTH_SANITIZE_REDIRECTS = False
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
-# SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
-# SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
+SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
+SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
 
 LOGIN_URL = '/'
 
-SOCIAL_AUTH_USER_MODEL = 'core.ChSocialUser'
+SOCIAL_AUTH_USER_MODEL = 'login.ChSocialUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 
