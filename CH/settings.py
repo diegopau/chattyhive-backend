@@ -118,6 +118,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social.apps.django_app.default',   #social_auth app
     'chat_app',
     'chat_androidAPI',
     'core',
@@ -135,14 +136,12 @@ AUTHENTICATION_BACKENDS = (
     'social.backends.google.GooglePlusAuth',
     'social.backends.twitter.TwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
+    # 'django.contrib.auth.backends.ModelBackend',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'social.apps.django_app.context_processors.backends',
     'social.apps.django_app.context_processors.login_redirect',
-    'django.contrib.auth.context_processors.auth',
-    'django.core.context_processors.static',
 )
 
 SOCIAL_AUTH_PIPELINE = (
@@ -150,12 +149,11 @@ SOCIAL_AUTH_PIPELINE = (
     'social.pipeline.social_auth.social_uid',
     'social.pipeline.social_auth.auth_allowed',
     'social.pipeline.social_auth.social_user',
-    # 'social.pipeline.social_auth.associate_by_email',
     'social.pipeline.user.get_username',
     'social.pipeline.user.create_user',
     'social.pipeline.social_auth.associate_user',
-    # 'social.pipeline.social_auth.load_extra_data',
-    'social.pipeline.user.user_details',
+    'social.pipeline.social_auth.load_extra_data',
+    'social.pipeline.user.user_details'
 )
 
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/logged-in/'
@@ -165,19 +163,28 @@ SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/new-users-redirect-url/'
 SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/new-association-redirect-url/'
 SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
-SOCIAL_AUTH_SANITIZE_REDIRECTS = False
+
+SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
+SOCIAL_AUTH_SANITIZE_REDIRECTS = True
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
 # SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
 # SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
 
-LOGIN_URL = '/'
+# <uppercase backend name>_REQUEST_TOKEN_EXTRA_ARGUMENTS = {...}
 
-SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
-AUTH_USER_MODEL = 'core.ChUser'
-AUTH_PROFILE_MODULE = 'core.ChProfile'
-
+#GOOGLE
 SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
 SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
+#TWITTER
+SOCIAL_AUTH_TWITTER_KEY = 'hmhyd92hqifYUHchpr8yBA'
+SOCIAL_AUTH_TWITTER_SECRET = 'vPpk6F54ej80ej8jT7LvFp6FcQdUJHg4tHLFMM0FVw'
+#FACEBOOK
+
+LOGIN_URL = '/'
+
+SOCIAL_AUTH_USER_MODEL = 'login.ChSocialUser'
+AUTH_USER_MODEL = 'core.ChUser'
+AUTH_PROFILE_MODULE = 'core.ChProfile'
 
 #==============================================================================
 
