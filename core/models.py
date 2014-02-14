@@ -60,6 +60,9 @@ class ChUser(AbstractUser):
         return AbstractUser.is_authenticated(self)
 
 
+
+
+
 class ChProfile(models.Model):
     # TODO Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')

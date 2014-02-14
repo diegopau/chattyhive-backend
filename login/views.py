@@ -1,3 +1,5 @@
+from social.backends.google import GooglePlusAuth
+
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -74,7 +76,8 @@ def create_user_view(request):
             # 'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         # })
         return render(request, "login/registration.html", {  # FIXME only for test, use the lines above
-            'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
+            'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
+            'plus_scope' : ' '.join(GooglePlusAuth.DEFAULT_SCOPE)
         })
 
 

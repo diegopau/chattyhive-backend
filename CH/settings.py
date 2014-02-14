@@ -118,7 +118,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'social.apps.django_app.default',  #social_auth app
+    'social.apps.django_app.default',  #social_auth app
     'chat_app',
     'chat_androidAPI',
     'core',
@@ -184,7 +184,8 @@ SOCIAL_AUTH_TWITTER_SECRET = 'vPpk6F54ej80ej8jT7LvFp6FcQdUJHg4tHLFMM0FVw'
 
 LOGIN_URL = '/'
 
-SOCIAL_AUTH_USER_MODEL = 'login.ChSocialUser'
+# SOCIAL_AUTH_USER_MODEL = 'login.ChSocialUser'
+SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 

@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.contrib.auth.models import UserManager
 from django.db import models
 from social.apps.django_app.default.fields import JSONField
@@ -47,17 +48,19 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     if not fields:
         return
 
-    username = fields['username']
+    # username = fields['username']
+    username = "pepito"
     email = fields['email']
     provider = strategy.backend.name
-    fieldspwd = {'username': username, 'uid':uid, 'provider':provider, 'email': email,}
+    # uid = username = uuid4().hex
+    fieldspwd = {'username': username, email:'email', 'password':uid, 'provider':provider, 'email': email,}
     # print(fieldspwd)
 
     return {
         'is_new': True,
         'user': strategy.create_user(**fieldspwd)
     }
-
+'''
 class ChSocialUserManager(UserManager):
     def create_user(self, uid, provider, *args, **kwargs):
         print('create')
@@ -164,3 +167,4 @@ class ChSocialUser(models.Model, DjangoUserMixin):
         raise NotImplementedError('Implement in subclass')
 
 # ==============================================================
+'''
