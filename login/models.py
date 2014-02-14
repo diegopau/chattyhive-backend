@@ -80,6 +80,7 @@ class ChSocialUser(models.Model, DjangoUserMixin):
     # user_id = models.IntegerField(null=True)
     extra_data = JSONField()
     email = models.EmailField(null=True)
+    last_login = models.DateTimeField(null=True)
 
     objects = ChSocialUserManager()
 

@@ -37,7 +37,7 @@ class ChUser(AbstractUser):
     #****************Info Fields****************#
     # first_name = AbstractUser
     # last_name = AbstractUser
-    birth_date = models.DateField(null=True, auto_now=False, auto_now_add=False)
+    # birth_date = models.DateField(null=True, auto_now=False, auto_now_add=False)
     # sex =
     # language =
     # timezone =

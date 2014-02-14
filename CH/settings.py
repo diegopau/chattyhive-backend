@@ -118,7 +118,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'social.apps.django_app.default',   #social_auth app
+    # 'social.apps.django_app.default',  #social_auth app
     'chat_app',
     'chat_androidAPI',
     'core',
@@ -136,12 +136,13 @@ AUTHENTICATION_BACKENDS = (
     'social.backends.google.GooglePlusAuth',
     'social.backends.twitter.TwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
-    # 'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'social.apps.django_app.context_processors.backends',
     'social.apps.django_app.context_processors.login_redirect',
+    'django.contrib.auth.context_processors.auth'
 )
 
 SOCIAL_AUTH_PIPELINE = (
@@ -150,7 +151,8 @@ SOCIAL_AUTH_PIPELINE = (
     'social.pipeline.social_auth.auth_allowed',
     'social.pipeline.social_auth.social_user',
     'social.pipeline.user.get_username',
-    'social.pipeline.user.create_user',
+    # 'social.pipeline.user.create_user',
+    'login.models.create_user',
     'social.pipeline.social_auth.associate_user',
     'social.pipeline.social_auth.load_extra_data',
     'social.pipeline.user.user_details'
