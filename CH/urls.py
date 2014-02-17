@@ -1,3 +1,4 @@
+# coding=utf-8
 __author__ = 'xurxo'
 from django.conf.urls import patterns, include, url
 from django.conf import settings
@@ -23,7 +24,7 @@ urlpatterns = patterns('',
     url(r'^explore/$', 'core.views.explore', name='explore'),
     url(r'^join/(?P<hive_name>[a-zA-Z0-9_ ]+)/', 'core.views.join', name='join'),
     url(r'^chat_test/', 'chat_app.views.chat', name='chat'),
-    url(r'^chat/(?P<hive>[a-zA-Z0-9_ ]+)/', 'core.views.chat', name='chat_hive'),
+    url(r'^chat/(?P<hive>[a-zA-Z0-9_ñáéíóúł ]+)/', 'core.views.chat', name='chat_hive'),
     url(r'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
 

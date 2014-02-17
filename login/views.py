@@ -43,6 +43,8 @@ def create_user_view(request):
             username = email  # TODO temporal solution, should be changed
             password = form.cleaned_data['password']
             password2 = form.cleaned_data['password2']
+            print(email)
+            print(password)
 
             if password == password2:  # Checking correct password written twice
                 # Checking already existing user
@@ -66,6 +68,7 @@ def create_user_view(request):
             return HttpResponseRedirect("/create_user/register1/")
 
         else:
+            print(form.errors)
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateUserForm()
@@ -73,9 +76,6 @@ def create_user_view(request):
             'form': form,
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         })
-        # return render(request, "login/registration.html", {  # FIXME only for test, use the lines above
-        #     'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
-        # })
 
 
 def register_one(request):

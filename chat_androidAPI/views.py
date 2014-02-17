@@ -1,5 +1,7 @@
 import django, json
+from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
+from core.models import ChUser, ChProfile, ChUserManager
 
 __author__ = 'lorenzo'
 
@@ -58,3 +60,44 @@ def chat(request):
     else:
         status = "EXPIRED"
         return HttpResponse({"status": status})
+
+
+# ================================== #
+#             0.2 Version            #
+# ================================== #
+def create_user_view(request, email, pass1, pass2):
+    if request.method == 'POST':
+        # username = form.cleaned_data['username']
+        email = email
+        username = email  # TODO temporal solution, should be changed
+        password = pass1
+        password2 = pass2
+        print(email)
+        print(password)
+
+        if password == password2:  # Checking correct password written twice
+            # Checking already existing user
+            try:
+                if ChUser.objects.get(username=username) is not None:
+                    status = "ALREADY_EXISTS"
+                    return HttpResponse({"status": status})
+            except ObjectDoesNotExist:
+                manager = ChUserManager()
+                user = manager.create_user(username, email, password)
+        else:
+            status = "NOT_MATCHING_PASS"
+            return HttpResponse({"status": status})
+
+        # Let's try to create a linked profile here
+        profile = ChProfile(user=user)
+        profile.save()
+
+        # Let's try to save the user in a cookie
+        request.session['email'] = profile.user.username
+        request.session['pass'] = password
+
+        return HttpResponseRedirect("/create_user/register1/")
+
+    else:
+        # print(form.errors)
+        return HttpResponse("ERROR, invalid form")
