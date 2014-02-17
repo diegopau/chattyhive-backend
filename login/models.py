@@ -3,8 +3,10 @@ from django.contrib.auth.models import UserManager
 from django.db import models
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
+from social.exceptions import AuthException
 from social.storage.base import CLEAN_USERNAME_REGEX
 from social.storage.django_orm import DjangoUserMixin
+from social.utils import module_member, slugify
 
 __author__ = 'lorenzo'
 
@@ -48,123 +50,37 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     if not fields:
         return
 
-    # username = fields['username']
-    username = "pepito"
+    username = fields['username']
     email = fields['email']
-    provider = strategy.backend.name
-    # uid = username = uuid4().hex
-    fieldspwd = {'username': username, email:'email', 'password':uid, 'provider':provider, 'email': email,}
-    # print(fieldspwd)
+    password = uuid4().hex
+    fieldspwd = {'username': username, 'email': email, 'password': password}
+    user = strategy.create_user(**fieldspwd)
+    profile = ChProfile(user=user)
+    # profile.set_first_name(details[''])
 
     return {
         'is_new': True,
         'user': strategy.create_user(**fieldspwd)
     }
-'''
-class ChSocialUserManager(UserManager):
-    def create_user(self, uid, provider, *args, **kwargs):
-        print('create')
-        user = ChSocialUser(uid=uid)
-        # user.email = email
-        # user.set_password(password)
-        # user.uid = kwargs.get('uid')
-        user.extra_data = kwargs
-        user.provider = provider
-        user.save(using=self._db)
-        return user
+# overwrite for the social's get_username default function
+def get_username(strategy, details, user=None, *args, **kwargs):
+    if 'username' not in strategy.setting('USER_FIELDS', USER_FIELDS):
+        return
+    storage = strategy.storage
 
-class ChSocialUser(models.Model, DjangoUserMixin):
-    # code from social auth "must have"
-    # ==============================================================
-    # username = models.CharField(max_length=32, unique=True)
-    user = models.ForeignKey(ChUser, related_name='social_auth', null=True)
-    provider = models.CharField(max_length=32)
-    uid = models.CharField(max_length=UID_LENGTH)
-    # user_id = models.IntegerField(null=True)
-    extra_data = JSONField()
-    email = models.EmailField(null=True)
-    last_login = models.DateTimeField(null=True)
+    if not user:
+        email_as_username = strategy.setting('USERNAME_IS_FULL_EMAIL', False)
 
-    objects = ChSocialUserManager()
+        if email_as_username and details.get('email'):
+            username = details['email']
+        else:
+            raise AuthException(
+                strategy.backend,
+                'No e-mail given from provider'
+            )
 
-    USERNAME_FIELD = 'uid'
+        final_username = username
 
-    class Meta:
-        """Meta data"""
-        unique_together = ('provider', 'uid')
-        db_table = 'social_auth_usersocialauth'
-
-    @classmethod
-    def get_username(cls, user=None):
-        print('get_username')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def username_max_length(cls):
-        print('username_max_length')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def user_model(cls):
-        print('user_model')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def changed(cls, user):
-        print('changed')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def user_exists(cls, *args, **kwargs):
-        print('user_exists')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def create_user(cls, *args, **kwargs):
-        print('create_user')
-        # manager = ChUserManager()
-        # user = manager.create_user(username, email, password)
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def get_social_auth(cls, provider, uid):
-        print('get_social_auth')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def get_social_auth_for_user(cls, user, provider=None, id=None):
-        print('get_social_auth_for_user')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def create_social_auth(cls, user, uid, provider):
-        print('create_social_auth')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def allowed_to_disconnect(cls, user, backend_name, association_id=None):
-        print('allowed_to_disconnect')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def disconnect(cls, entry):
-        print('disconnect')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def clean_username(cls, value):
-        print('clean_username')
-        return CLEAN_USERNAME_REGEX.sub('', value)
-
-    @classmethod
-    def get_user(cls, pk):
-        print('get_user')
-        raise NotImplementedError('Implement in subclass')
-
-    @classmethod
-    def get_users_by_email(cls, email):
-        print('get_users_by_email')
-        raise NotImplementedError('Implement in subclass')
-
-# ==============================================================
-'''
+    else:
+        final_username = storage.user.get_username(user)
+    return {'username': final_username}

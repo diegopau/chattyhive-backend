@@ -84,9 +84,11 @@ def create_user_view(request):
 def register_one(request):
     if request.method == 'POST':
         user = request.session['email']
+        # ===============================
         prueba = ChProfile.objects.all()
         print(user)
         print(prueba)
+        # ===============================
         # profile = ChProfile.objects.get(user=request.user_pk=2)
         profile = ChProfile.objects.get(user__username=user)
         form = RegistrationFormOne(request.POST, instance=profile)
