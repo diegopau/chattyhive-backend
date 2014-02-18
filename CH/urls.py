@@ -32,8 +32,10 @@ urlpatterns = patterns('',
     ###                     Android - URLS                       ###
     ### ======================================================== ###
 
-    url(r'^android.login/(?P<user>[a-zA-Z]+)/','chat_androidAPI.views.login', name='login'),
-    url(r'^android.chat/','chat_androidAPI.views.chat', name='chat'),
+    url(r'^android.login/(?P<user>[a-zA-Z]+)/', 'chat_androidAPI.views.login', name='login'),
+    url(r'^android.chat/', 'chat_androidAPI.views.chat', name='chat'),
+    url(r'^android.email_check/', 'chat_androidAPI.views.email_check', name='email_check'),
+    url(r'^android.register/', 'chat_androidAPI.views.register', name='register')
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
 
     # url('', include('social.apps.django_app.urls', namespace='social'))

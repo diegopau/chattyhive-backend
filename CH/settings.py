@@ -234,4 +234,6 @@ STATICFILES_DIRS = (
 # ================================ #
 #            Android               #
 # ================================ #
-ANDROID_ERROR = {}
+ANDROID_STATUS = {
+
+}

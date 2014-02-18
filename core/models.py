@@ -89,6 +89,33 @@ class ChProfile(models.Model):
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
+    def set_public_name(self, char_name):
+        self.public_name = char_name
+
+    def set_first_name(self, char_name):
+        self.first_name = char_name
+
+    def set_last_name(self, char_name):
+        self.last_name = char_name
+
+    def set_sex(self, char_sex):
+        self.sex = char_sex
+
+    def set_language(self, char_language):
+        self.language = char_language
+
+    def set_location(self, text_location):
+        self.location = text_location
+
+    def set_private_show_age(self, boolean_show):
+        self.private_show_age = boolean_show
+
+    def set_public_show_age(self, boolean_show):
+        self.public_show_age = boolean_show
+
+    def set_show_location(self, boolean_show):
+        self.show_location = boolean_show
+
     def __unicode__(self):
         return u"%s - Personal Profile" % self.user
 
