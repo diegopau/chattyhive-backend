@@ -86,6 +86,7 @@ class ChProfile(models.Model):
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
     show_location = models.BooleanField(default=False)
+    # todo image fields
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 

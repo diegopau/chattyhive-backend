@@ -3,6 +3,7 @@ from django.contrib.auth.models import UserManager
 from django.db import models
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
+from social.backends.google import GooglePlusAuth
 from social.exceptions import AuthException
 from social.storage.base import CLEAN_USERNAME_REGEX
 from social.storage.django_orm import DjangoUserMixin
@@ -56,12 +57,14 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
     fieldspwd = {'username': username, 'email': email, 'password': password}
     user = strategy.create_user(**fieldspwd)
     profile = ChProfile(user=user)
-    # profile.set_first_name(details[''])
+    profile.save()
 
     return {
         'is_new': True,
-        'user': strategy.create_user(**fieldspwd)
+        'user': user
     }
+
+
 # overwrite for the social's get_username default function
 def get_username(strategy, details, user=None, *args, **kwargs):
     if 'username' not in strategy.setting('USER_FIELDS', USER_FIELDS):
@@ -84,3 +87,42 @@ def get_username(strategy, details, user=None, *args, **kwargs):
     else:
         final_username = storage.user.get_username(user)
     return {'username': final_username}
+
+
+def user_details(strategy, details, response, user=None, *args, **kwargs):
+    """Update user details using data from provider."""
+    if user:
+        if kwargs.get('is_new'):
+            profile = ChProfile.objects.get(user__username=user)
+            profile.set_public_name(details.get('username'))
+            profile.set_first_name(details.get('first_name'))
+            profile.set_last_name(details.get('last_name'))
+            profile.set_sex(details.get('sex'))
+            # profile.set_language(details.get(''))
+            profile.set_location(details.get('locale'))
+            profile.set_public_show_age(False)
+            profile.set_private_show_age(True)
+            profile.save()
+
+
+class ChGooglePlusAuth(GooglePlusAuth):
+
+    EXTRA_DATA = [
+        ('id', 'user_id'),
+        ('refresh_token', 'refresh_token', True),
+        ('expires_in', 'expires'),
+        ('access_type', 'access_type', True),
+        ('code', 'code'),
+        ('link', 'link')
+    ]
+
+    def get_user_details(self, response):
+        """Return user details from Orkut account"""
+        return {'username': response.get('email', '').split('@', 1)[0],
+                'email': response.get('email', ''),
+                'fullname': response.get('name', ''),
+                'first_name': response.get('given_name', ''),
+                'last_name': response.get('family_name', ''),
+                'sex': response.get('gender',''),
+                'locale': response.get('locale', 'es'),  # todo how to show location
+                'url_picture': response.get('picture')}
