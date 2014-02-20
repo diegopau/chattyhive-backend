@@ -11,6 +11,10 @@ import pusher
 
 @login_required
 def create_hive(request):
+    """
+    :param request:
+    :return:
+    """
     if request.method == 'POST':
         form = CreateHiveForm(request.POST)
         if form.is_valid():
@@ -33,6 +37,10 @@ def create_hive(request):
 
 @login_required
 def create_hive_created(request):
+    """
+    :param request:
+    :return:
+    """
     # Getting needed information
     username = request.user
     user = ChUser.objects.get(username=username)
@@ -61,6 +69,11 @@ def create_hive_created(request):
 
 @login_required
 def join(request, hive_name):
+    """
+    :param request:
+    :param hive_name:
+    :return:
+    """
     # Getting needed information
     username = request.user
     user = ChUser.objects.get(username=username)
@@ -111,6 +124,10 @@ def join(request, hive_name):
 
 @login_required
 def home(request):
+    """
+    :param request:
+    :return:
+    """
     if request.method == 'GET':
         # Getting needed info
         username = request.user
@@ -141,6 +158,10 @@ def home(request):
 
 @login_required
 def explore(request):
+    """
+    :param request:
+    :return:
+    """
     if request.method == 'GET':
         # Returns all the hives (subscribed and not subscribed)
         try:
@@ -154,6 +175,11 @@ def explore(request):
 
 @login_required
 def profile(request, private):
+    """
+    :param request:
+    :param private:
+    :return:
+    """
     if request.method == 'GET':
         username = request.user
         try:
@@ -179,6 +205,11 @@ def profile(request, private):
 
 @login_required
 def chat(request, hive):
+    """
+    :param request:
+    :param hive:
+    :return:
+    """
     # Variable declaration
     user = request.user.get_username()
     app_key = "55129"

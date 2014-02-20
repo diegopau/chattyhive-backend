@@ -5,32 +5,40 @@ from core.models import ChUser, ChProfile, ChUserManager
 
 __author__ = 'lorenzo'
 
-from django.shortcuts import render
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponse
 import pusher
 
 
 # @csrf_exempt
 def login(request, user):
+    """
+    :param request:
+    :param user:
+    :return:
+    """
     if request.method == 'GET':
-        print("if")
+        # print("if")  # PRINT
         request.session['user'] = user
         request.session['active'] = True
         request.session.set_expiry(300)
         session_id = request.session.session_key
         csrf = django.middleware.csrf.get_token(request)
         status = "LOGGED"
-        print(status)
+        # print(status)  # PRINT
         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
                             mimetype="application/json")
     else:
         status = "ERROR"
-        print(status)
+        # print(status)  # PRINT
         return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
 
 
 # @csrf_exempt
 def chat(request):
+    """
+    :param request:
+    :return:
+    """
     # Variable declaration
     if 'user' in request.session and request.session['active']:
         user = request.session['user']
@@ -77,7 +85,7 @@ def email_check(request):
         email = request.POST.get('email')
 
         username = email
-        print(email + '_ANDROID')
+        # print(email + '_ANDROID')  # PRINT
 
         # Checking already existing user
         try:
@@ -116,12 +124,12 @@ def register(request):
 
         username = email
         password = pass1
-        print(username + '_ANDROID')
+        print(username + '_ANDROID')  # PRINT
 
         try:
             # Checking already existing user
             if ChUser.objects.get(username=username) is not None:
-                status = "ALREADY_EXISTS"
+                status = "USER_ALREADY_EXISTS"
                 return HttpResponse({"status": status})
 
         except ObjectDoesNotExist:

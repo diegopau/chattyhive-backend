@@ -8,20 +8,30 @@ from django import forms
 
 
 class ChUserManager(UserManager):
+    # Creates a simple user with only email and password
     def create_user(self, username, email, password, *args, **kwargs):
-        print('user')
-        print(username)
-        print('email')
-        print(email)
-        print('pass')
-        print(password)
-        user = ChUser(username=username)    # TODO it works, but, it's correct?
+        """
+        :param username:
+        :param email:
+        :param password:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        user = ChUser(username=username)
         user.email = email
         user.set_password(password)
         user.save(using=self._db)
         return user
 
+    # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):
+        """
+        :param username:
+        :param email:
+        :param password:
+        :return:
+        """
         user = self.create_user(username, email, password)
         user.is_admin = True
         user.is_staff = True
@@ -61,7 +71,7 @@ class ChUser(AbstractUser):
 
 
 class ChProfile(models.Model):
-    # TODO Here it's defined the relation between profiles & users
+    # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
     # user = models.ForeignKey(ChUser, unique=True)
 
@@ -89,31 +99,68 @@ class ChProfile(models.Model):
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
+    # Setters for all variables
     def set_public_name(self, char_name):
+        """
+        :param char_name:
+        :return:
+        """
         self.public_name = char_name
 
     def set_first_name(self, char_name):
+        """
+        :param char_name:
+        :return:
+        """
         self.first_name = char_name
 
     def set_last_name(self, char_name):
+        """
+        :param char_name:
+        :return:
+        """
         self.last_name = char_name
 
     def set_sex(self, char_sex):
+        """
+        :param char_sex:
+        :return:
+        """
         self.sex = char_sex
 
     def set_language(self, char_language):
+        """
+        :param char_language:
+        :return:
+        """
         self.language = char_language
 
     def set_location(self, text_location):
+        """
+        :param text_location:
+        :return:
+        """
         self.location = text_location
 
     def set_private_show_age(self, boolean_show):
+        """
+        :param boolean_show:
+        :return:
+        """
         self.private_show_age = boolean_show
 
     def set_public_show_age(self, boolean_show):
+        """
+        :param boolean_show:
+        :return:
+        """
         self.public_show_age = boolean_show
 
     def set_show_location(self, boolean_show):
+        """
+        :param boolean_show:
+        :return:
+        """
         self.show_location = boolean_show
 
     def __unicode__(self):
@@ -150,10 +197,18 @@ class ChChat(models.Model):
     date = models.DateTimeField(auto_now=True)
 
     def set_hive(self, hive):
+        """
+        :param hive:
+        :return:
+        """
         self.hive = hive
         return
 
     def join(self, profile):
+        """
+        :param profile:
+        :return:
+        """
         subscription = ChSubscription()
         subscription.set_profile(profile)
         subscription.set_chat(self)
@@ -184,14 +239,26 @@ class ChSubscription(models.Model):
     chat = models.ForeignKey(ChChat, null=True, blank=True)
 
     def set_chat(self, chat):
+        """
+        :param chat:
+        :return:
+        """
         self.chat = chat
         return
 
     def set_profile(self, profile):
+        """
+        :param profile:
+        :return:
+        """
         self.profile = profile
         return
 
     def set_hive(self, hive):
+        """
+        :param hive:
+        :return:
+        """
         self.hive = hive
         return
 
