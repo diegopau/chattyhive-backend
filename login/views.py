@@ -1,5 +1,3 @@
-from social.backends.google import GooglePlusAuth
-
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -8,8 +6,8 @@ from core.models import *
 from login.models import *
 from CH import settings
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
+from social.backends.google import GooglePlusAuth
 
 
 def login_view(request):
@@ -72,8 +70,8 @@ def create_user_view(request):
     else:
         form = CreateUserForm()
         # return render(request, "login/create_user.html", {
-            # 'form': form,
-            # 'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
+        #     'form': form,
+        #     'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
         # })
         return render(request, "login/registration.html", {  # FIXME only for test, use the lines above
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
@@ -82,7 +80,7 @@ def create_user_view(request):
 
 
 def register_one(request):
-    if request.method == 'POST':
+    if request.method == 'POST': # todo if authenticated
         user = request.session['email']
         # ===============================
         prueba = ChProfile.objects.all()
@@ -99,7 +97,20 @@ def register_one(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = RegistrationFormOne()
+        if request.user.is_authenticated():
+            print(request.user)
+            profile = ChProfile.objects.get(user__username=request.user)
+            # form.fields['first_name'].cleaned_data = profile.first_name
+            form = RegistrationFormOne(initial={
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'sex': profile.sex,
+                'language': profile.language,
+                'private_show_age': profile.private_show_age,
+                'location': profile.location,
+            })
+        else:
+            form = RegistrationFormOne()
         return render(request, "login/registration_1.html", {
             'form': form
         })
@@ -108,12 +119,18 @@ def register_one(request):
 
 def register_two(request):
     if request.method == 'POST':
-        user = request.session['email']
+        if request.user.is_authenticated():
+            user = request.user
+        else:
+            user = request.session['email']
         profile = ChProfile.objects.get(user__username=user)
         form = RegistrationFormTwo(request.POST, instance=profile)
         if form.is_valid():
             print('form is valid')
             form.save()
+
+            if request.user.is_authenticated():
+                return HttpResponseRedirect("/home/")
 
             # Trying login
             username = user
@@ -133,7 +150,16 @@ def register_two(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = RegistrationFormTwo()
+        if request.user.is_authenticated():
+            print(request.user)
+            profile = ChProfile.objects.get(user__username=request.user)
+            form = RegistrationFormTwo(initial={
+                'public_name': profile.public_name,
+                'public_show_age': profile.public_show_age,
+                'show_location': profile.show_location,
+            })
+        else:
+            form = RegistrationFormTwo()
         return render(request, "login/registration_2.html", {
             'form': form
         })
