@@ -135,7 +135,8 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 AUTHENTICATION_BACKENDS = (
     # 'social.backends.google.GooglePlusAuth',
     'login.models.ChGooglePlusAuth',
-    'social.backends.twitter.TwitterOAuth',
+    # 'social.backends.twitter.TwitterOAuth',
+    'login.models.ChTwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )

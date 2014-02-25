@@ -4,6 +4,7 @@ from django.db import models
 from social.apps.django_app.default.fields import JSONField
 from social.apps.django_app.default.models import UID_LENGTH
 from social.backends.google import GooglePlusAuth
+from social.backends.twitter import TwitterOAuth
 from social.exceptions import AuthException
 from social.storage.base import CLEAN_USERNAME_REGEX
 from social.storage.django_orm import DjangoUserMixin
@@ -22,10 +23,7 @@ class LoginForm(forms.Form):
 
 
 class CreateUserForm(forms.Form):
-    # username = forms.CharField(max_length=40)
     email = forms.EmailField()
-    password = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
-    password2 = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
 
 
 class RegistrationFormOne(forms.ModelForm):
@@ -38,6 +36,13 @@ class RegistrationFormTwo(forms.ModelForm):
     class Meta:
         model = ChProfile
         fields = ('public_name', 'public_show_age', 'show_location')
+
+
+class RegistrationFormThree(forms.Form):
+    # username = forms.CharField(max_length=40)
+    email = forms.EmailField()
+    password = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
+    password2 = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
 
 #======================================================================
 # overwrite for the social's create_user default function
@@ -98,8 +103,8 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
             profile.set_first_name(details.get('first_name'))
             profile.set_last_name(details.get('last_name'))
             profile.set_sex(details.get('sex'))
-            # profile.set_language(details.get(''))
-            profile.set_location(details.get('locale'))
+            profile.set_language(details.get('language'))
+            profile.set_location(details.get('location'))
             profile.set_public_show_age(False)
             profile.set_private_show_age(True)
             profile.save()
@@ -118,11 +123,53 @@ class ChGooglePlusAuth(GooglePlusAuth):
 
     def get_user_details(self, response):
         """Return user details from Orkut account"""
+        lang_provided=response.get('lang')
+        if lang_provided=='es':             # todo how to get/show language
+            language='es-es'
+        else:
+            language='en-gb'
         return {'username': response.get('email', '').split('@', 1)[0],
                 'email': response.get('email', ''),
                 'fullname': response.get('name', ''),
                 'first_name': response.get('given_name', ''),
                 'last_name': response.get('family_name', ''),
                 'sex': response.get('gender',''),
-                'locale': response.get('locale', 'es'),  # todo how to show location
+                'location': response.get('locale', 'es'),  # todo how to show location
+                'language': language,
                 'url_picture': response.get('picture')}
+
+
+class ChTwitterOAuth(TwitterOAuth):
+
+    EXTRA_DATA = [
+        ('id', 'id'),
+        ('url', 'url'),
+        ('protected', 'protected'),
+        ('verified', 'verified')
+    ]
+
+    def get_user_details(self, response):
+        """Return user details from Twitter account"""
+        try:
+            first_name, last_name = response['name'].split(' ', 1)
+        except:
+            first_name = response['name']
+            last_name = ''
+
+        email = response['screen_name'] + '@twitter.com'
+
+        lang_provided=response.get('lang')
+        if lang_provided=='es':             # todo how to get/show language
+            language='es-es'
+        else:
+            language='en-gb'
+
+        return {'username': response['screen_name'],
+                'email': email,  # not supplied?
+                'fullname': response['name'],
+                'first_name': first_name,
+                'last_name': last_name,
+                'sex': '',
+                'location': response.get('location','es'),
+                'language': language,
+                'url_picture': response.get('profile_background_image_url','')}

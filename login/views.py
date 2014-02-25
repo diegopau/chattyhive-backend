@@ -41,27 +41,28 @@ def create_user_view(request):
             # username = form.cleaned_data['username']
             email = form.cleaned_data['email']
             username = email  # TODO temporal solution, should be changed
-            password = form.cleaned_data['password']
-            password2 = form.cleaned_data['password2']
+            password = uuid4().hex
 
-            if password == password2:  # Checking correct password written twice
-                # Checking already existing user
-                try:
-                    if ChUser.objects.get(username=username) is not None:
-                        return HttpResponse("Username already exists. Please, choose other")
-                except ObjectDoesNotExist:
-                    manager = ChUserManager()
-                    user = manager.create_user(username, email, password)
-            else:
-                return HttpResponse("Password doesn't match")
+            # Checking already existing user
+            try:
+                if ChUser.objects.get(username=username) is not None:
+                    return HttpResponse("Username already exists. Please, choose other")
+            except ObjectDoesNotExist:
+                manager = ChUserManager()
+                user = manager.create_user(username, email, password)
 
             # Let's try to create a linked profile here
             profile = ChProfile(user=user)
             profile.save()
 
-            # Let's try to save the user in a cookie
-            request.session['email'] = profile.user.username
-            request.session['pass'] = password
+            user2 = authenticate(username=username, password=password)
+            if user is not None:
+                if user.is_active:
+                    login(request, user2)
+                else:
+                    return HttpResponse("ERROR, inactive user")
+            else:
+                return HttpResponse("UNKNOWN ERROR")
 
             return HttpResponseRedirect("/create_user/register1/")
 
@@ -69,26 +70,22 @@ def create_user_view(request):
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateUserForm()
-        # return render(request, "login/create_user.html", {
-        #     'form': form,
-        #     'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None)
-        # })
-        return render(request, "login/registration.html", {  # FIXME only for test, use the lines above
+        return render(request, "login/registration.html", {
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
-            'plus_scope' : ' '.join(GooglePlusAuth.DEFAULT_SCOPE)
+            'plus_scope' : ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
+            'form': form
         })
 
 
 def register_one(request):
-    if request.method == 'POST': # todo if authenticated
-        user = request.session['email']
-        # ===============================
-        prueba = ChProfile.objects.all()
-        print(user)
-        print(prueba)
-        # ===============================
-        # profile = ChProfile.objects.get(user=request.user_pk=2)
-        profile = ChProfile.objects.get(user__username=user)
+    if request.method == 'POST':
+        if request.user.is_authenticated():
+            user = request.user
+            profile = ChProfile.objects.get(user=user)
+        else:
+            user = request.session['email']
+            profile = ChProfile.objects.get(user__username=user)
+
         form = RegistrationFormOne(request.POST, instance=profile)
         if form.is_valid():
             print('form is valid')
@@ -114,39 +111,38 @@ def register_one(request):
         return render(request, "login/registration_1.html", {
             'form': form
         })
-        # return HttpResponse("ERROR, invalid form 2")
 
 
 def register_two(request):
     if request.method == 'POST':
         if request.user.is_authenticated():
             user = request.user
+            profile = ChProfile.objects.get(user=user)
         else:
             user = request.session['email']
-        profile = ChProfile.objects.get(user__username=user)
+            profile = ChProfile.objects.get(user__username=user)
         form = RegistrationFormTwo(request.POST, instance=profile)
         if form.is_valid():
             print('form is valid')
             form.save()
 
-            if request.user.is_authenticated():
-                return HttpResponseRedirect("/home/")
+            # if request.user.is_authenticated():
+            #     return HttpResponseRedirect("/home/")
 
             # Trying login
-            username = user
-            print(username)
-            password = request.session['pass']
-            print(password)
-            user2 = authenticate(username=username, password=password)
-            if user2 is not None:
-                if user2.is_active:
-                    login(request, user2)
-                    print("Login successful")
-                    return HttpResponseRedirect("/home/")
-                else:
-                    return HttpResponse("ERROR, inactive user")
+            # username = user
+            # print(username)
+            # password = request.session['pass']
+            # print(password)
+            # user2 = authenticate(username=username, password=password)
+            # if user2 is not None:
+            #     if user2.is_active:
+            #         login(request, user2)
+            #         return HttpResponseRedirect("/home/")
+            #     else:
+            #         return HttpResponse("ERROR, inactive user")
 
-            return HttpResponseRedirect("/home/")
+            return HttpResponseRedirect("/create_user/register3/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
@@ -162,6 +158,42 @@ def register_two(request):
             form = RegistrationFormTwo()
         return render(request, "login/registration_2.html", {
             'form': form
+        })
+
+
+def register_three(request):
+    if request.method == 'POST':
+        if request.user.is_authenticated():
+            user = request.user
+        else:
+            user = request.session['email']
+        form = RegistrationFormThree(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            username = email  # TODO temporal solution, should be changed
+            password = form.cleaned_data['password']
+            password2 = form.cleaned_data['password2']
+
+            if password == password2:  # Checking correct password written twice
+                user.username = username
+                user.set_password(password)
+                user.save()
+            else:
+                return HttpResponse("Passwords don't match")
+
+            return HttpResponseRedirect("/home/")
+
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        if request.user.is_authenticated():
+            form = RegistrationFormThree(initial={
+                'email': request.user.username,
+            })
+        else:
+            form = RegistrationFormThree()
+        return render(request, "login/create_user.html", {
+            'form': form,
         })
 
 

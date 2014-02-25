@@ -15,8 +15,8 @@ class ChUserManager(UserManager):
         print(email)
         print('pass')
         print(password)
-        user = ChUser(username=username)    # TODO it works, but, it's correct?
-        user.email = email
+        user = ChUser(username=username)
+        # user.email = email                # TODO email?
         user.set_password(password)
         user.save(using=self._db)
         return user
