@@ -118,7 +118,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'chat_app',
     'chat_androidAPI',
     'core',
     'login',

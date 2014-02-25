@@ -47,7 +47,7 @@ class ChUser(AbstractUser):
     #****************Info Fields****************#
     # first_name = AbstractUser
     # last_name = AbstractUser
-    birth_date = models.DateField(null=True, auto_now=False, auto_now_add=False)
+    birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # sex =
     # language =
     # timezone =
@@ -102,64 +102,64 @@ class ChProfile(models.Model):
     # Setters for all variables
     def set_public_name(self, char_name):
         """
-        :param char_name:
-        :return:
+        :param char_name: Public name of the Profile
+        :return: None
         """
         self.public_name = char_name
 
     def set_first_name(self, char_name):
         """
-        :param char_name:
-        :return:
+        :param char_name: First name of the Profile
+        :return: None
         """
         self.first_name = char_name
 
     def set_last_name(self, char_name):
         """
-        :param char_name:
-        :return:
+        :param char_name: Last name of the Profile
+        :return: None
         """
         self.last_name = char_name
 
     def set_sex(self, char_sex):
         """
-        :param char_sex:
-        :return:
+        :param char_sex: Sex of the Profile
+        :return: None
         """
         self.sex = char_sex
 
     def set_language(self, char_language):
         """
-        :param char_language:
-        :return:
+        :param char_language: Language of the Profile
+        :return: None
         """
         self.language = char_language
 
     def set_location(self, text_location):
         """
-        :param text_location:
-        :return:
+        :param text_location: Location of the Profile
+        :return: None
         """
         self.location = text_location
 
     def set_private_show_age(self, boolean_show):
         """
-        :param boolean_show:
-        :return:
+        :param boolean_show: Permission of showing privately the age of the Profile
+        :return: None
         """
         self.private_show_age = boolean_show
 
     def set_public_show_age(self, boolean_show):
         """
-        :param boolean_show:
-        :return:
+        :param boolean_show: Permission of showing publicly the age of the Profile
+        :return: None
         """
         self.public_show_age = boolean_show
 
     def set_show_location(self, boolean_show):
         """
-        :param boolean_show:
-        :return:
+        :param boolean_show: Permission of showing the location of the Profile
+        :return: None
         """
         self.show_location = boolean_show
 
@@ -198,16 +198,16 @@ class ChChat(models.Model):
 
     def set_hive(self, hive):
         """
-        :param hive:
-        :return:
+        :param hive: Owner hive of this chat
+        :return: None
         """
         self.hive = hive
         return
 
     def join(self, profile):
         """
-        :param profile:
-        :return:
+        :param profile: Object profile who wants to join to this chat
+        :return: None, but will create a subscription for this relation
         """
         subscription = ChSubscription()
         subscription.set_profile(profile)
@@ -240,24 +240,24 @@ class ChSubscription(models.Model):
 
     def set_chat(self, chat):
         """
-        :param chat:
-        :return:
+        :param chat: Object chat that is relating
+        :return: None
         """
         self.chat = chat
         return
 
     def set_profile(self, profile):
         """
-        :param profile:
-        :return:
+        :param profile: Object profile that is relating
+        :return: None
         """
         self.profile = profile
         return
 
     def set_hive(self, hive):
         """
-        :param hive:
-        :return:
+        :param hive: Object hive that is relating
+        :return: None
         """
         self.hive = hive
         return

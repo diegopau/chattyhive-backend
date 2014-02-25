@@ -14,7 +14,7 @@ import pusher
 def create_hive(request):
     """
     :param request:
-    :return:
+    :return: Web page with the form for creating a hive
     """
     if request.method == 'POST':
         form = CreateHiveForm(request.POST)
@@ -40,7 +40,7 @@ def create_hive(request):
 def create_hive_created(request):
     """
     :param request:
-    :return:
+    :return: Home web page after creating the hive
     """
     # Getting needed information
     username = request.user
@@ -72,8 +72,8 @@ def create_hive_created(request):
 def join(request, hive_name):
     """
     :param request:
-    :param hive_name:
-    :return:
+    :param hive_name: Name of the hive that will be joined to
+    :return: Home web page with the subscription created
     """
     # Getting needed information
     username = request.user
@@ -127,7 +127,7 @@ def join(request, hive_name):
 def home(request):
     """
     :param request:
-    :return:
+    :return: Home web page
     """
     if request.method == 'GET':
         # Getting needed info
@@ -161,7 +161,7 @@ def home(request):
 def explore(request):
     """
     :param request:
-    :return:
+    :return: Explore web page which contains all hives
     """
     if request.method == 'GET':
         # Returns all the hives (subscribed and not subscribed)
@@ -178,8 +178,8 @@ def explore(request):
 def profile(request, private):
     """
     :param request:
-    :param private:
-    :return:
+    :param private: Type of profile which is going to be shown, private or public
+    :return: Profile web page which contains your personal info
     """
     if request.method == 'GET':
         username = request.user
@@ -208,8 +208,8 @@ def profile(request, private):
 def chat(request, hive):
     """
     :param request:
-    :param hive:
-    :return:
+    :param hive: Name of the hive, which will be used for the channel name in Pusher
+    :return: Chat web page which allows to chat with users who joined the same channel
     """
     # Variable declaration
     user = request.user.get_username()
