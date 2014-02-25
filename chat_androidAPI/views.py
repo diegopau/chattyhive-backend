@@ -13,8 +13,8 @@ import pusher
 def login(request, user):
     """
     :param request:
-    :param user:
-    :return:
+    :param user: username for the login request
+    :return: JSON with status, csrf and session_id
     """
     if request.method == 'GET':
         # print("if")  # PRINT
@@ -37,7 +37,7 @@ def login(request, user):
 def chat(request):
     """
     :param request:
-    :return:
+    :return: JSON with status
     """
     # Variable declaration
     if 'user' in request.session and request.session['active']:
@@ -76,7 +76,7 @@ def chat(request):
 def email_check(request):
     """
     :param request:
-    :return:
+    :return: JSON with status
     """
 
     if request.method == 'POST':
@@ -104,7 +104,7 @@ def email_check(request):
 def register(request):
     """
     :param request:
-    :return:
+    :return: JSON with status and profile
     """
 
     if request.method == 'POST':

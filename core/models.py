@@ -11,12 +11,12 @@ class ChUserManager(UserManager):
     # Creates a simple user with only email and password
     def create_user(self, username, email, password, *args, **kwargs):
         """
-        :param username:
-        :param email:
-        :param password:
+        :param username: Email of the user used as username
+        :param email: Email also saved
+        :param password: Password for the user
         :param args:
         :param kwargs:
-        :return:
+        :return: Normal user
         """
         user = ChUser(username=username)
         user.email = email
@@ -27,10 +27,10 @@ class ChUserManager(UserManager):
     # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):
         """
-        :param username:
-        :param email:
-        :param password:
-        :return:
+        :param username: Email
+        :param email: Email
+        :param password: Password
+        :return: User with privileges
         """
         user = self.create_user(username, email, password)
         user.is_admin = True
@@ -279,3 +279,7 @@ class CreateHiveForm(forms.ModelForm):
     class Meta:
         model = ChHive
         fields = ('name', 'category', 'description')
+
+
+class MsgForm(forms.Form):
+    write_your_message = forms.CharField(max_length=128)

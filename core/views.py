@@ -1,4 +1,5 @@
-from chat_app.models import MsgForm
+# coding=utf-8
+from core.models import MsgForm
 
 __author__ = 'lorenzo'
 
@@ -218,7 +219,7 @@ def chat(request, hive):
     event = 'msg'
     hive = hive.replace(" ", "_")
     channel = hive
-    print(channel)
+    print(channel)  # PRINT
 
     # GET vs POST
     if request.method == 'POST':
@@ -230,14 +231,15 @@ def chat(request, hive):
             key=key,
             secret=secret
         )
-        print(channel + " aqui se envia")
+        print(channel + " aqui se envia")  # PRINT
         p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
         # request.session.set_expiry(300)
         return HttpResponse("Server Ok")
     else:
 
-        channel = hive + '_public'
-        print(channel)
+        if channel != 'public_test':
+            channel = hive + '_public'
+        print(channel)  # PRINT
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user,
