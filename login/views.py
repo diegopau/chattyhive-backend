@@ -8,6 +8,8 @@ from CH import settings
 from django.contrib.auth import authenticate, login, logout
 from django.core.exceptions import ObjectDoesNotExist
 from social.backends.google import GooglePlusAuth
+from django.contrib.auth.decorators import login_required
+from social.apps.django_app.default.models import UserSocialAuth
 
 
 def login_view(request):
@@ -38,7 +40,6 @@ def create_user_view(request):
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
-            # username = form.cleaned_data['username']
             email = form.cleaned_data['email']
             username = email  # TODO temporal solution, should be changed
             password = uuid4().hex
@@ -77,96 +78,61 @@ def create_user_view(request):
         })
 
 
+@login_required
 def register_one(request):
     if request.method == 'POST':
-        if request.user.is_authenticated():
-            user = request.user
-            profile = ChProfile.objects.get(user=user)
-        else:
-            user = request.session['email']
-            profile = ChProfile.objects.get(user__username=user)
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
 
         form = RegistrationFormOne(request.POST, instance=profile)
         if form.is_valid():
-            print('form is valid')
             form.save()
             return HttpResponseRedirect("/create_user/register2/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        if request.user.is_authenticated():
-            print(request.user)
-            profile = ChProfile.objects.get(user__username=request.user)
-            # form.fields['first_name'].cleaned_data = profile.first_name
-            form = RegistrationFormOne(initial={
-                'first_name': profile.first_name,
-                'last_name': profile.last_name,
-                'sex': profile.sex,
-                'language': profile.language,
-                'private_show_age': profile.private_show_age,
-                'location': profile.location,
-            })
-        else:
-            form = RegistrationFormOne()
+        profile = ChProfile.objects.get(user__username=request.user)
+        form = RegistrationFormOne(initial={
+            'first_name': profile.first_name,
+            'last_name': profile.last_name,
+            'sex': profile.sex,
+            'language': profile.language,
+            'private_show_age': profile.private_show_age,
+            'location': profile.location,
+        })
         return render(request, "login/registration_1.html", {
             'form': form
         })
 
 
+@login_required
 def register_two(request):
     if request.method == 'POST':
-        if request.user.is_authenticated():
-            user = request.user
-            profile = ChProfile.objects.get(user=user)
-        else:
-            user = request.session['email']
-            profile = ChProfile.objects.get(user__username=user)
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
         form = RegistrationFormTwo(request.POST, instance=profile)
         if form.is_valid():
-            print('form is valid')
             form.save()
-
-            # if request.user.is_authenticated():
-            #     return HttpResponseRedirect("/home/")
-
-            # Trying login
-            # username = user
-            # print(username)
-            # password = request.session['pass']
-            # print(password)
-            # user2 = authenticate(username=username, password=password)
-            # if user2 is not None:
-            #     if user2.is_active:
-            #         login(request, user2)
-            #         return HttpResponseRedirect("/home/")
-            #     else:
-            #         return HttpResponse("ERROR, inactive user")
 
             return HttpResponseRedirect("/create_user/register3/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        if request.user.is_authenticated():
-            print(request.user)
-            profile = ChProfile.objects.get(user__username=request.user)
-            form = RegistrationFormTwo(initial={
-                'public_name': profile.public_name,
-                'public_show_age': profile.public_show_age,
-                'show_location': profile.show_location,
-            })
-        else:
-            form = RegistrationFormTwo()
+        profile = ChProfile.objects.get(user__username=request.user)
+        form = RegistrationFormTwo(initial={
+            'public_name': profile.public_name,
+            'public_show_age': profile.public_show_age,
+            'show_location': profile.show_location,
+        })
         return render(request, "login/registration_2.html", {
             'form': form
         })
 
 
+@login_required
 def register_three(request):
     if request.method == 'POST':
-        if request.user.is_authenticated():
-            user = request.user
-        else:
-            user = request.session['email']
+        user = request.user
         form = RegistrationFormThree(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
@@ -186,19 +152,24 @@ def register_three(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        if request.user.is_authenticated():
+        try:
+            user_social = UserSocialAuth.objects.get(user=request.user)
+            if user_social.provider == 'twitter':
+                form = RegistrationFormThree()
+            else:
+                form = RegistrationFormThree(initial={
+                    'email': request.user.username,
+                })
+        except UserSocialAuth.DoesNotExist:
             form = RegistrationFormThree(initial={
                 'email': request.user.username,
             })
-        else:
-            form = RegistrationFormThree()
         return render(request, "login/create_user.html", {
             'form': form,
         })
 
 
 def logout_view(request):
-    print("logout")
     logout(request)
     request.session['active'] = False
     return HttpResponse("logged out")

@@ -1,20 +1,13 @@
-from uuid import uuid4
-from django.contrib.auth.models import UserManager
-from django.db import models
-from social.apps.django_app.default.fields import JSONField
-from social.apps.django_app.default.models import UID_LENGTH
-from social.backends.google import GooglePlusAuth
-from social.backends.twitter import TwitterOAuth
-from social.exceptions import AuthException
-from social.storage.base import CLEAN_USERNAME_REGEX
-from social.storage.django_orm import DjangoUserMixin
-from social.utils import module_member, slugify
-
 __author__ = 'lorenzo'
 
 from django import forms
 from social.pipeline.user import USER_FIELDS
-from core.models import ChProfile, ChUser, ChHive
+from core.models import ChProfile
+from uuid import uuid4
+from social.backends.google import GooglePlusAuth
+from social.backends.twitter import TwitterOAuth
+from social.exceptions import AuthException
+from social.backends.facebook import FacebookOAuth2
 
 
 class LoginForm(forms.Form):
@@ -39,7 +32,6 @@ class RegistrationFormTwo(forms.ModelForm):
 
 
 class RegistrationFormThree(forms.Form):
-    # username = forms.CharField(max_length=40)
     email = forms.EmailField()
     password = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
     password2 = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
@@ -110,6 +102,7 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
             profile.save()
 
 
+# overwrite for the social's GooglePlus backend
 class ChGooglePlusAuth(GooglePlusAuth):
 
     EXTRA_DATA = [
@@ -139,6 +132,7 @@ class ChGooglePlusAuth(GooglePlusAuth):
                 'url_picture': response.get('picture')}
 
 
+# overwrite for the social's Twitter backend
 class ChTwitterOAuth(TwitterOAuth):
 
     EXTRA_DATA = [
@@ -173,3 +167,35 @@ class ChTwitterOAuth(TwitterOAuth):
                 'location': response.get('location','es'),
                 'language': language,
                 'url_picture': response.get('profile_background_image_url','')}
+
+
+class ChFacebookOAuth2(FacebookOAuth2):
+
+    EXTRA_DATA = [
+        ('id', 'id'),
+        ('expires', 'expires'),
+        ('verified', 'verified'),
+        ('link', 'link'),
+        ('birthday', 'birthday')
+    ]
+
+    def get_user_details(self, response):
+        """Return user details from Facebook account"""
+
+        lang_provided=response.get('lang')
+        if lang_provided=='es':             # todo how to get/show language
+            language='es-es'
+        else:
+            language='en-gb'
+
+        picture = 'http://graph.facebook.com/' + response.get('id') + '/picture'
+
+        return {'username': response.get('username', response.get('name')),
+                'email': response.get('email', ''),
+                'fullname': response.get('name', ''),
+                'first_name': response.get('first_name', ''),
+                'last_name': response.get('last_name', ''),
+                'sex': response.get('gender',''),
+                'location': response.get('locale',''),
+                'language': language,
+                'url_picture': picture}

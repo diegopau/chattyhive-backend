@@ -1,11 +1,10 @@
-from chat_app.models import MsgForm
-
 __author__ = 'lorenzo'
 
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from core.models import *
 from django.contrib.auth.decorators import login_required
+from chat_app.models import MsgForm
 import pusher
 
 

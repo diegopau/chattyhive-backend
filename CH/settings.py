@@ -137,7 +137,8 @@ AUTHENTICATION_BACKENDS = (
     'login.models.ChGooglePlusAuth',
     # 'social.backends.twitter.TwitterOAuth',
     'login.models.ChTwitterOAuth',
-    'social.backends.facebook.FacebookOAuth2',
+    # 'social.backends.facebook.FacebookOAuth2',
+    'login.models.ChFacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
 
@@ -178,10 +179,6 @@ SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_SANITIZE_REDIRECTS = True
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
-# SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
-# SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
-
-# <uppercase backend name>_REQUEST_TOKEN_EXTRA_ARGUMENTS = {...}
 
 #GOOGLE
 SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
@@ -190,10 +187,12 @@ SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
 SOCIAL_AUTH_TWITTER_KEY = 'hmhyd92hqifYUHchpr8yBA'
 SOCIAL_AUTH_TWITTER_SECRET = 'vPpk6F54ej80ej8jT7LvFp6FcQdUJHg4tHLFMM0FVw'
 #FACEBOOK
+SOCIAL_AUTH_FACEBOOK_KEY = '1430000390551335'
+SOCIAL_AUTH_FACEBOOK_SECRET = 'eed2aa4e2ded3c4ad4c0ed7516acceae'
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_birthday', 'user_location']
 
 LOGIN_URL = '/'
 
-# SOCIAL_AUTH_USER_MODEL = 'login.ChSocialUser'
 SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
