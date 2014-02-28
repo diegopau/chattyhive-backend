@@ -12,7 +12,7 @@
     <br />
     Welcome, {{ user }}!
     <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
-    Hive: {{ channel }}<br />
+    Hive: {{ hive }}<br />
     <p id="chat_field"></p>
     <label for="msg_text"></label><input id="msg_text" type="text">
     <button type="button" id="btn_send">Send</button>
@@ -23,12 +23,14 @@
         var num_rep=0;
         var user="{{ user }}";
         var key="{{ key }}";
+        var hive = "{{ hive }}";
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
         var chat="{{ chat_field }}";
 
         // Connecting to pusher
         var pusher = new Pusher(key);
+        //channel_name = channel_name.replace("ñ", "__nh__");
         var channel = pusher.subscribe(channel_name);
 
         // Listening to the channel

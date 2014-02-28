@@ -1,4 +1,4 @@
-# coding=utf-8
+# -*- encoding: utf-8 -*-
 from core.models import MsgForm
 
 __author__ = 'lorenzo'
@@ -47,7 +47,7 @@ def create_hive_created(request):
     user = ChUser.objects.get(username=username)
     profile = ChProfile.objects.get(user=user)
     aux = profile.location
-    print(aux)
+    print(aux)  # PRINT
     hive_name = request.session['hive']
     hive_name = hive_name.replace("_", " ")
     hive = ChHive.objects.get(name=hive_name)
@@ -218,7 +218,8 @@ def chat(request, hive):
     secret = '360b346d88ee47d4c230'
     event = 'msg'
     hive = hive.replace(" ", "_")
-    channel = hive
+    hive2 = replace_unicode(hive)
+    channel = hive2
     print(channel)  # PRINT
 
     # GET vs POST
@@ -238,13 +239,14 @@ def chat(request, hive):
     else:
 
         if channel != 'public_test':
-            channel = hive + '_public'
+            channel = hive2 + '_public'
         print(channel)  # PRINT
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user,
             'app_key': app_key,
             'key': key,
+            'hive': hive,
             'channel': channel,
             'event': event,
             'form': form,

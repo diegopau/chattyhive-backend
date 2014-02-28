@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 from distutils.command import register
 
 __author__ = 'lorenzo'
@@ -283,3 +284,18 @@ class CreateHiveForm(forms.ModelForm):
 
 class MsgForm(forms.Form):
     write_your_message = forms.CharField(max_length=128)
+
+
+### ==========================================================
+###                          METHODS
+### ==========================================================
+
+def replace_unicode(string):
+    string = string.replace(u'ñ', "__nh__")
+    string = string.replace(u'Ñ', "__Nh__")
+    string = string.replace(u'á', "__atilde__")
+    string = string.replace(u'é', "__etilde__")
+    string = string.replace(u'í', "__itilde__")
+    string = string.replace(u'ó', "__otilde__")
+    string = string.replace(u'ú', "__utilde__")
+    return string

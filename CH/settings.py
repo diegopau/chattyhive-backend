@@ -1,4 +1,5 @@
 # Django settings for clean_project project.
+# -*- encoding: utf-8 -*-
 import os
 
 DEBUG = True
@@ -35,6 +36,8 @@ TIME_ZONE = 'Europe/Madrid'
 # Language _code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'es-es'
+
+# DEFAULT_CHARSET = 'utf-8'
 
 SITE_ID = 1
 
