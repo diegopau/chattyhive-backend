@@ -47,7 +47,7 @@ def create_hive_created(request):
     user = ChUser.objects.get(username=username)
     profile = ChProfile.objects.get(user=user)
     aux = profile.location
-    print(aux)  # PRINT
+    # print(aux)  # PRINT
     hive_name = request.session['hive']
     hive_name = hive_name.replace("_", " ")
     hive = ChHive.objects.get(name=hive_name)
@@ -220,7 +220,7 @@ def chat(request, hive):
     hive = hive.replace(" ", "_")
     hive2 = replace_unicode(hive)
     channel = hive2
-    print(channel)  # PRINT
+    # print(channel)  # PRINT
 
     # GET vs POST
     if request.method == 'POST':
@@ -232,7 +232,7 @@ def chat(request, hive):
             key=key,
             secret=secret
         )
-        print(channel + " aqui se envia")  # PRINT
+        # print(channel + " aqui se envia")  # PRINT
         p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
         # request.session.set_expiry(300)
         return HttpResponse("Server Ok")
@@ -240,7 +240,7 @@ def chat(request, hive):
 
         if channel != 'public_test':
             channel = hive2 + '_public'
-        print(channel)  # PRINT
+        # print(channel)  # PRINT
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user,

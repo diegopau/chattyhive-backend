@@ -124,7 +124,7 @@ def register(request):
 
         username = email
         password = pass1
-        print(username + '_ANDROID')  # PRINT
+        # print(username + '_ANDROID')  # PRINT
 
         try:
             # Checking already existing user
