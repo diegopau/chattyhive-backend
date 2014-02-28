@@ -19,12 +19,12 @@ def create_hive(request):
     if request.method == 'POST':
         form = CreateHiveForm(request.POST)
         if form.is_valid():
-            print('form is valid')
+            # print('form is valid')  # PRINT
             hive = form.cleaned_data['name']
             hive = hive.replace(" ", "_")
             form.cleaned_data['name'] = hive
             form.save()
-            print(hive)
+            # print(hive)  # PRINT
             request.session['hive'] = hive
             return HttpResponseRedirect("/create_hive/create/")
         else:
@@ -46,7 +46,7 @@ def create_hive_created(request):
     username = request.user
     user = ChUser.objects.get(username=username)
     profile = ChProfile.objects.get(user=user)
-    aux = profile.location
+    # aux = profile.location
     # print(aux)  # PRINT
     hive_name = request.session['hive']
     hive_name = hive_name.replace("_", " ")
