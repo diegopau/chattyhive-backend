@@ -133,12 +133,9 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
 #==============================================================================
 AUTHENTICATION_BACKENDS = (
-    # 'social.backends.google.GooglePlusAuth',
-    'login.models.ChGooglePlusAuth',
-    # 'social.backends.twitter.TwitterOAuth',
-    'login.models.ChTwitterOAuth',
-    # 'social.backends.facebook.FacebookOAuth2',
-    'login.models.ChFacebookOAuth2',
+    'login.ch_social_auth.ChGooglePlusAuth',
+    'login.ch_social_auth.ChTwitterOAuth',
+    'login.ch_social_auth.ChFacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
 
@@ -153,11 +150,11 @@ SOCIAL_AUTH_PIPELINE = (
     'social.pipeline.social_auth.social_uid',
     'social.pipeline.social_auth.auth_allowed',
     'social.pipeline.social_auth.social_user',
-    'login.models.get_username',
-    'login.models.create_user',
+    'login.ch_social_auth.get_username',
+    'login.ch_social_auth.create_user',
     'social.pipeline.social_auth.associate_user',
     'social.pipeline.social_auth.load_extra_data',
-    'login.models.user_details'
+    'login.ch_social_auth.user_details'
 )
 
 SOCIAL_AUTH_DISCONNECT_PIPELINE = (
