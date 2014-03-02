@@ -98,9 +98,6 @@ def join(request, hive_name):
     except ChSubscription.DoesNotExist:
         return HttpResponse("You've no subscriptions yet!")
 
-    # print(hives)
-    # print("====================")
-    # print(hive_joining)
     hive_appeared = False
     for hive_aux in hives:
         if hive_aux == hive_joining:
@@ -119,6 +116,32 @@ def join(request, hive_name):
 
     else:
         return HttpResponse("You're already subscribed to this hive")
+
+    return HttpResponseRedirect("/home/")
+
+
+@login_required
+def leave(request, hive_name):
+    """
+    :param request:
+    :param hive_name:
+    :return:
+    """
+    # Getting needed information
+    username = request.user
+    user = ChUser.objects.get(username=username)
+    profile = ChProfile.objects.get(user=user)
+    hive_leaving = ChHive.objects.get(name=hive_name)
+
+    # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
+    try:
+        subscriptions = ChSubscription.objects.all()
+        subscriptions = subscriptions.filter(profile=profile)
+        subscription = subscriptions.filter(hive=hive_leaving)
+        subscription.delete()
+
+    except ChSubscription.DoesNotExist:
+        return HttpResponse("You've no subscriptions yet!")
 
     return HttpResponseRedirect("/home/")
 
