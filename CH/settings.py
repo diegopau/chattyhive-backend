@@ -131,7 +131,10 @@ INSTALLED_APPS = (
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
-#==============================================================================
+    ### ======================================================== ###
+    ###                       Social Auth                        ###
+    ### ======================================================== ###
+
 AUTHENTICATION_BACKENDS = (
     'login.ch_social_auth.ChGooglePlusAuth',
     'login.ch_social_auth.ChTwitterOAuth',
@@ -157,32 +160,36 @@ SOCIAL_AUTH_PIPELINE = (
     'login.ch_social_auth.user_details'
 )
 
+# this is to disconnect a user in the system from the selected social provider
+# not used for now.
 SOCIAL_AUTH_DISCONNECT_PIPELINE = (
     'social.pipeline.disconnect.allowed_to_disconnect',
     'social.pipeline.disconnect.get_entries',
     'social.pipeline.disconnect.revoke_tokens',
     'social.pipeline.disconnect.disconnect',
-    # 'logout_function'
+    # 'logout_function' must be implemented
 )
 
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/home/'
-SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'
-SOCIAL_AUTH_LOGIN_URL = '/login-url/'
+SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'   # todo create this page
+SOCIAL_AUTH_LOGIN_URL = '/login-url/'           # todo check if this is necessary
 SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/create_user/register1/'
 SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/home/'
-SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
-SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
+SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/' # not used
+SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'   # not used
 
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_SANITIZE_REDIRECTS = True
-SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False   # change when https is implemented
 
 #GOOGLE
 SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
 SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
+# scopes?
 #TWITTER
 SOCIAL_AUTH_TWITTER_KEY = 'hmhyd92hqifYUHchpr8yBA'
 SOCIAL_AUTH_TWITTER_SECRET = 'vPpk6F54ej80ej8jT7LvFp6FcQdUJHg4tHLFMM0FVw'
+# scopes?
 #FACEBOOK
 SOCIAL_AUTH_FACEBOOK_KEY = '1430000390551335'
 SOCIAL_AUTH_FACEBOOK_SECRET = 'eed2aa4e2ded3c4ad4c0ed7516acceae'
@@ -194,7 +201,7 @@ SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 
-#==============================================================================
+    ### ======================================================== ###
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

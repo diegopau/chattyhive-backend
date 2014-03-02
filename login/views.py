@@ -42,18 +42,19 @@ def create_user_view(request):
         form = CreateUserForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            username = email  # TODO temporal solution, should be changed
-            password = uuid4().hex
+            username = email        # TODO temporal solution, should be changed
+            password = uuid4().hex  # this password will be used until the user enter a new one
 
             # Checking already existing user
             try:
                 if ChUser.objects.get(username=username) is not None:
                     return HttpResponse("Username already exists. Please, choose other")
+            # if the user ist not already created, we create a new one
             except ObjectDoesNotExist:
                 manager = ChUserManager()
                 user = manager.create_user(username, email, password)
 
-            # Let's try to create a linked profile here
+            # Profile creation
             profile = ChProfile(user=user)
             profile.save()
 
@@ -74,7 +75,7 @@ def create_user_view(request):
         form = CreateUserForm()
         return render(request, "login/registration.html", {
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
-            'plus_scope' : ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
+            'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
             'form': form
         })
 
@@ -153,7 +154,7 @@ def register_three(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        try:
+        try:    # if the user is created by twitter a valid email must be provided
             user_social = UserSocialAuth.objects.get(user=request.user)
             if user_social.provider == 'twitter':
                 form = RegistrationFormThree()
