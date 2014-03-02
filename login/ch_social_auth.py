@@ -8,9 +8,11 @@ from social.exceptions import AuthException
 from social.pipeline.user import USER_FIELDS
 from core.models import ChProfile
 
+
     ### ======================================================== ###
     ###                    Social Pipeline                       ###
     ### ======================================================== ###
+
 
 # overwrite for the social's create_user default function
 def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
@@ -18,15 +20,18 @@ def create_user(strategy, details, response, uid, user=None, *args, **kwargs):
         return
     # get user fields from "pipeline flow"
     fields = dict((name, kwargs.get(name) or details.get(name))
-                  for name in strategy.setting('USER_FIELDS',
+                  for name in strategy.setting('USER_FIELDS',   # TODO *1
                                                USER_FIELDS))
     if not fields:
         return
 
     username = fields['username']
     email = fields['email']
-    password = uuid4().hex
+    password = uuid4().hex      # aleatory provisional password
+
+    # TODO *1 by creating a new strategy we can avoid this?
     fieldspass = {'username': username, 'email': email, 'password': password}
+
     user = strategy.create_user(**fieldspass)
     profile = ChProfile(user=user)
     profile.save()
@@ -46,12 +51,13 @@ def get_username(strategy, details, user=None, *args, **kwargs):
     if not user:
         email_as_username = strategy.setting('USERNAME_IS_FULL_EMAIL', False)
 
+        # We only use email as username
         if email_as_username and details.get('email'):
             username = details['email']
         else:
             raise AuthException(
                 strategy.backend,
-                'No e-mail given from provider'
+                'No email given from provider'
             )
 
         final_username = username
@@ -62,7 +68,7 @@ def get_username(strategy, details, user=None, *args, **kwargs):
 
 
 def user_details(strategy, details, response, user=None, *args, **kwargs):
-    """Update user details using data from provider."""
+    """Fill user details using data from provider."""
     if user:
         if kwargs.get('is_new'):
             profile = ChProfile.objects.get(user__username=user)
@@ -81,6 +87,7 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
     ###                    Social Backends                       ###
     ### ======================================================== ###
 
+
 # overwrite for the social's GooglePlus backend
 class ChGooglePlusAuth(GooglePlusAuth):
 
@@ -89,23 +96,23 @@ class ChGooglePlusAuth(GooglePlusAuth):
         ('refresh_token', 'refresh_token', True),
         ('expires_in', 'expires'),
         ('access_type', 'access_type', True),
-        ('code', 'code'),
-        ('link', 'link')
+        ('code', 'code'),                       # provisional place
+        ('link', 'link')                        # provisional place
     ]
 
     def get_user_details(self, response):
         """Return user details from Orkut account"""
-        lang_provided=response.get('lang')
-        if lang_provided=='es':             # todo how to get/show language
-            language='es-es'
+        lang_provided = response.get('lang')
+        if lang_provided == 'es':             # todo how to get/show language
+            language = 'es-es'
         else:
-            language='en-gb'
-        return {'username': response.get('email', '').split('@', 1)[0],
-                'email': response.get('email', ''),
+            language = 'en-gb'
+        return {'username': response.get('email', '').split('@', 1)[0],     # First part of the email as profile public
+                'email': response.get('email', ''),                         # name, is not the user username
                 'fullname': response.get('name', ''),
                 'first_name': response.get('given_name', ''),
                 'last_name': response.get('family_name', ''),
-                'sex': response.get('gender',''),
+                'sex': response.get('gender', ''),
                 'location': response.get('locale', 'es'),  # todo how to show location
                 'language': language,
                 'url_picture': response.get('picture')}
@@ -123,19 +130,22 @@ class ChTwitterOAuth(TwitterOAuth):
 
     def get_user_details(self, response):
         """Return user details from Twitter account"""
+        # try to get name and last name from twitter name, not fully accurate
         try:
             first_name, last_name = response['name'].split(' ', 1)
         except:
             first_name = response['name']
             last_name = ''
 
+        # email not provided by twitter, as temporal solution, we create this fake email
+        # user must enter a valid email in the last step of user creation
         email = response['screen_name'] + '@twitter.com'
 
-        lang_provided=response.get('lang')
-        if lang_provided=='es':             # todo how to get/show language
-            language='es-es'
+        lang_provided = response.get('lang')
+        if lang_provided == 'es':             # todo how to get/show language
+            language = 'es-es'
         else:
-            language='en-gb'
+            language = 'en-gb'
 
         return {'username': response['screen_name'],
                 'email': email,  # not supplied?
@@ -143,9 +153,9 @@ class ChTwitterOAuth(TwitterOAuth):
                 'first_name': first_name,
                 'last_name': last_name,
                 'sex': '',
-                'location': response.get('location','es'),
+                'location': response.get('location', 'es'),
                 'language': language,
-                'url_picture': response.get('profile_background_image_url','')}
+                'url_picture': response.get('profile_background_image_url', '')}
 
 
 # overwrite for the social's Facebook backend
@@ -155,18 +165,18 @@ class ChFacebookOAuth2(FacebookOAuth2):
         ('id', 'id'),
         ('expires', 'expires'),
         ('verified', 'verified'),
-        ('link', 'link'),
-        ('birthday', 'birthday')
+        ('link', 'link'),               # provisional place
+        ('birthday', 'birthday')        # provisional place
     ]
 
     def get_user_details(self, response):
         """Return user details from Facebook account"""
 
-        lang_provided=response.get('lang')
-        if lang_provided=='es':             # todo how to get/show language
-            language='es-es'
+        lang_provided = response.get('lang')
+        if lang_provided == 'es':             # todo how to get/show language
+            language = 'es-es'
         else:
-            language='en-gb'
+            language = 'en-gb'
 
         picture = 'http://graph.facebook.com/' + response.get('id') + '/picture'
 
@@ -175,7 +185,7 @@ class ChFacebookOAuth2(FacebookOAuth2):
                 'fullname': response.get('name', ''),
                 'first_name': response.get('first_name', ''),
                 'last_name': response.get('last_name', ''),
-                'sex': response.get('gender',''),
-                'location': response.get('locale',''),
+                'sex': response.get('gender', ''),
+                'location': response.get('locale', ''),
                 'language': language,
                 'url_picture': picture}
