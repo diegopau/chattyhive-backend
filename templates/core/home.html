@@ -28,30 +28,30 @@
     {% endfor %}
 
 
-{#    <script type="text/javascript">#}
-{#        // Buttons behaviour#}
-{#        $(document).ready(function() {#}
-{#            // Button logout behaviour when clicked#}
-{#            $('#btn_logout').on('click', function()#}
-{#            {#}
-{#                var csrftoken = $.cookie('csrftoken');#}
-{#                $.ajax({#}
-{#                    type: "POST",#}
-{#                    url: "/logout/",#}
-{#                    headers: {"X-CSRFToken":csrftoken},#}
-{#                    data: "",#}
-{#                    success: function(newData){#}
-{#                        alert(newData);#}
-{#                        //$.removeCookie(); TODO toggle to remove browser cookies#}
-{#                        location.href="/";#}
-{#                    },#}
-{#                    failure: function(errMsg) {#}
-{#                        alert(errMsg);#}
-{#                    }#}
-{#                });#}
-{#                return false;#}
-{#            });#}
-{#        });#}
-{#    </script>#}
+    <script type="text/javascript">
+        // Buttons behaviour
+        $(document).ready(function() {
+            // Button logout behaviour when clicked
+            $('#btn_logout').on('click', function()
+            {
+                var csrftoken = $.cookie('csrftoken');
+                $.ajax({
+                    type: "POST",
+                    url: "/logout/",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        alert(newData);
+                        //$.removeCookie(); TODO toggle to remove browser cookies
+                        location.href="/";
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
 </body>
 </html>

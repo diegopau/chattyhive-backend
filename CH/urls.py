@@ -17,6 +17,7 @@ urlpatterns = patterns('',
     url(r'^create_user/$', 'login.views.create_user_view', name='create_user'),
     url(r'^create_user/register1/$', 'login.views.register_one', name='register_step_one'),
     url(r'^create_user/register2/$', 'login.views.register_two', name='register_step_two'),
+    url(r'^create_user/register3/$', 'login.views.register_three', name='register_step_three'),
     url(r'^create_hive/$', 'core.views.create_hive', name='create_hive'),
     url(r'^create_hive/create/$', 'core.views.create_hive_created', name='create_hive_created'),
     url(r'^home/$', 'core.views.home', name='home'),
@@ -37,5 +38,9 @@ urlpatterns = patterns('',
     url(r'^android.register/', 'chat_androidAPI.views.register', name='register')
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
 
-    # url('', include('social.apps.django_app.urls', namespace='social'))
+    ### ======================================================== ###
+    ###                   Social_auth - URLS                     ###
+    ### ======================================================== ###
+
+    url('', include('social.apps.django_app.urls', namespace='social'))
 )

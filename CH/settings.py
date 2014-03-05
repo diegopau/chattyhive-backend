@@ -121,6 +121,8 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social.apps.django_app.default',  #social_auth app
+    'chat_app',
     'chat_androidAPI',
     'core',
     'login',
@@ -132,19 +134,21 @@ INSTALLED_APPS = (
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 
-#==============================================================================
+    ### ======================================================== ###
+    ###                       Social Auth                        ###
+    ### ======================================================== ###
+
 AUTHENTICATION_BACKENDS = (
-    'social.backends.google.GooglePlusAuth',
-    'social.backends.twitter.TwitterOAuth',
-    'social.backends.facebook.FacebookOAuth2',
+    'login.ch_social_auth.ChGooglePlusAuth',
+    'login.ch_social_auth.ChTwitterOAuth',
+    'login.ch_social_auth.ChFacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'social.apps.django_app.context_processors.backends',
     'social.apps.django_app.context_processors.login_redirect',
-    'django.contrib.auth.context_processors.auth',
-    'django.core.context_processors.static',
+    'django.contrib.auth.context_processors.auth'
 )
 
 SOCIAL_AUTH_PIPELINE = (
@@ -152,25 +156,47 @@ SOCIAL_AUTH_PIPELINE = (
     'social.pipeline.social_auth.social_uid',
     'social.pipeline.social_auth.auth_allowed',
     'social.pipeline.social_auth.social_user',
-    # 'social.pipeline.social_auth.associate_by_email',
-    'social.pipeline.user.get_username',
-    'social.pipeline.user.create_user',
+    'login.ch_social_auth.get_username',
+    'login.ch_social_auth.create_user',
     'social.pipeline.social_auth.associate_user',
-    # 'social.pipeline.social_auth.load_extra_data',
-    'social.pipeline.user.user_details',
+    'social.pipeline.social_auth.load_extra_data',
+    'login.ch_social_auth.user_details'
 )
 
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/logged-in/'
-SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'
-SOCIAL_AUTH_LOGIN_URL = '/login-url/'
-SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/new-users-redirect-url/'
-SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/new-association-redirect-url/'
-SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'
-SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'
-SOCIAL_AUTH_SANITIZE_REDIRECTS = False
-SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
-# SOCIAL_AUTH_STRATEGY = 'social.strategies.django_strategy.DjangoStrategy'
-# SOCIAL_AUTH_STORAGE = 'social.apps.django_app.default.models.DjangoStorage'
+# this is to disconnect a user in the system from the selected social provider
+# not used for now.
+SOCIAL_AUTH_DISCONNECT_PIPELINE = (
+    'social.pipeline.disconnect.allowed_to_disconnect',
+    'social.pipeline.disconnect.get_entries',
+    'social.pipeline.disconnect.revoke_tokens',
+    'social.pipeline.disconnect.disconnect',
+    # 'logout_function' must be implemented
+)
+
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/home/'
+SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'   # todo create this page
+SOCIAL_AUTH_LOGIN_URL = '/login-url/'           # todo check if this is necessary
+SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/create_user/register1/'
+SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/home/'
+SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/' # not used
+SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'   # not used
+
+SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
+SOCIAL_AUTH_SANITIZE_REDIRECTS = True
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False   # change when https is implemented
+
+#GOOGLE
+SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
+# scopes?
+#TWITTER
+SOCIAL_AUTH_TWITTER_KEY = 'hmhyd92hqifYUHchpr8yBA'
+SOCIAL_AUTH_TWITTER_SECRET = 'vPpk6F54ej80ej8jT7LvFp6FcQdUJHg4tHLFMM0FVw'
+# scopes?
+#FACEBOOK
+SOCIAL_AUTH_FACEBOOK_KEY = '1430000390551335'
+SOCIAL_AUTH_FACEBOOK_SECRET = 'eed2aa4e2ded3c4ad4c0ed7516acceae'
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_birthday', 'user_location']
 
 LOGIN_URL = '/'
 
@@ -178,10 +204,7 @@ SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 
-SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
-
-#==============================================================================
+    ### ======================================================== ###
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

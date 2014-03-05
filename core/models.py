@@ -20,7 +20,7 @@ class ChUserManager(UserManager):
         :return: Normal user
         """
         user = ChUser(username=username)
-        user.email = email
+        # user.email = email  # TODO check if email needed
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -48,7 +48,7 @@ class ChUser(AbstractUser):
     #****************Info Fields****************#
     # first_name = AbstractUser
     # last_name = AbstractUser
-    birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
+    # birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # sex =
     # language =
     # timezone =
@@ -97,6 +97,7 @@ class ChProfile(models.Model):
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
     show_location = models.BooleanField(default=False)
+    # todo image fields
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
