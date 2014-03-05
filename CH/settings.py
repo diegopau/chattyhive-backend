@@ -121,8 +121,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'social.apps.django_app.default',  #social_auth app
-    'chat_app',
+    'social.apps.django_app.default',  # social_auth app
     'chat_androidAPI',
     'core',
     'login',

@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from distutils.command import register
-
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager

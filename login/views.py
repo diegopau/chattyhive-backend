@@ -9,7 +9,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from social.backends.google import GooglePlusAuth
-from django.contrib.auth.decorators import login_required
 from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
 

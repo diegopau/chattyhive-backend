@@ -1,8 +1,7 @@
 # -*- encoding: utf-8 -*-
-from core.models import MsgForm
-
 __author__ = 'lorenzo'
 
+from core.models import MsgForm
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from core.models import *
