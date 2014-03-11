@@ -219,14 +219,25 @@ class ChChat(models.Model):
 
 
 class ChMessage(models.Model):
+
+    CONTENTS = (
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('url', 'URL'),
+        ('file', 'File')
+    )
+
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
-    hive = models.ForeignKey(ChHive, null=True, blank=True)
     chat = models.ForeignKey(ChChat, null=True, blank=True)
 
     # Attributes of the message
-    content = models.CharField(max_length=300)
+    content_type = models.CharField(max_length=20, choices=CONTENTS)
     date = models.DateTimeField(auto_now=True)
+
+    # Content of the message
+    content = models.TextField(max_length=2048)
 
     def __unicode__(self):
         return self.profile.first_name + " said: " + self.content
