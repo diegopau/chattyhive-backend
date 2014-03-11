@@ -1,4 +1,5 @@
-import django, json
+import django
+import json
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 from core.models import ChUser, ChProfile, ChUserManager
@@ -98,7 +99,7 @@ def email_check(request):
 
     else:
         status = "INVALID_METHOD"
-        return HttpResponse({'status': status})
+        return HttpResponse(json.dumps({'status': status}))
 
 
 def register(request):
@@ -130,7 +131,7 @@ def register(request):
             # Checking already existing user
             if ChUser.objects.get(username=username) is not None:
                 status = "USER_ALREADY_EXISTS"
-                return HttpResponse({"status": status})
+                return HttpResponse(json.dumps({"status": status}))
 
         except ObjectDoesNotExist:
 
@@ -154,13 +155,24 @@ def register(request):
             profile.set_location(location)
             profile.save()
 
+            # Formatting info for sending in json
+            profile_json = json.dumps({"set_public_name": public_name,
+                                       "set_first_name": first_name,
+                                       "set_last_name": last_name,
+                                       "set_sex": sex,
+                                       "set_language": language,
+                                       "set_private_show_age": private_show_age,
+                                       "set_public_show_age": public_show_age,
+                                       "set_show_location": show_location,
+                                       "set_location": location})
+
             # Sending info to Android device
             status = "PROFILE_CREATED"
-            return HttpResponse({
+            return HttpResponse(json.dumps({
                 'status': status,   # Returning OK status
-                'profile': profile  # Returning complete Profile
-            })
+                'profile': profile_json  # Returning complete Profile
+            }))
 
     else:
         status = "INVALID_METHOD"
-        return HttpResponse({'status': status})
+        return HttpResponse(json.dumps({'status': status}))
