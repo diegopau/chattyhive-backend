@@ -163,7 +163,7 @@ class ChProfile(models.Model):
         """
         self.show_location = boolean_show
 
-    def __unicode__(self):
+    def __str__(self):
         return u"%s - Personal Profile" % self.user
 
 
@@ -181,7 +181,7 @@ class ChHive(models.Model):
     category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     creation_date = models.DateField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return u"%s" % self.name
 
 
@@ -228,7 +228,7 @@ class ChMessage(models.Model):
     content = models.CharField(max_length=300)
     date = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.profile.first_name + " said: " + self.content
 
 
@@ -266,7 +266,7 @@ class ChSubscription(models.Model):
     # def get_verbose_name(self):
         # return object._meta.verbose_name
 
-    def __unicode__(self):
+    def __str__(self):
         return self.profile.first_name + " links with"
 
 

@@ -208,7 +208,7 @@ def profile(request, private):
         try:
             user = ChUser.objects.get(username=username)
             profile = ChProfile.objects.get(user=user)
-        except ChProfile.DoesNotExist, ChUser.DoesNotExist:
+        except (ChProfile.DoesNotExist, ChUser.DoesNotExist):
             profile, user = None
         if private == "private":
             data = {"first_name": profile.first_name, "surname": profile.last_name, "language": profile.language,
