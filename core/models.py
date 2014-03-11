@@ -214,16 +214,17 @@ class ChChat(models.Model):
         subscription.set_chat(self)
         return
 
-    # def __unicode__(self):
-    #     return self.user1.username + " - Chats with - " + self.user2.username
+        # def __unicode__(self):
+        #     return self.user1.username + " - Chats with - " + self.user2.username
 
 
 class ChMessage(models.Model):
-
     CONTENTS = (
         ('text', 'Text'),
         ('image', 'Image'),
         ('video', 'Video'),
+        ('audio', 'Audio'),
+        ('animation', 'Animation'),
         ('url', 'URL'),
         ('file', 'File')
     )
@@ -241,6 +242,11 @@ class ChMessage(models.Model):
 
     def __unicode__(self):
         return self.profile.first_name + " said: " + self.content
+
+
+class ChAnswer(ChMessage):
+    # Relation to the message.
+    message = models.ForeignKey(ChMessage, related_name='response')
 
 
 class ChSubscription(models.Model):
@@ -273,8 +279,8 @@ class ChSubscription(models.Model):
         self.hive = hive
         return
 
-    # @register.simple_tag
-    # def get_verbose_name(self):
+        # @register.simple_tag
+        # def get_verbose_name(self):
         # return object._meta.verbose_name
 
     def __unicode__(self):

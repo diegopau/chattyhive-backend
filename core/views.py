@@ -257,6 +257,12 @@ def chat(request, hive):
         # print(channel + " aqui se envia")  # PRINT
         p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
         # request.session.set_expiry(300)
+        profile = ChProfile.objects.get(user=user)
+        chat = ChChat.objects.get(hive=hive.replace("_", " "))
+        message = ChMessage(profile=profile, chat=chat)
+        message.content_type = 'text'
+        message.content = msg
+        message.save()
         return HttpResponse("Server Ok")
     else:
 
