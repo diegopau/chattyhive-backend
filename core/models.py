@@ -235,7 +235,7 @@ class ChMessage(models.Model):
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
-    date = models.DateTimeField(auto_now=True)
+    date = models.DateTimeField(auto_now_add=True)
 
     # Content of the message
     content = models.TextField(max_length=2048)

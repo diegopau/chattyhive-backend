@@ -13,7 +13,11 @@
     Welcome, {{ user }}!
     <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
     Hive: {{ hive }}<br />
-    <p id="chat_field"></p>
+    <p id="chat_field">
+        {% for message in messages %}
+            <br />{{ message.profile.user.username }} said: {{ message.content }}&nbsp;&nbsp;&nbsp;&nbsp; on: {{ message.date.timetz }}
+        {% endfor %}
+    </p>
     <label for="msg_text"></label><input id="msg_text" type="text">
     <button type="button" id="btn_send">Send</button>
     <p id="time"></p>
@@ -44,11 +48,11 @@
             chat = $('#chat_field').html();
             num_rep ++;
             if (num_rep > 25) {
-                $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp;  on: " + timestamp);
+                $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
                 $('#time').text("Last message on " + timestamp + " &nbsp;&mbsp;&nbsp;&nbsp;&nbsp; Received on server on " + timestamp_server);
                 num_rep = 0;
             } else {
-                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp;   on: " + timestamp);
+                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
                 $('#time').text("Last message: " + timestamp + "   Received on server on " + timestamp_server);
             }
         }

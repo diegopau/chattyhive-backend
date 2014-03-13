@@ -234,7 +234,9 @@ def chat(request, hive):
     :return: Chat web page which allows to chat with users who joined the same channel
     """
     # Variable declaration
-    user = request.user.get_username()
+    username = request.user.get_username()
+    user = ChUser.objects.get(username=username)
+    hive_object = ChHive.objects.get(name=hive.replace("_", " "))
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
@@ -255,10 +257,10 @@ def chat(request, hive):
             secret=secret
         )
         # print(channel + " aqui se envia")  # PRINT
-        p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
+        p[channel].trigger(event, {"username": username, "message": msg, "timestamp": timestamp})
         # request.session.set_expiry(300)
         profile = ChProfile.objects.get(user=user)
-        chat = ChChat.objects.get(hive=hive.replace("_", " "))
+        chat = ChChat.objects.get(hive=hive_object)
         message = ChMessage(profile=profile, chat=chat)
         message.content_type = 'text'
         message.content = msg
@@ -267,8 +269,11 @@ def chat(request, hive):
     else:
 
         if channel != 'public_test':
-            channel = hive2 + '_public'
-        # print(channel)  # PRINT
+            channel = hive2
+
+        chat = ChChat.objects.get(hive=hive_object)
+        messages = ChMessage.objects.filter(chat=chat)
+
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user,
@@ -278,4 +283,5 @@ def chat(request, hive):
             'channel': channel,
             'event': event,
             'form': form,
+            "messages": messages,
         })
