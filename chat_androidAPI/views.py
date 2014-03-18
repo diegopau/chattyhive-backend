@@ -176,3 +176,5 @@ def register(request):
     else:
         status = "INVALID_METHOD"
         return HttpResponse(json.dumps({'status': status}))
+
+
