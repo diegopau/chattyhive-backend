@@ -25,6 +25,8 @@ urlpatterns = patterns('',
     url(ur'^join/(?P<hive_name>[-a-zA-Z0-9ñÑáéíóú¿¡!?_ ]+)/', 'core.views.join', name='join'),
     url(ur'^leave/(?P<hive_name>[-a-zA-Z0-9ñÑáéíóú¿¡!?_ ]+)/', 'core.views.leave', name='leave'),
     url(ur'^chat/(?P<hive>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/', 'core.views.chat', name='chat_hive'),
+    url(ur'^messages/(?P<chat_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<last_message>[0-9]+)-(?P<interval>[0-9]+)/',
+                                                                        'core.views.get_messages', name='get_messages'),
     url(ur'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
 

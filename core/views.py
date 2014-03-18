@@ -1,9 +1,11 @@
 # -*- encoding: utf-8 -*-
+import json
+
 __author__ = 'lorenzo'
 
 from core.models import MsgForm
 from django.shortcuts import render
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from django.contrib.auth.decorators import login_required
 import pusher
@@ -272,7 +274,7 @@ def chat(request, hive):
             channel = hive2
 
         chat = ChChat.objects.get(hive=hive_object)
-        messages = ChMessage.objects.filter(chat=chat)
+        messages = ChMessage.objects.filter(chat=chat).order_by('date')
 
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
@@ -285,3 +287,26 @@ def chat(request, hive):
             'form': form,
             "messages": messages,
         })
+
+
+@login_required
+def get_messages(request, chat_name, last_message, interval):   # todo change hive_name for chat_name
+    """
+    :param request:
+    :param chat_name: Name of the hive, which will be used for the channel name in Pusher
+    :param last_message: Name of the hive, which will be used for the channel name in Pusher
+    :param interval: Name of the hive, which will be used for the channel name in Pusher
+    :return: *interval* messages until *last_messages*
+    """
+    # Variable declaration
+    username = request.user.get_username()
+    hive_object = ChHive.objects.get(name=chat_name.replace("_", " "))
+    # user = ChUser.objects.get(username=username)
+
+    # GET vs POST
+    if request.method == 'GET':
+        chat = ChChat.objects.get(hive=hive_object)
+        messages = ChMessage.objects.filter(chat=chat).order_by('id')[int(last_message):int(last_message)+int(interval)]
+        return HttpResponse(messages)
+    else:
+        raise Http404
