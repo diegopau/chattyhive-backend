@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import json
+from tokenize import String
 
 __author__ = 'lorenzo'
 
@@ -175,7 +176,7 @@ def home(request):
                     hives.append(subscription.hive)
         except ChSubscription.DoesNotExist:
             subscriptions, subscription = None
-        # print(subscriptions)
+            # print(subscriptions)
         return render(request, "core/home.html", {
             'hives': hives
         })
@@ -274,7 +275,7 @@ def chat(request, hive):
             channel = hive2
 
         chat = ChChat.objects.get(hive=hive_object)
-        messages = ChMessage.objects.filter(chat=chat).order_by('date')
+        messages = ChMessage.objects.filter(chat=chat).order_by('id')[0:15]
 
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
@@ -285,7 +286,9 @@ def chat(request, hive):
             'channel': channel,
             'event': event,
             'form': form,
-            "messages": messages,
+            'messages': messages,
+            'oldest': messages[(len(messages)-1)].id,
+            'last': messages[0].id,
         })
 
 
@@ -299,14 +302,19 @@ def get_messages(request, chat_name, last_message, interval):   # todo change hi
     :return: *interval* messages until *last_messages*
     """
     # Variable declaration
-    username = request.user.get_username()
+    username = request.user.get_username()      #todo check permisions for user
     hive_object = ChHive.objects.get(name=chat_name.replace("_", " "))
     # user = ChUser.objects.get(username=username)
 
     # GET vs POST
     if request.method == 'GET':
         chat = ChChat.objects.get(hive=hive_object)
-        messages = ChMessage.objects.filter(chat=chat).order_by('id')[int(last_message):int(last_message)+int(interval)]
-        return HttpResponse(messages)
+        messages = ChMessage.objects.filter(chat=chat, id__gt=int(last_message)).order_by('id')[0:int(interval)]
+        messages_row = []
+        for message in messages:
+            time_string = '%s:%s:%s' % (message.date.hour, message.date.minute, message.date.second)
+            messages_row.append({"username": message.profile.user.username, "message": message.content,
+                                "timestamp": time_string, "id": message.id})
+        return HttpResponse(json.dumps(messages_row))
     else:
         raise Http404

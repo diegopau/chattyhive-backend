@@ -38,6 +38,8 @@ urlpatterns = patterns('',
     url(r'^android.chat/', 'chat_androidAPI.views.chat', name='chat'),
     url(r'^android.email_check/', 'chat_androidAPI.views.email_check', name='email_check'),
     url(r'^android.register/', 'chat_androidAPI.views.register', name='register'),
+    url(ur'^android.messages/(?P<chat_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<last_message>[0-9]+)-(?P<interval>[0-9]+)/',
+                                                                        'core.views.get_messages', name='get_messages'),
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
 
     ### ======================================================== ###
