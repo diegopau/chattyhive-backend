@@ -273,3 +273,17 @@ def chat(request, hive):
             'event': event,
             'form': form,
         })
+
+
+def android_test(request):
+    return render(request, "core/android_test.html")
+
+
+def test(request):
+    if request.method == 'POST':
+        data = request.POST.items()
+        headers = request.POST.get("head")
+    if request.method == 'GET':
+        data = request.GET.items()
+        headers = request.GET.get("head")
+    return HttpResponse(headers)

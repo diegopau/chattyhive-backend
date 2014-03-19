@@ -27,6 +27,8 @@ urlpatterns = patterns('',
     url(r'^chat/(?P<hive>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/', 'core.views.chat', name='chat_hive'),
     url(r'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
+    url(r'^android_test/', 'core.views.android_test', name='android_test'),
+    url(r'^test/', 'core.views.test', name='test'),
 
     ### ======================================================== ###
     ###                     Android - URLS                       ###
