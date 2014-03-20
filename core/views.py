@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
-import json
-from tokenize import String
+from django.utils import timezone
 
 __author__ = 'lorenzo'
 
@@ -10,6 +9,7 @@ from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from django.contrib.auth.decorators import login_required
 import pusher
+import json
 
 
 @login_required
@@ -265,6 +265,7 @@ def chat(request, hive):
         profile = ChProfile.objects.get(user=user)
         chat = ChChat.objects.get(hive=hive_object)
         message = ChMessage(profile=profile, chat=chat)
+        message.date = timezone.now()
         message.content_type = 'text'
         message.content = msg
         message.save()
@@ -311,7 +312,9 @@ def get_messages(request, chat_name, init, interval):   # todo change hive_name 
             raise Http404
         messages_row = []
         for message in messages:
-            time_string = '%s:%s:%s' % (message.date.hour, message.date.minute, message.date.second)
+            time_string = '%s:%s:%s' % (message.date.astimezone().hour,
+                                        message.date.astimezone().minute,
+                                        message.date.astimezone().second)
             messages_row.append({"username": message.profile.user.username, "message": message.content,
                                 "timestamp": time_string, "id": message.id})
         return HttpResponse(json.dumps(messages_row))
