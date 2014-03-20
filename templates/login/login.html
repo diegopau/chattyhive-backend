@@ -4,10 +4,16 @@
     <title>USUARIO</title>
 </head>
 <body>
-    <form action="/" method="post">{% csrf_token %}
-        {{ form.as_p }}
-    <input type="submit" value="Submit" />
-    </form>
-<a href="/create_user/">Create new user</a>
+    <div align="right">
+        <a href="/admin">Admin site</a><br />
+    </div>
+    <div align="center">
+        <br /><h2>Welcome to ChattyHive!</h2><br />
+        <form action="/" method="post">{% csrf_token %}
+            {{ form.as_p }}
+        <input type="submit" value="Submit" />
+        </form>
+        <br /><a href="/create_user/">Create new user</a>
+    </div>
 </body>
 </html>

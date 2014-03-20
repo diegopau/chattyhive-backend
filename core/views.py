@@ -211,7 +211,7 @@ def profile(request, private):
         try:
             user = ChUser.objects.get(username=username)
             profile = ChProfile.objects.get(user=user)
-        except ChProfile.DoesNotExist, ChUser.DoesNotExist:
+        except (ChProfile.DoesNotExist, ChUser.DoesNotExist):
             profile, user = None
         if private == "private":
             data = {"first_name": profile.first_name, "surname": profile.last_name, "language": profile.language,
@@ -318,3 +318,17 @@ def get_messages(request, chat_name, last_message, interval):   # todo change hi
         return HttpResponse(json.dumps(messages_row))
     else:
         raise Http404
+
+
+def android_test(request):
+    return render(request, "core/android_test.html")
+
+
+def test(request):
+    if request.method == 'POST':
+        data = request.POST.items()
+        headers = request.POST.get("head")
+    if request.method == 'GET':
+        data = request.GET.items()
+        headers = request.GET.get("head")
+    return HttpResponse(headers)
