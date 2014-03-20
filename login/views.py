@@ -11,6 +11,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from social.backends.google import GooglePlusAuth
 from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
+from django.core.mail import send_mail
+from .confirmation_email import *
 
 
 def login_view(request):
@@ -146,6 +148,8 @@ def register_three(request):
                 user.username = username
                 user.set_password(password)
                 user.save()
+                # Send confirmation email here
+                send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
             else:
                 return HttpResponse("Passwords don't match")
 
