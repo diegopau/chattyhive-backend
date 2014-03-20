@@ -276,6 +276,13 @@ def chat(request, hive):
 
         chat = ChChat.objects.get(hive=hive_object)
         messages = ChMessage.objects.filter(chat=chat).order_by('id')[0:15]
+        if len(messages) > 0:
+            oldest = messages[0].id
+            last = messages[len(messages)-1].id
+        else:
+            oldest = 0
+            last = 0
+
 
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
@@ -287,8 +294,8 @@ def chat(request, hive):
             'event': event,
             'form': form,
             'messages': messages,
-            'oldest': messages[(len(messages)-1)].id,
-            'last': messages[0].id,
+            'oldest': oldest,
+            'last': last,
         })
 
 

@@ -45,6 +45,7 @@
         channel.bind(event_name, function(data) {
 
             if(data.username!=user) write(data.username, data.message, data.timestamp, data.timestamp_server);
+            else $('#last').html(message.id)
         });
 
         // AJAX method to write chat answers on screen
@@ -64,12 +65,12 @@
         // AJAX method to reload chat answers on screen
         function reload(messages) {
             message = messages[0]
+            $('#oldest').html(message.id)
             $('#chat_field').html(message.username + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
             for(i = 1; i < messages.length; i++){
                 message = messages[i]
                 $('#chat_field').html($('#chat_field').html() + '<br/>' + message.username + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
             }
-            $('#oldest').html(message.id)
         }
 
         // Buttons behaviour

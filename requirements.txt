@@ -12,5 +12,5 @@ python-social-auth==0.1.22
 python3-openid==3.0.3
 requests==2.2.1
 requests-oauthlib==0.4.0
-six==1.5.2
+six==1.6.1
 static==1.0.2
