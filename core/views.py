@@ -274,16 +274,6 @@ def chat(request, hive):
         if channel != 'public_test':
             channel = hive2
 
-        chat = ChChat.objects.get(hive=hive_object)
-        messages = ChMessage.objects.filter(chat=chat).order_by('id')[0:15]
-        if len(messages) > 0:
-            oldest = messages[0].id
-            last = messages[len(messages)-1].id
-        else:
-            oldest = 0
-            last = 0
-
-
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user,
@@ -293,14 +283,11 @@ def chat(request, hive):
             'channel': channel,
             'event': event,
             'form': form,
-            'messages': messages,
-            'oldest': oldest,
-            'last': last,
         })
 
 
 @login_required
-def get_messages(request, chat_name, last_message, interval):   # todo change hive_name for chat_name
+def get_messages(request, chat_name, init, interval):   # todo change hive_name for chat_name
     """
     :param request:
     :param chat_name: Name of the hive, which will be used for the channel name in Pusher
@@ -316,7 +303,12 @@ def get_messages(request, chat_name, last_message, interval):   # todo change hi
     # GET vs POST
     if request.method == 'GET':
         chat = ChChat.objects.get(hive=hive_object)
-        messages = ChMessage.objects.filter(chat=chat, id__gt=int(last_message)).order_by('id')[0:int(interval)]
+        if init == 'last':
+            messages = ChMessage.objects.filter(chat=chat).order_by('-id')[0:int(interval)]
+        elif init.isnumeric():
+            messages = ChMessage.objects.filter(chat=chat, id__lte=int(init)).order_by('-id')[0:int(interval)]
+        else:
+            raise Http404
         messages_row = []
         for message in messages:
             time_string = '%s:%s:%s' % (message.date.hour, message.date.minute, message.date.second)
