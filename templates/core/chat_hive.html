@@ -13,7 +13,15 @@
     Welcome, {{ user }}!
     <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
     Hive: {{ hive }}<br />
-    <p id="chat_field"></p>
+    <br /><br /><button type="button" id="btn_load" style="text-align: right">Load previous messages</button>
+    <p id="chat_field">
+        {% for message in messages %}
+            {{ message.profile.user.username }} said: {{ message.content }}&nbsp;&nbsp;&nbsp;&nbsp; on: {{ message.date.timetz }}<br />
+        {% endfor %}
+    </p>
+    <button type="button" id="btn_recent" style="text-align: right">Load last messages</button><br /><br /><br />
+    <p id="oldest" hidden="true">{{ oldest }}</p>
+    <p id="last" hidden="true">{{ last }}</p>
     <label for="msg_text"></label><input id="msg_text" type="text">
     <button type="button" id="btn_send">Send</button>
     <p id="time"></p>
@@ -44,13 +52,24 @@
             chat = $('#chat_field').html();
             num_rep ++;
             if (num_rep > 25) {
-                $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp;  on: " + timestamp);
+                $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
                 $('#time').text("Last message on " + timestamp + " &nbsp;&mbsp;&nbsp;&nbsp;&nbsp; Received on server on " + timestamp_server);
                 num_rep = 0;
             } else {
-                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp;   on: " + timestamp);
+                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
                 $('#time').text("Last message: " + timestamp + "   Received on server on " + timestamp_server);
             }
+        }
+
+        // AJAX method to reload chat answers on screen
+        function reload(messages) {
+            message = messages[0]
+            $('#chat_field').html(message.username + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
+            for(i = 1; i < messages.length; i++){
+                message = messages[i]
+                $('#chat_field').html($('#chat_field').html() + '<br/>' + message.username + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
+            }
+            $('#oldest').html(message.id)
         }
 
         // Buttons behaviour
@@ -98,6 +117,48 @@
                         alert(newData);
                         //$.removeCookie(); TODO toggle to remove browser cookies
                         location.href="/";
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+
+            // Button load behaviour when clicked
+            $('#btn_load').on('click', function()
+            {
+                var csrftoken = $.cookie('csrftoken');
+                oldest = $('#oldest').html();
+                $.ajax({
+                    type: "GET",
+                    url: "/messages/" + channel_name + "/" + oldest + "-15",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        messages = JSON.parse(newData)
+                        reload(messages)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+
+            // Button recent behaviour when clicked
+            $('#btn_recent').on('click', function()
+            {
+                var csrftoken = $.cookie('csrftoken');
+                last = $('#last').html();
+                $.ajax({
+                    type: "GET",
+                    url: "/messages/" + channel_name + "/" + last + "-15",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        messages = JSON.parse(newData)
+                        reload(messages)
                     },
                     failure: function(errMsg) {
                         alert(errMsg);

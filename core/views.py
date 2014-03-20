@@ -1,9 +1,12 @@
 # -*- encoding: utf-8 -*-
+import json
+from tokenize import String
+
 __author__ = 'lorenzo'
 
 from core.models import MsgForm
 from django.shortcuts import render
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from django.contrib.auth.decorators import login_required
 import pusher
@@ -173,7 +176,7 @@ def home(request):
                     hives.append(subscription.hive)
         except ChSubscription.DoesNotExist:
             subscriptions, subscription = None
-        # print(subscriptions)
+            # print(subscriptions)
         return render(request, "core/home.html", {
             'hives': hives
         })
@@ -234,7 +237,9 @@ def chat(request, hive):
     :return: Chat web page which allows to chat with users who joined the same channel
     """
     # Variable declaration
-    user = request.user.get_username()
+    username = request.user.get_username()
+    user = ChUser.objects.get(username=username)
+    hive_object = ChHive.objects.get(name=hive.replace("_", " "))
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
@@ -255,14 +260,23 @@ def chat(request, hive):
             secret=secret
         )
         # print(channel + " aqui se envia")  # PRINT
-        p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
+        p[channel].trigger(event, {"username": username, "message": msg, "timestamp": timestamp})
         # request.session.set_expiry(300)
+        profile = ChProfile.objects.get(user=user)
+        chat = ChChat.objects.get(hive=hive_object)
+        message = ChMessage(profile=profile, chat=chat)
+        message.content_type = 'text'
+        message.content = msg
+        message.save()
         return HttpResponse("Server Ok")
     else:
 
         if channel != 'public_test':
-            channel = hive2 + '_public'
-        # print(channel)  # PRINT
+            channel = hive2
+
+        chat = ChChat.objects.get(hive=hive_object)
+        messages = ChMessage.objects.filter(chat=chat).order_by('id')[0:15]
+
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user,
@@ -272,4 +286,35 @@ def chat(request, hive):
             'channel': channel,
             'event': event,
             'form': form,
+            'messages': messages,
+            'oldest': messages[(len(messages)-1)].id,
+            'last': messages[0].id,
         })
+
+
+@login_required
+def get_messages(request, chat_name, last_message, interval):   # todo change hive_name for chat_name
+    """
+    :param request:
+    :param chat_name: Name of the hive, which will be used for the channel name in Pusher
+    :param last_message: Name of the hive, which will be used for the channel name in Pusher
+    :param interval: Name of the hive, which will be used for the channel name in Pusher
+    :return: *interval* messages until *last_messages*
+    """
+    # Variable declaration
+    username = request.user.get_username()      #todo check permisions for user
+    hive_object = ChHive.objects.get(name=chat_name.replace("_", " "))
+    # user = ChUser.objects.get(username=username)
+
+    # GET vs POST
+    if request.method == 'GET':
+        chat = ChChat.objects.get(hive=hive_object)
+        messages = ChMessage.objects.filter(chat=chat, id__gt=int(last_message)).order_by('id')[0:int(interval)]
+        messages_row = []
+        for message in messages:
+            time_string = '%s:%s:%s' % (message.date.hour, message.date.minute, message.date.second)
+            messages_row.append({"username": message.profile.user.username, "message": message.content,
+                                "timestamp": time_string, "id": message.id})
+        return HttpResponse(json.dumps(messages_row))
+    else:
+        raise Http404

@@ -214,22 +214,39 @@ class ChChat(models.Model):
         subscription.set_chat(self)
         return
 
-    # def __unicode__(self):
-    #     return self.user1.username + " - Chats with - " + self.user2.username
+        # def __unicode__(self):
+        #     return self.user1.username + " - Chats with - " + self.user2.username
 
 
 class ChMessage(models.Model):
+    CONTENTS = (
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('audio', 'Audio'),
+        ('animation', 'Animation'),
+        ('url', 'URL'),
+        ('file', 'File')
+    )
+
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
-    hive = models.ForeignKey(ChHive, null=True, blank=True)
     chat = models.ForeignKey(ChChat, null=True, blank=True)
 
     # Attributes of the message
-    content = models.CharField(max_length=300)
-    date = models.DateTimeField(auto_now=True)
+    content_type = models.CharField(max_length=20, choices=CONTENTS)
+    date = models.DateTimeField(auto_now_add=True)
+
+    # Content of the message
+    content = models.TextField(max_length=2048)
 
     def __unicode__(self):
         return self.profile.first_name + " said: " + self.content
+
+
+class ChAnswer(ChMessage):
+    # Relation to the message.
+    message = models.ForeignKey(ChMessage, related_name='response')
 
 
 class ChSubscription(models.Model):
@@ -262,8 +279,8 @@ class ChSubscription(models.Model):
         self.hive = hive
         return
 
-    # @register.simple_tag
-    # def get_verbose_name(self):
+        # @register.simple_tag
+        # def get_verbose_name(self):
         # return object._meta.verbose_name
 
     def __unicode__(self):
