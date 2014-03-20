@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 
 __author__ = 'lorenzo'
@@ -312,12 +313,9 @@ def get_messages(request, chat_name, init, interval):   # todo change hive_name 
             raise Http404
         messages_row = []
         for message in messages:
-            time_string = '%s:%s:%s' % (message.date.astimezone().hour,
-                                        message.date.astimezone().minute,
-                                        message.date.astimezone().second)
             messages_row.append({"username": message.profile.user.username, "message": message.content,
-                                "timestamp": time_string, "id": message.id})
-        return HttpResponse(json.dumps(messages_row))
+                                "timestamp": message.date.astimezone(), "id": message.id})
+        return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
     else:
         raise Http404
 
