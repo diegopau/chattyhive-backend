@@ -178,3 +178,12 @@ def register(request):
         return HttpResponse(json.dumps({'status': status}))
 
 
+def start_session(request):
+    if request.method == 'GET':
+        csrf = django.middleware.csrf.get_token(request)
+        return HttpResponse(json.dumps({'csrf': csrf}),
+                            mimetype="application/json")
+    else:
+        status = "ERROR"
+        # print(status)  # PRINT
+        return HttpResponse(json.dumps({"status": status}), mimetype="application/json")

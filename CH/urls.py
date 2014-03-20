@@ -36,6 +36,7 @@ urlpatterns = patterns('',
     ###                     Android - URLS                       ###
     ### ======================================================== ###
 
+    url(r'^android.start_session/', 'chat_androidAPI.views.start_session', name='start_session'),
     url(r'^android.login/(?P<user>[a-zA-Z]+)/', 'chat_androidAPI.views.login', name='login'),
     url(r'^android.chat/', 'chat_androidAPI.views.chat', name='chat'),
     url(r'^android.email_check/', 'chat_androidAPI.views.email_check', name='email_check'),
