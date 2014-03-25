@@ -13,6 +13,7 @@ from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 
 from email_confirmation.signals import email_confirmed, email_confirmation_sent
+# from core.models import ChUser
 
 # this code based in-part on django-registration
 
@@ -45,7 +46,7 @@ class EmailAddressManager(models.Manager):
 
 class EmailAddress(models.Model):
     
-    user = models.ForeignKey(ChUser)
+    user = models.ForeignKey('core.ChUser')
     email = models.EmailField()
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)

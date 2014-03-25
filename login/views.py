@@ -149,6 +149,12 @@ def register_three(request):
                 user.username = username
                 user.set_password(password)
                 user.save()
+
+                mail_manager = EmailAddressManager()
+                user2 = ChUser.objects.get(username=username)
+                # print(user2)  # PRINT
+                email_address = mail_manager.add_email(user=user2, email=email)
+
                 # Send confirmation email here
                 # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
 

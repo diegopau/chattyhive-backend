@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from emailconfirmation.models import EmailAddress, EmailConfirmation
+from email_confirmation.models import EmailAddress, EmailConfirmation
 
 
 admin.site.register(EmailAddress)
