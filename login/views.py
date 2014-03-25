@@ -12,7 +12,7 @@ from social.backends.google import GooglePlusAuth
 from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
 from django.core.mail import send_mail
-from .confirmation_email import *
+from email_confirmation import *
 
 
 def login_view(request):
@@ -138,6 +138,7 @@ def register_three(request):
     if request.method == 'POST':
         user = request.user
         form = RegistrationFormThree(request.POST)
+        # email_manager = EmailAddressManager()
         if form.is_valid():
             email = form.cleaned_data['email']
             username = email  # TODO temporal solution, should be changed
@@ -149,7 +150,8 @@ def register_three(request):
                 user.set_password(password)
                 user.save()
                 # Send confirmation email here
-                send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+                # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+
             else:
                 return HttpResponse("Passwords don't match")
 

@@ -125,6 +125,7 @@ INSTALLED_APPS = (
     'social.apps.django_app.default',  # social_auth app
     'chat_androidAPI',
     'core',
+    'email_confirmation',
     'login',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
