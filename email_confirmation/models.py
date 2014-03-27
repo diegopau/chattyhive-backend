@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 import datetime
 from random import random
 
@@ -7,12 +8,14 @@ from django.core.mail import send_mail
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.template.loader import render_to_string
 # from django.utils.hashcompat import sha_constructor
+import hashlib
 from django.utils.translation import gettext_lazy as _
 
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 
 from email_confirmation.signals import email_confirmed, email_confirmation_sent
+from email_confirmation.email_info import DEFAULT_FROM_EMAIL
 # from core.models import ChUser
 
 # this code based in-part on django-registration
@@ -22,10 +25,15 @@ class EmailAddressManager(models.Manager):
     
     def add_email(self, user, email):
         try:
+            print(user)
+            print(email)
             email_address = self.create(user=user, email=email)
+            print("2")
             EmailConfirmation.objects.send_confirmation(email_address)
+            print("email created")
             return email_address
         except IntegrityError:
+            print("NONE")
             return None
     
     def get_primary(self, user):
@@ -46,7 +54,7 @@ class EmailAddressManager(models.Manager):
 
 class EmailAddress(models.Model):
     
-    user = models.ForeignKey('core.ChUser')
+    user = models.ForeignKey('core.ChProfile')
     email = models.EmailField()
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)
@@ -93,21 +101,23 @@ class EmailConfirmationManager(models.Manager):
             return email_address
     
     def send_confirmation(self, email_address):
-        salt = sha_constructor(str(random())).hexdigest()[:5]
-        confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
+        # salt = sha_constructor(str(random())).hexdigest()[:5]
+        salt = hashlib.sha1(str(random()).encode('utf-8')).hexdigest()[:5]
+        # confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
+        confirmation_key = hashlib.sha1((salt + email_address.email).encode('utf-8')).hexdigest()
         current_site = Site.objects.get_current()
         # check for the url with the dotted view path
         try:
-            path = reverse("emailconfirmation.views.confirm_email",
-                args=[confirmation_key])
+            path = reverse("email_confirmation.views.confirm_email",
+                           args=[confirmation_key])
         except NoReverseMatch:
             # or get path with named urlconf instead
             path = reverse(
-                "emailconfirmation_confirm_email", args=[confirmation_key])
+                "email_confirmation_confirm_email", args=[confirmation_key])
         protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
         activate_url = u"%s://%s%s" % (
             protocol,
-            unicode(current_site.domain),
+            str(current_site.domain),
             path
         )
         context = {
@@ -117,12 +127,12 @@ class EmailConfirmationManager(models.Manager):
             "confirmation_key": confirmation_key,
         }
         subject = render_to_string(
-            "emailconfirmation/email_confirmation_subject.txt", context)
+            "email_confirmation/email_confirmation_subject.txt", context)
         # remove superfluous line breaks
         subject = "".join(subject.splitlines())
         message = render_to_string(
-            "emailconfirmation/email_confirmation_message.txt", context)
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email_address.email])
+            "email_confirmation/email_confirmation_message.txt", context)
+        send_mail(subject, message, DEFAULT_FROM_EMAIL, [email_address.email])
         confirmation = self.create(
             email_address=email_address,
             sent=datetime.datetime.now(),

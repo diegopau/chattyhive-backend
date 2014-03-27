@@ -150,10 +150,16 @@ def register_three(request):
                 user.set_password(password)
                 user.save()
 
-                mail_manager = EmailAddressManager()
-                user2 = ChUser.objects.get(username=username)
-                # print(user2)  # PRINT
-                email_address = mail_manager.add_email(user=user2, email=email)
+                profile = ChProfile.objects.get(user=user)
+                # mail_manager = EmailAddressManager()
+                print(profile)  # PRINT
+                mail_address = EmailAddress.objects.add_email(user=profile, email=email)
+                # mail_address
+                # mail_address.user = profile
+                # mail_address.email = email
+                # mail_address.save()
+                # email_address.set_as_primary(conditional=True)
+                # email_address.save()
 
                 # Send confirmation email here
                 # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
