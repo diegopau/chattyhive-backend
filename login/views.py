@@ -67,6 +67,8 @@ def create_user_view(request):
             else:
                 return HttpResponse("UNKNOWN ERROR")
 
+
+
             return HttpResponseRedirect("/create_user/register1/")
 
         else:
@@ -82,9 +84,9 @@ def create_user_view(request):
 
 @login_required
 def register_one(request):
+    user = request.user
+    profile = ChProfile.objects.get(user=user)
     if request.method == 'POST':
-        user = request.user
-        profile = ChProfile.objects.get(user=user)
 
         form = RegistrationFormOne(request.POST, instance=profile)
         if form.is_valid():
@@ -93,7 +95,6 @@ def register_one(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        profile = ChProfile.objects.get(user__username=request.user)
         form = RegistrationFormOne(initial={
             'first_name': profile.first_name,
             'last_name': profile.last_name,
@@ -109,9 +110,9 @@ def register_one(request):
 
 @login_required
 def register_two(request):
+    user = request.user
+    profile = ChProfile.objects.get(user=user)
     if request.method == 'POST':
-        user = request.user
-        profile = ChProfile.objects.get(user=user)
         form = RegistrationFormTwo(request.POST, instance=profile)
         if form.is_valid():
             form.save()
@@ -120,7 +121,6 @@ def register_two(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        profile = ChProfile.objects.get(user__username=request.user)
         form = RegistrationFormTwo(initial={
             'public_name': profile.public_name,
             'public_show_age': profile.public_show_age,
@@ -133,8 +133,8 @@ def register_two(request):
 
 @login_required
 def register_three(request):
+    user = request.user
     if request.method == 'POST':
-        user = request.user
         form = RegistrationFormThree(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
@@ -155,7 +155,7 @@ def register_three(request):
             return HttpResponse("ERROR, invalid form")
     else:
         try:    # if the user is created by twitter a valid email must be provided
-            user_social = UserSocialAuth.objects.get(user=request.user)
+            user_social = UserSocialAuth.objects.get(user=user)
             if user_social.provider == 'twitter':
                 form = RegistrationFormThree()
             else:
