@@ -1,7 +1,4 @@
-import json
-from django.core.serializers.json import DjangoJSONEncoder
-import pusher
-
+# -*- encoding: utf-8 -*-
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -15,6 +12,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from social.backends.google import GooglePlusAuth
 from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+import pusher
 
 
 def login_view(request):
@@ -70,8 +70,6 @@ def create_user_view(request):
                     return HttpResponse("ERROR, inactive user")
             else:
                 return HttpResponse("UNKNOWN ERROR")
-
-
 
             return HttpResponseRedirect("/create_user/register1/")
 
@@ -195,7 +193,11 @@ def chat_auth(request):
         try:
             ChSubscription.objects.get(hive=hive, profile=profile)
 
-            channel_data = {'user_id': socket_id, 'user_info': {'name': profile.public_name}}
+            channel_data = {'user_id': socket_id,
+                            'user_info': {'public_name': profile.public_name,
+                                          'username': user.username
+                            }
+            }
 
             app_key = "55129"
             key = 'f073ebb6f5d1b918e59e'
