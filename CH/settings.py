@@ -134,7 +134,6 @@ INSTALLED_APPS = (
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
-EMAIL_CONFIRMATION_DAYS = 1
 
     ### ======================================================== ###
     ###                       Social Auth                        ###

@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import datetime
+from django.utils import timezone
 from random import random
 
 from django.conf import settings
@@ -15,7 +16,7 @@ from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 
 from email_confirmation.signals import email_confirmed, email_confirmation_sent
-from email_confirmation.email_info import DEFAULT_FROM_EMAIL
+from email_confirmation.email_info import DEFAULT_FROM_EMAIL, SITE, EMAIL_CONFIRMATION_DAYS
 # from core.models import ChUser
 
 # this code based in-part on django-registration
@@ -105,6 +106,10 @@ class EmailConfirmationManager(models.Manager):
         salt = hashlib.sha1(str(random()).encode('utf-8')).hexdigest()[:5]
         # confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
         confirmation_key = hashlib.sha1((salt + email_address.email).encode('utf-8')).hexdigest()
+        obj = Site.objects.get_current()
+        obj.name = SITE
+        obj.domain = SITE
+        obj.save()
         current_site = Site.objects.get_current()
         # check for the url with the dotted view path
         try:
@@ -135,7 +140,8 @@ class EmailConfirmationManager(models.Manager):
         send_mail(subject, message, DEFAULT_FROM_EMAIL, [email_address.email])
         confirmation = self.create(
             email_address=email_address,
-            sent=datetime.datetime.now(),
+            # sent=datetime.datetime.now(),  # PRINT
+            sent=timezone.now(),
             confirmation_key=confirmation_key
         )
         email_confirmation_sent.send(
@@ -160,8 +166,9 @@ class EmailConfirmation(models.Model):
     
     def key_expired(self):
         expiration_date = self.sent + datetime.timedelta(
-            days=settings.EMAIL_CONFIRMATION_DAYS)
-        return expiration_date <= datetime.datetime.now()
+            days=EMAIL_CONFIRMATION_DAYS)
+        # return expiration_date <= datetime.datetime.now()  # PRINT
+        return expiration_date <= timezone.now()
     key_expired.boolean = True
     
     def __str__(self):
