@@ -1,12 +1,13 @@
 import django
 import json
+from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
-from core.models import ChUser, ChProfile, ChUserManager
+from core.models import ChUser, ChProfile, ChUserManager, ChSubscription
 
 __author__ = 'lorenzo'
 
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 import pusher
 
 
@@ -74,6 +75,74 @@ def chat(request):
 # ================================== #
 #             0.2 Version            #
 # ================================== #
+def start_session(request):
+    if request.method == 'GET':
+        csrf = django.middleware.csrf.get_token(request)
+        # print(status)  # PRINT
+        return HttpResponse(json.dumps({'csrf': csrf}),
+                            mimetype="application/json")
+    else:
+        raise Http404
+
+
+def login_v2(request):
+    if request.method == 'POST':
+        user = request.POST.get("user")
+        passw = request.POST.get("pass")
+        user_auth = authenticate(username=user, password=passw)
+        if user_auth is not None:
+                if user_auth.is_active:
+                    login(request, user)
+                    status = "OK"
+
+                    chuser = ChUser.objects.get(username=user)
+
+                    profile = ChProfile.objects.get(user=chuser)
+
+                    # Trying to get all the subscriptions of this profile
+                    try:
+                        subscriptions = ChSubscription.objects.filter(profile=profile)
+                        hives = []
+                        for subscription in subscriptions:
+                            # Excluding duplicated hives
+                            hive_appeared = False
+                            for hive in hives:
+                                if subscription.hive == hive:
+                                    hive_appeared = True
+                            if not hive_appeared:
+                                # Adding the hive to the home view
+                                hives.append(subscription.hive)
+                    except ChSubscription.DoesNotExist:
+                        return HttpResponse("Subscription not found")
+
+                    answer = json.dumps({'status': status, 'profile': profile, 'hives_subscribed': hives})
+
+                    return HttpResponse(answer)
+                    # return HttpResponseRedirect("/home/")
+                else:
+                    status = 'ERROR'
+                    return HttpResponse(json.dumps({'status': status}))
+        else:
+            status = 'ERROR'
+            return HttpResponse(json.dumps({'status': status}))
+    else:
+        raise Http404
+
+
+def explore(request):
+    if request.method == 'GET':
+        # Returns all the hives (subscribed and not subscribed)
+        try:
+            hives = ChHive.objects.all()
+            status = "OK"
+        except ChHive.DoesNotExist:
+            hives = None
+            status = "NO HIVES"
+
+        answer = json.dumps({'status': status, 'hives': hives})
+        return HttpResponse(answer)
+
+
 def email_check(request):
     """
     :param request:
