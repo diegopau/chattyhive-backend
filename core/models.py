@@ -175,8 +175,9 @@ class ChHive(models.Model):
         ('free-time', 'Free Time')
     )
 
-    # Attributes of the Hive TODO now Hive = Chat
+    # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
+    name_url = models.CharField(max_length=60, unique=True)
     description = models.TextField()
     category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     creation_date = models.DateField(auto_now=True)
@@ -188,6 +189,7 @@ class ChHive(models.Model):
 class ChChat(models.Model):
     # Relation between chat and hive
     hive = models.OneToOneField(ChHive, related_name="hive", null=True, blank=True)
+    channel_unicode = models.CharField(max_length=60, unique=True)
 
     # Relations between chat and its users
     user1 = models.ForeignKey(ChUser, related_name="user_1", null=True, blank=True)
@@ -202,6 +204,14 @@ class ChChat(models.Model):
         :return: None
         """
         self.hive = hive
+        return
+
+    def set_channel(self, channel_unicode):
+        """
+        :param channel_unicode: Pusher id for this chat
+        :return: None
+        """
+        self.channel_unicode = channel_unicode
         return
 
     def join(self, profile):
@@ -235,7 +245,7 @@ class ChMessage(models.Model):
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField()
 
     # Content of the message
     content = models.TextField(max_length=2048)

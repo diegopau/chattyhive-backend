@@ -1,15 +1,14 @@
 # -*- encoding: utf-8 -*-
-import json
-from tokenize import String
-
 __author__ = 'lorenzo'
 
-from core.models import MsgForm
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from django.contrib.auth.decorators import login_required
 import pusher
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from django.utils import timezone
 
 
 @login_required
@@ -21,14 +20,31 @@ def create_hive(request):
     if request.method == 'POST':
         form = CreateHiveForm(request.POST)
         if form.is_valid():
-            # print('form is valid')  # PRINT
-            hive = form.cleaned_data['name']
-            hive = hive.replace(" ", "_")
-            form.cleaned_data['name'] = hive
-            form.save()
-            # print(hive)  # PRINT
-            request.session['hive'] = hive
-            return HttpResponseRedirect("/create_hive/create/")
+            hive_name = form.cleaned_data['name']
+            hive = form.save(commit=False)
+            hive.name_url = hive_name.replace(" ", "_")
+            hive.save()
+
+            user = request.user
+            profile = ChProfile.objects.get(user=user)
+
+            # Creating public chat of hive
+            chat = ChChat()
+            chat.set_hive(hive=hive)
+            chat.set_channel(replace_unicode(hive.name_url))
+            chat.save()
+            chat.join(profile)
+
+            # Creating subscription
+            user = request.user
+            profile = ChProfile.objects.get(user=user)
+            subscription = ChSubscription()
+            subscription.set_hive(hive=hive)
+            subscription.set_profile(profile=profile)
+            subscription.set_chat(chat=chat)
+            subscription.save()
+            # return HttpResponseRedirect("/create_hive/create/")
+            return HttpResponseRedirect("/home/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
@@ -39,87 +55,55 @@ def create_hive(request):
 
 
 @login_required
-def create_hive_created(request):
-    """
-    :param request:
-    :return: Home web page after creating the hive
-    """
-    # Getting needed information
-    username = request.user
-    user = ChUser.objects.get(username=username)
-    profile = ChProfile.objects.get(user=user)
-    # aux = profile.location
-    # print(aux)  # PRINT
-    hive_name = request.session['hive']
-    hive_name = hive_name.replace("_", " ")
-    hive = ChHive.objects.get(name=hive_name)
-
-    # Creating public chat of hive
-    chat = ChChat()
-    chat.set_hive(hive=hive)
-    chat.save()
-    chat.join(profile)
-
-    # Creating subscription
-    subscription = ChSubscription()
-    subscription.set_hive(hive=hive)
-    subscription.set_profile(profile=profile)
-    subscription.set_chat(chat=chat)
-    subscription.save()
-
-    return HttpResponseRedirect("/home/")
-
-
-@login_required
 def join(request, hive_name):
     """
     :param request:
     :param hive_name: Name of the hive that will be joined to
     :return: Home web page with the subscription created
     """
-    # Getting needed information
-    username = request.user
-    user = ChUser.objects.get(username=username)
-    profile = ChProfile.objects.get(user=user)
-    hive_joining = ChHive.objects.get(name=hive_name)
+    if request.method == 'GET':
+        # Getting needed information
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        hive_joining = ChHive.objects.get(name=hive_name)
 
-    # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
-    try:
-        subscriptions = ChSubscription.objects.all()
-        subscriptions = subscriptions.filter(profile=profile)
-        hives = []
-        for subscription in subscriptions:
-            # Excluding duplicated hives
-            hive_appeared = False
-            for hive in hives:
-                if subscription.hive == hive:
-                    hive_appeared = True
-            if not hive_appeared:
-                # Adding the hive to the hives array (only hives subscribed)
-                hives.append(subscription.hive)
-    except ChSubscription.DoesNotExist:
-        return HttpResponse("You've no subscriptions yet!")
+        # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
+        try:
+            subscriptions = ChSubscription.objects.filter(profile=profile)
+            hives = []
+            for subscription in subscriptions:
+                # Excluding duplicated hives
+                hive_appeared = False
+                for hive in hives:
+                    if subscription.hive == hive:
+                        hive_appeared = True
+                if not hive_appeared:
+                    # Adding the hive to the hives array (only hives subscribed)
+                    hives.append(subscription.hive)
+        except ChSubscription.DoesNotExist:
+            return HttpResponse("Subscription not found")
 
-    hive_appeared = False
-    for hive_aux in hives:
-        if hive_aux == hive_joining:
-            hive_appeared = True
+        hive_appeared = False
+        for hive_aux in hives:
+            if hive_aux == hive_joining:
+                hive_appeared = True
 
-    if not hive_appeared:
-        # Getting public chat of hive
-        chat = ChChat.objects.get(hive=hive_joining)
+        if not hive_appeared:
+            # Getting public chat of hive
+            chat = ChChat.objects.get(hive=hive_joining)
 
-        # Creating subscription
-        subscription = ChSubscription()
-        subscription.set_hive(hive=hive_joining)
-        subscription.set_profile(profile=profile)
-        subscription.set_chat(chat=chat)
-        subscription.save()
+            # Creating subscription
+            subscription = ChSubscription()
+            subscription.set_hive(hive=hive_joining)
+            subscription.set_profile(profile=profile)
+            subscription.set_chat(chat=chat)
+            subscription.save()
+            return HttpResponseRedirect("/home/")
 
+        else:
+            return HttpResponse("You're already subscribed to this hive")
     else:
-        return HttpResponse("You're already subscribed to this hive")
-
-    return HttpResponseRedirect("/home/")
+        raise Http404
 
 
 @login_required
@@ -129,23 +113,26 @@ def leave(request, hive_name):
     :param hive_name:
     :return:
     """
-    # Getting needed information
-    username = request.user
-    user = ChUser.objects.get(username=username)
-    profile = ChProfile.objects.get(user=user)
-    hive_leaving = ChHive.objects.get(name=hive_name)
+    if request.method == 'GET':
+        # Getting needed information
+        username = request.user
+        user = ChUser.objects.get(username=username)
+        profile = ChProfile.objects.get(user=user)
+        hive_leaving = ChHive.objects.get(name=hive_name)
 
-    # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
-    try:
-        subscriptions = ChSubscription.objects.all()
-        subscriptions = subscriptions.filter(profile=profile)
-        subscription = subscriptions.filter(hive=hive_leaving)
-        subscription.delete()
+        # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
+        try:
+            subscriptions = ChSubscription.objects.all()
+            subscriptions = subscriptions.filter(profile=profile)
+            subscription = subscriptions.filter(hive=hive_leaving)
+            subscription.delete()
 
-    except ChSubscription.DoesNotExist:
-        return HttpResponse("You've no subscriptions yet!")
+        except ChSubscription.DoesNotExist:
+            return HttpResponse("Subscription not found")
 
-    return HttpResponseRedirect("/home/")
+        return HttpResponseRedirect("/home/")
+    else:
+        raise Http404
 
 
 @login_required
@@ -156,14 +143,12 @@ def home(request):
     """
     if request.method == 'GET':
         # Getting needed info
-        username = request.user
-        user = ChUser.objects.get(username=username)
+        user = request.user
         profile = ChProfile.objects.get(user=user)
 
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChSubscription.objects.all()
-            subscriptions = subscriptions.filter(profile=profile)
+            subscriptions = ChSubscription.objects.filter(profile=profile)
             hives = []
             for subscription in subscriptions:
                 # Excluding duplicated hives
@@ -175,8 +160,7 @@ def home(request):
                     # Adding the hive to the home view
                     hives.append(subscription.hive)
         except ChSubscription.DoesNotExist:
-            subscriptions, subscription = None
-            # print(subscriptions)
+            return HttpResponse("Subscription not found")
         return render(request, "core/home.html", {
             'hives': hives
         })
@@ -206,13 +190,12 @@ def profile(request, private):
     :param private: Type of profile which is going to be shown, private or public
     :return: Profile web page which contains your personal info
     """
+    user = request.user
     if request.method == 'GET':
-        username = request.user
         try:
-            user = ChUser.objects.get(username=username)
             profile = ChProfile.objects.get(user=user)
-        except (ChProfile.DoesNotExist, ChUser.DoesNotExist):
-            profile, user = None
+        except ChProfile.DoesNotExist:
+            profile = None
         if private == "private":
             data = {"first_name": profile.first_name, "surname": profile.last_name, "language": profile.language,
                     "sex": profile.sex}
@@ -230,79 +213,88 @@ def profile(request, private):
 
 
 @login_required
-def chat(request, hive):
+def chat(request, hive_url):
     """
     :param request:
-    :param hive: Name of the hive, which will be used for the channel name in Pusher
+    :param hive_url: Url of the hive, which will be used for the channel name in Pusher
     :return: Chat web page which allows to chat with users who joined the same channel
     """
     # Variable declaration
-    username = request.user.get_username()
-    user = ChUser.objects.get(username=username)
-    hive_object = ChHive.objects.get(name=hive.replace("_", " "))
+    user = request.user
+    profile = ChProfile.objects.get(user=user)
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
     event = 'msg'
-    hive = hive.replace(" ", "_")
-    hive2 = replace_unicode(hive)
-    channel = hive2
-    # print(channel)  # PRINT
 
     # GET vs POST
     if request.method == 'POST':
+
+        hive = ChHive.objects.get(name_url=hive_url)
+        chat = ChChat.objects.get(hive=hive)
 
         msg = request.POST.get("message")
         timestamp = request.POST.get("timestamp")
         p = pusher.Pusher(
             app_id=app_key,
             key=key,
-            secret=secret
+            secret=secret,
+            encoder=DjangoJSONEncoder,
         )
-        # print(channel + " aqui se envia")  # PRINT
-        p[channel].trigger(event, {"username": username, "message": msg, "timestamp": timestamp})
-        # request.session.set_expiry(300)
-        profile = ChProfile.objects.get(user=user)
-        chat = ChChat.objects.get(hive=hive_object)
         message = ChMessage(profile=profile, chat=chat)
+        message.date = timezone.now()
         message.content_type = 'text'
         message.content = msg
+
+        p[chat.channel_unicode].trigger(event, {"username": user.username,
+                                                "public_name": profile.public_name,
+                                                "message": msg,
+                                                "timestamp": timestamp,
+                                                "server_time": message.date.astimezone(),
+                                                })
+
         message.save()
         return HttpResponse("Server Ok")
     else:
 
-        if channel != 'public_test':
-            channel = hive2
+        raise Http404
+        """
+        hive_url = 'public_test'
 
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
-            'user': user,
+            'user': user.username,
             'app_key': app_key,
             'key': key,
-            'hive': hive,
-            'channel': channel,
+            'hive': hive_url,
+            'channel': hive_url,
             'event': event,
             'form': form,
         })
+        """
 
 
 @login_required
 def get_messages(request, chat_name, init, interval):   # todo change hive_name for chat_name
     """
     :param request:
-    :param chat_name: Name of the hive, which will be used for the channel name in Pusher
-    :param last_message: Name of the hive, which will be used for the channel name in Pusher
-    :param interval: Name of the hive, which will be used for the channel name in Pusher
-    :return: *interval* messages until *last_messages*
+    :param chat_name: Url of the chat, which will be used for the query
+    :param init: ID of the first message to return
+    :param interval: Number of messages to return
+    :return: *interval* messages from *init*
     """
     # Variable declaration
-    username = request.user.get_username()      #todo check permisions for user
-    hive_object = ChHive.objects.get(name=chat_name.replace("_", " "))
-    # user = ChUser.objects.get(username=username)
+    user = request.user
+    profile = ChProfile.objects.get(user=user)
+    hive = ChHive.objects.get(name_url=chat_name)
+    try:
+        ChSubscription.objects.get(profile=profile, hive=hive)
+    except ChSubscription.DoesNotExist:
+        return HttpResponse("You are not subscribed to this chat")
 
     # GET vs POST
     if request.method == 'GET':
-        chat = ChChat.objects.get(hive=hive_object)
+        chat = ChChat.objects.get(hive=hive)
         if init == 'last':
             messages = ChMessage.objects.filter(chat=chat).order_by('-id')[0:int(interval)]
         elif init.isnumeric():
@@ -311,10 +303,13 @@ def get_messages(request, chat_name, init, interval):   # todo change hive_name 
             raise Http404
         messages_row = []
         for message in messages:
-            time_string = '%s:%s:%s' % (message.date.hour, message.date.minute, message.date.second)
-            messages_row.append({"username": message.profile.user.username, "message": message.content,
-                                "timestamp": time_string, "id": message.id})
-        return HttpResponse(json.dumps(messages_row))
+            messages_row.append({"username": message.profile.user.username,
+                                 "public_name": message.profile.public_name,
+                                 "message": message.content,
+                                 "timestamp": message.date.astimezone(),
+                                 "server_time": message.date.astimezone(),
+                                 "id": message.id})
+        return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
     else:
         raise Http404
 

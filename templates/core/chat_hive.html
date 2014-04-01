@@ -40,7 +40,7 @@
         // Listening to the channel
         channel.bind(event_name, function(data) {
 
-            if(data.username!=user) write(data.username, data.message, data.timestamp, data.timestamp_server);
+            if(data.username!=user) write(data.public_name, data.message, data.timestamp, data.timestamp_server);
         });
 
         // AJAX method to write chat answers on screen
@@ -59,11 +59,16 @@
 
         // AJAX method to reload chat answers on screen
         function reload(messages) {
-            message = messages[0]
-            $('#chat_field').html(message.username + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
+            var message = messages[0];
+            var showname = "";
+            if(message.username==user) showname="you";
+            else showname=message.public_name;
+            $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
             for(i = 1; i < messages.length; i++){
                 message = messages[i]
-                $('#chat_field').html(message.username + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp + '<br/>' + $('#chat_field').html());
+                if(message.username==user) shownname="you";
+                else showname=message.public_name;
+                $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp + '<br/>' + $('#chat_field').html());
             }
             $('#older').html(message.id)
         }
@@ -100,7 +105,7 @@
                     type: "POST",
                     url: "/chat/" + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
+                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);
