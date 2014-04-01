@@ -211,7 +211,7 @@ class ChChat(models.Model):
         :param channel_unicode: Pusher id for this chat
         :return: None
         """
-        self.channel_unicode = channel_unicode
+        self.channel_unicode = 'presence-' + channel_unicode
         return
 
     def join(self, profile):

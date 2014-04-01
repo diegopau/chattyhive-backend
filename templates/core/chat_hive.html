@@ -31,9 +31,15 @@
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
         var chat="{{ chat_field }}";
+        var csrftoken = $.cookie('csrftoken');
 
         // Connecting to pusher
-        var pusher = new Pusher(key);
+        var pusher = new Pusher(key, {  authEndpoint: '/chat_auth/',
+                                        auth: {
+                                            headers: {'X-CSRFToken': csrftoken}
+                                        }
+                                    });
+
         //channel_name = channel_name.replace("ñ", "__nh__");
         var channel = pusher.subscribe(channel_name);
 
@@ -75,7 +81,6 @@
 
         $(document).ready(function() {
 
-            var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "GET",
                     url: "/messages/" + channel_name + "/last-15",
@@ -100,7 +105,6 @@
                 var d = new Date();
                 var timestamp = d.toTimeString();
                 var timestamp_server = null;
-                var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
                     url: "/chat/" + channel_name + "/",
@@ -125,7 +129,6 @@
             // Button logout behaviour when clicked
             $('#btn_logout').on('click', function()
             {
-                var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
                     url: "/logout/",
@@ -146,7 +149,6 @@
             // Button load behaviour when clicked
             $('#btn_load').on('click', function()
             {
-                var csrftoken = $.cookie('csrftoken');
                 older = $('#older').html();
                 $.ajax({
                     type: "GET",
@@ -167,7 +169,6 @@
             // Button recent behaviour when clicked
             $('#btn_recent').on('click', function()
             {
-                var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "GET",
                     url: "/messages/" + channel_name + "/last-15",
