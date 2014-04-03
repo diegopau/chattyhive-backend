@@ -216,7 +216,7 @@ def profile(request, private):
 def chat(request, hive_url):
     """
     :param request:
-    :param hive_url: Url of the hive, which will be used for the channel name in Pusher
+    :param hive_url: Url of the hive, which will be used for the channel name in Pusher if POST
     :return: Chat web page which allows to chat with users who joined the same channel
     """
     # Variable declaration
@@ -229,9 +229,8 @@ def chat(request, hive_url):
 
     # GET vs POST
     if request.method == 'POST':
-
-        hive = ChHive.objects.get(name_url=hive_url)
-        chat = ChChat.objects.get(hive=hive)
+        #if POST hive_url is the name of the pusher channel
+        chat = ChChat.objects.get(channel_unicode=hive_url)
 
         msg = request.POST.get("message")
         timestamp = request.POST.get("timestamp")
@@ -256,10 +255,9 @@ def chat(request, hive_url):
         message.save()
         return HttpResponse("Server Ok")
     else:
-
-        raise Http404
-        """
-        hive_url = 'public_test'
+        #if GET hive_url is the hive URL
+        hive = ChHive.objects.get(name_url=hive_url)
+        chat = ChChat.objects.get(hive=hive)
 
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
@@ -267,15 +265,14 @@ def chat(request, hive_url):
             'app_key': app_key,
             'key': key,
             'hive': hive_url,
-            'channel': hive_url,
+            'channel': chat.channel_unicode,
             'event': event,
             'form': form,
         })
-        """
 
 
 @login_required
-def get_messages(request, chat_name, init, interval):   # todo change hive_name for chat_name
+def get_messages(request, chat_name, init, interval):
     """
     :param request:
     :param chat_name: Url of the chat, which will be used for the query
@@ -286,7 +283,8 @@ def get_messages(request, chat_name, init, interval):   # todo change hive_name 
     # Variable declaration
     user = request.user
     profile = ChProfile.objects.get(user=user)
-    hive = ChHive.objects.get(name_url=chat_name)
+    chat = ChChat.objects.get(channel_unicode=chat_name)
+    hive = chat.hive
     try:
         ChSubscription.objects.get(profile=profile, hive=hive)
     except ChSubscription.DoesNotExist:
@@ -294,7 +292,7 @@ def get_messages(request, chat_name, init, interval):   # todo change hive_name 
 
     # GET vs POST
     if request.method == 'GET':
-        chat = ChChat.objects.get(hive=hive)
+        # chat = ChChat.objects.get(hive=hive)
         if init == 'last':
             messages = ChMessage.objects.filter(chat=chat).order_by('-id')[0:int(interval)]
         elif init.isnumeric():
@@ -308,7 +306,8 @@ def get_messages(request, chat_name, init, interval):   # todo change hive_name 
                                  "message": message.content,
                                  "timestamp": message.date.astimezone(),
                                  "server_time": message.date.astimezone(),
-                                 "id": message.id})
+                                 "id": message.id
+            })
         return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
     else:
         raise Http404

@@ -1,7 +1,8 @@
+# -*- encoding: utf-8 -*-
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from login.models import *
 from CH import settings
@@ -11,6 +12,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from social.backends.google import GooglePlusAuth
 from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+import pusher
 
 
 def login_view(request):
@@ -66,8 +70,6 @@ def create_user_view(request):
                     return HttpResponse("ERROR, inactive user")
             else:
                 return HttpResponse("UNKNOWN ERROR")
-
-
 
             return HttpResponseRedirect("/create_user/register1/")
 
@@ -175,3 +177,47 @@ def logout_view(request):
     logout(request)
     request.session['active'] = False
     return HttpResponse("logged out")
+
+
+@login_required
+def chat_auth(request):
+    user = request.user
+    if request.method == 'POST':
+        chat_channel = request.POST['channel_name']
+        chat = ChChat.objects.get(channel_unicode=chat_channel)
+        socket_id = request.POST['socket_id']
+
+        profile = ChProfile.objects.get(user=user)
+        hive = chat.hive
+
+        try:
+            ChSubscription.objects.get(hive=hive, profile=profile)
+
+            channel_data = {'user_id': socket_id,
+                            'user_info': {'public_name': profile.public_name,
+                                          'username': user.username
+                            }
+            }
+
+            app_key = "55129"
+            key = 'f073ebb6f5d1b918e59e'
+            secret = '360b346d88ee47d4c230'
+
+            p = pusher.Pusher(
+                app_id=app_key,
+                key=key,
+                secret=secret,
+                encoder=DjangoJSONEncoder,
+            )
+
+            auth_response = p[chat_channel].authenticate(socket_id, channel_data)
+
+            return HttpResponse(json.dumps(auth_response, cls=DjangoJSONEncoder))
+
+        except ChSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
+
+    else:
+        raise Http404
