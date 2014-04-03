@@ -140,7 +140,8 @@ class Channel(object):
       if custom_string:
         string_to_sign += ":%s" % custom_string
 
-      signature = hmac.new(self.pusher.secret, string_to_sign, hashlib.sha256).hexdigest()
+      # signature = hmac.new(self.pusher.secret, string_to_sign, hashlib.sha256).hexdigest()
+      signature = hmac.new(self.pusher.secret.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
 
       return "%s:%s" % (self.pusher.key,signature)
 
