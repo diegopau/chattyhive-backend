@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 from core.models import ChUser, ChProfile, ChUserManager, ChSubscription
+from django.core.serializers.json import DjangoJSONEncoder
 
 __author__ = 'lorenzo'
 
