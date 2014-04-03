@@ -28,6 +28,7 @@ urlpatterns = patterns('',
     url(r'^messages/(?P<chat_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<init>[0-9last]+)-(?P<interval>[0-9]+)/',
                                                                         'core.views.get_messages', name='get_messages'),
     url(r'^confirm_email/(\w+)/$', 'email_confirmation.views.confirm_email', name='email_confirmation'),
+    url(r'^email_confirmed/$', 'email_confirmation.views.email_confirmed', name='email_confirmed'),
 
     url(r'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^logout/', 'login.views.logout_view', name='logout'),
