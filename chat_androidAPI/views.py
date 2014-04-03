@@ -90,6 +90,7 @@ def login_v2(request):
         user = request.POST.get("user")
         passw = request.POST.get("pass")
         aux = request.POST.items()
+        aux2 = request.POST.keys()
         logs = {"user": user, "pass": passw, "aux": aux}
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
@@ -117,16 +118,18 @@ def login_v2(request):
                     except ChSubscription.DoesNotExist:
                         return HttpResponse("Subscription not found")
 
-                    answer = json.dumps({'status': status, 'profile': profile, 'hives_subscribed': hives})
+                    answer = json.dumps({'status': status, 'profile': profile, 'hives_subscribed': hives},
+                                        cls=DjangoJSONEncoder)
 
                     return HttpResponse(answer)
                     # return HttpResponseRedirect("/home/")
                 else:
                     status = 'ERROR'
-                    return HttpResponse(json.dumps({'status': status, "logs": logs}))
+                    return HttpResponse(json.dumps({'status': status, "logs": logs},
+                                        cls=DjangoJSONEncoder))
         else:
             status = 'ERROR'
-            return HttpResponse(json.dumps({'status': status, "logs": logs}))
+            return HttpResponse(json.dumps({'status': status, "logs": logs}, cls=DjangoJSONEncoder))
     else:
         raise Http404
 
