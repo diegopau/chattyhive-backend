@@ -89,7 +89,8 @@ def login_v2(request):
     if request.method == 'POST':
         user = request.POST.get("user")
         passw = request.POST.get("pass")
-        logs = {"user": user, "pass": passw}
+        aux = request.POST.items()
+        logs = {"user": user, "pass": passw, "aux": aux}
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
                 if user_auth.is_active:
