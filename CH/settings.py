@@ -125,6 +125,7 @@ INSTALLED_APPS = (
     'social.apps.django_app.default',  # social_auth app
     'chat_androidAPI',
     'core',
+    'email_confirmation',
     'login',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
@@ -257,6 +258,11 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
+
+# ================================ #
+#            SMTP Email            #
+# ================================ #
+from .email_info import *
 
 # ================================ #
 #            Android               #

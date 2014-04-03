@@ -4,6 +4,7 @@ __author__ = 'lorenzo'
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django import forms
+from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
 
 
 class ChUserManager(UserManager):
@@ -95,6 +96,8 @@ class ChProfile(models.Model):
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
     show_location = models.BooleanField(default=False)
+    # email_manager = EmailAddressManager()
+    # confirmed = models.BooleanField(default=False)
     # todo image fields
     # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
     # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)

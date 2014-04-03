@@ -15,6 +15,8 @@ from uuid import uuid4
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 import pusher
+from django.core.mail import send_mail
+from email_confirmation import *
 
 
 def login_view(request):
@@ -148,6 +150,21 @@ def register_three(request):
                 user.username = username
                 user.set_password(password)
                 user.save()
+
+                profile = ChProfile.objects.get(user=user)
+                # mail_manager = EmailAddressManager()
+                print(profile)  # PRINT
+                mail_address = EmailAddress.objects.add_email(user=profile, email=email)
+                # mail_address
+                # mail_address.user = profile
+                # mail_address.email = email
+                # mail_address.save()
+                # email_address.set_as_primary(conditional=True)
+                # email_address.save()
+
+                # Send confirmation email here
+                # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+
             else:
                 return HttpResponse("Passwords don't match")
 
