@@ -89,6 +89,7 @@ def login_v2(request):
     if request.method == 'POST':
         user = request.POST.get("user")
         passw = request.POST.get("pass")
+        logs = {"user": user, "pass": passw}
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
                 if user_auth.is_active:
@@ -121,10 +122,10 @@ def login_v2(request):
                     # return HttpResponseRedirect("/home/")
                 else:
                     status = 'ERROR'
-                    return HttpResponse(json.dumps({'status': status}))
+                    return HttpResponse(json.dumps({'status': status, "logs": logs}))
         else:
             status = 'ERROR'
-            return HttpResponse(json.dumps({'status': status}))
+            return HttpResponse(json.dumps({'status': status, "logs": logs}))
     else:
         raise Http404
 
