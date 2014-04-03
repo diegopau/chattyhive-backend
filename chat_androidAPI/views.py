@@ -87,8 +87,8 @@ def start_session(request):
 
 def login_v2(request):
     if request.method == 'POST':
-        user = request.POST["user"]
-        passw = request.POST["pass"]
+        user = request.POST.get("user")
+        passw = request.POST.get("pass")
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
                 if user_auth.is_active:
