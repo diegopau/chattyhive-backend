@@ -194,10 +194,6 @@ class ChChat(models.Model):
     hive = models.OneToOneField(ChHive, related_name="hive", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
 
-    # Relations between chat and its users
-    user1 = models.ForeignKey(ChUser, related_name="user_1", null=True, blank=True)
-    user2 = models.ForeignKey(ChUser, related_name="user_2", null=True, blank=True)
-
     # Attributes of the Chat
     date = models.DateTimeField(auto_now=True)
 

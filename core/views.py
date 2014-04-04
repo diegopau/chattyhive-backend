@@ -213,10 +213,10 @@ def profile(request, private):
 
 
 @login_required
-def chat(request, hive_url):
+def chat(request, chat_url):
     """
     :param request:
-    :param hive_url: Url of the hive, which will be used for the channel name in Pusher if POST
+    :param chat_url: Url of the chat
     :return: Chat web page which allows to chat with users who joined the same channel
     """
     # Variable declaration
@@ -229,8 +229,7 @@ def chat(request, hive_url):
 
     # GET vs POST
     if request.method == 'POST':
-        #if POST hive_url is the name of the pusher channel
-        chat = ChChat.objects.get(channel_unicode=hive_url)
+        chat = ChChat.objects.get(channel_unicode=chat_url)
 
         msg = request.POST.get("message")
         timestamp = request.POST.get("timestamp")
@@ -255,20 +254,27 @@ def chat(request, hive_url):
         message.save()
         return HttpResponse("Server Ok")
     else:
-        #if GET hive_url is the hive URL
-        hive = ChHive.objects.get(name_url=hive_url)
-        chat = ChChat.objects.get(hive=hive)
+        chat = ChChat.objects.get(channel_unicode=chat_url)
 
         form = MsgForm()
-        return render(request, "core/chat_hive.html", {
+        return render(request, "core/chat.html", {
             'user': user.username,
             'app_key': app_key,
             'key': key,
-            'hive': hive_url,
+            'url': chat_url,
             'channel': chat.channel_unicode,
             'event': event,
             'form': form,
         })
+
+
+@login_required
+def hive(request, hive_url):
+    if request.method == 'GET':
+        hive = ChHive.objects.get(name_url=hive_url)
+        # chat = ChChat.objects.get(hive=hive)
+    else:
+        raise Http404
 
 
 @login_required
