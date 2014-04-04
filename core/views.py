@@ -33,7 +33,6 @@ def create_hive(request):
             chat.set_hive(hive=hive)
             chat.set_channel(replace_unicode(hive.name_url))
             chat.save()
-            chat.join(profile)
 
             # Creating subscription
             user = request.user
@@ -52,6 +51,40 @@ def create_hive(request):
         return render(request, "core/create_hive.html", {
             'form': form
         })
+
+
+@login_required
+def create_chat(request, hive_url, public_name):
+    """
+    :param request:
+    :return: Web page with the form for creating a hive
+    """
+    if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        invited = ChProfile.objects.get(public_name=public_name)
+
+        profile_subscriptions = ChSubscription.objects.select_related().filter(profile=profile, hive__isnull=True)
+        invited_subscription = ChSubscription.objects.none()
+        for profile_subscription in profile_subscriptions:
+            invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
+            print(invited_subscription.chat.channel_unicode)
+            if invited_subscription:
+                break
+
+        if not invited_subscription:
+            # Creating private chat
+            chat = ChChat()
+            chat.set_channel(replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url))
+            chat.join(profile)
+            chat.join(invited)
+            chat.save()
+
+            return HttpResponseRedirect("/chat/" + chat.channel_unicode)
+        else:
+            return HttpResponseRedirect("/chat/" + invited_subscription.chat.channel_unicode)
+    else:
+        raise Http404
 
 
 @login_required
@@ -270,9 +303,20 @@ def chat(request, chat_url):
 
 @login_required
 def hive(request, hive_url):
+
     if request.method == 'GET':
         hive = ChHive.objects.get(name_url=hive_url)
-        # chat = ChChat.objects.get(hive=hive)
+        chat = ChChat.objects.get(hive=hive)
+        subscriptions = ChSubscription.objects.filter(hive=hive)
+        profiles = []
+        for subscription in subscriptions:
+            profiles.append(subscription.profile)
+        return render(request, "core/hive.html", {
+            'hive': hive,
+            'chat': chat,
+            'profiles': profiles
+        })
+
     else:
         raise Http404
 

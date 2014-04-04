@@ -261,8 +261,8 @@ class ChAnswer(ChMessage):
 class ChSubscription(models.Model):
     # Subscription object which relates Profiles with Hives/Chats
     profile = models.ForeignKey(ChProfile, unique=False)
-    hive = models.ForeignKey(ChHive, null=True, blank=True)
-    chat = models.ForeignKey(ChChat, null=True, blank=True)
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscription')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscription')
 
     def set_chat(self, chat):
         """
