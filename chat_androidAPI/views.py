@@ -96,8 +96,8 @@ def login_v2(request):
         aux3 = request.body
         # data = json.load(aux3)
         # pprint(data)
-        user2 = aux3['user']
-        passw2 = aux3['pass']
+        user2 = aux3[1]
+        passw2 = aux3[2]
         # user3 = data['user']
         # passw3 = data['pass']
         logs = {"user": user2, "pass": passw2}
