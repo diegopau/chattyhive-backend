@@ -96,7 +96,7 @@ def login_v2(request):
         # aux2 = request.POST.keys()
         aux3 = request.body
         # aux3.replace("b'{", "'{")
-        data = json.load(aux3.decode('utf-8'))
+        data = json.loads(aux3.decode('utf-8'))
         # pprint(data)
         # cgi.parse_multipart(aux3)
         # user2 = aux3[1]
