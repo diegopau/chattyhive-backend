@@ -130,8 +130,7 @@ def login_v2(request):
                     for hive in hives:
                         print(hive)
                     answer = json.dumps({'status': status, 'profile': profile.toJSON(),
-                                         'hives_subscribed': hives},
-                                        cls=DjangoJSONEncoder)
+                                         'hives_subscribed': hives}, cls=DjangoJSONEncoder, mimetype="application/json")
 
                     return HttpResponse(answer)
                     # return HttpResponseRedirect("/home/")
