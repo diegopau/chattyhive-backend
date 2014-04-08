@@ -90,22 +90,14 @@ def start_session(request):
 
 def login_v2(request):
     if request.method == 'POST':
-        user = request.POST.get("user")
-        passw = request.POST.get("pass")
-        # aux = request.POST.items()
-        # aux2 = request.POST.keys()
+        # user = request.POST.get("user")
+        # passw = request.POST.get("pass")
         aux3 = request.body
-        # aux3.replace("b'{", "'{")
         data = json.loads(aux3.decode('utf-8'))
-        # pprint(data)
-        # cgi.parse_multipart(aux3)
-        # user2 = aux3[1]
-        # passw2 = aux3[2]
-        user2 = data['user']
-        passw2 = data['pass']
-        logs = {"user": user2, "pass": passw2}
-        print(aux3)
-        # print(data)
+        user = data['user']
+        passw = data['pass']
+        logs = {"user": user, "pass": passw}
+        # print(aux3)
         print(logs)
 
         user_auth = authenticate(username=user, password=passw)
