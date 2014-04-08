@@ -163,6 +163,12 @@ class ChProfile(models.Model):
         """
         self.show_location = boolean_show
 
+    def toJSON(self):
+        return u"{'public_name': %s, 'first_name': %s, 'last_name': %s, 'sex': %s, 'language': %s, 'timezone: %s," \
+               u" 'location': %s, 'private_show_age': %s, 'public_show_age': %s, 'show_location': %s}"\
+               % (self.public_name, self.first_name, self.last_name, self.sex, self.language, self.timezone,
+                  self.location, self.private_show_age, self.public_show_age, self.show_location)
+
     def __str__(self):
         return u"%s - Personal Profile" % self.user
 
