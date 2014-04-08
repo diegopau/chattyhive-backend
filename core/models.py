@@ -188,6 +188,10 @@ class ChHive(models.Model):
     category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     creation_date = models.DateField(auto_now=True)
 
+    def toJSON(self):
+        return u"{'name': %s, 'name_url': %s, 'description': %s, 'category': %s, 'creation_date': %s}"\
+               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+
     def __str__(self):
         return u"%s" % self.name
 

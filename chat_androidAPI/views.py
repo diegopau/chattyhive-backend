@@ -122,13 +122,15 @@ def login_v2(request):
                                     hive_appeared = True
                             if not hive_appeared:
                                 # Adding the hive to the home view
-                                hives.append(subscription.hive)
+                                hives.append(subscription.hive.toJSON())
                     except ChSubscription.DoesNotExist:
                         return HttpResponse("Subscription not found")
 
                     print(profile.toJSON())
+                    for hive in hives:
+                        print(hive)
                     answer = json.dumps({'status': status, 'profile': profile.toJSON(),
-                                         'hives_subscribed': json.JSONEncoder.encode(hives)},
+                                         'hives_subscribed': hives},
                                         cls=DjangoJSONEncoder)
 
                     return HttpResponse(answer)
