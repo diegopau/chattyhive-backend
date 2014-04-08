@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 from core.models import ChUser, ChProfile, ChUserManager, ChSubscription
 from django.core.serializers.json import DjangoJSONEncoder
+from pprint import pprint
 
 __author__ = 'lorenzo'
 
@@ -90,11 +91,20 @@ def login_v2(request):
     if request.method == 'POST':
         user = request.POST.get("user")
         passw = request.POST.get("pass")
-        aux = request.POST.items()
-        aux2 = request.POST.keys()
+        # aux = request.POST.items()
+        # aux2 = request.POST.keys()
         aux3 = request.body
-        logs = {"user": user, "pass": passw, "aux": aux3}
+        data = json.load(aux3)
+        pprint(data)
+        user2 = aux3['user']
+        passw2 = aux3['pass']
+        user3 = data['user']
+        passw3 = data['pass']
+        logs = {"user": user2, "pass": passw2}
         print(aux3)
+        print(data)
+        print(logs)
+
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
                 if user_auth.is_active:
