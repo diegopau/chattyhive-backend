@@ -165,7 +165,7 @@ class ChProfile(models.Model):
 
     def toJSON(self):
         return u"{'public_name': %s, 'first_name': %s, 'last_name': %s, 'sex': %s, 'language': %s, 'timezone: %s," \
-               u" 'location': %s, 'private_show_age': %s, 'public_show_age': %s, 'show_location': %s}"\
+               u" 'location': %s, 'private_show_age': %s, 'public_show_age': %s, 'show_location': %s}".strip('"')\
                % (self.public_name, self.first_name, self.last_name, self.sex, self.language, self.timezone,
                   self.location, self.private_show_age, self.public_show_age, self.show_location)
 
@@ -189,7 +189,7 @@ class ChHive(models.Model):
     creation_date = models.DateField(auto_now=True)
 
     def toJSON(self):
-        return u"{'name': %s, 'name_url': %s, 'description': %s, 'category': %s, 'creation_date': %s}"\
+        return u"{'name': %s, 'name_url': %s, 'description': %s, 'category': %s, 'creation_date': %s}".strip('"')\
                % (self.name, self.name_url, self.description, self.category, self.creation_date)
 
     def __str__(self):

@@ -148,14 +148,17 @@ def login_v2(request):
 def explore(request):
     if request.method == 'GET':
         # Returns all the hives (subscribed and not subscribed)
+        hive_array = []
         try:
             hives = ChHive.objects.all()
+            for hive in hives:
+                hive_array.append(hive.toJSON())
             status = "OK"
         except ChHive.DoesNotExist:
             hives = None
             status = "NO HIVES"
 
-        answer = json.dumps({'status': status, 'hives': hives})
+        answer = json.dumps({'status': status, 'hives': hive_array})
         return HttpResponse(answer)
 
 
