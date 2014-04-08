@@ -7,6 +7,7 @@ from core.models import ChUser, ChProfile, ChUserManager, ChSubscription
 from django.core.serializers.json import DjangoJSONEncoder
 from pprint import pprint
 
+
 __author__ = 'lorenzo'
 
 from django.http import HttpResponse, Http404
@@ -94,12 +95,14 @@ def login_v2(request):
         # aux = request.POST.items()
         # aux2 = request.POST.keys()
         aux3 = request.body
-        # data = json.load(aux3)
+        aux3.replace("b'{", "'{")
+        data = json.load(aux3)
         # pprint(data)
-        user2 = aux3[1]
-        passw2 = aux3[2]
-        # user3 = data['user']
-        # passw3 = data['pass']
+        # cgi.parse_multipart(aux3)
+        # user2 = aux3[1]
+        # passw2 = aux3[2]
+        user2 = data['user']
+        passw2 = data['pass']
         logs = {"user": user2, "pass": passw2}
         print(aux3)
         # print(data)
