@@ -20,27 +20,26 @@ def create_hive(request):
     if request.method == 'POST':
         form = CreateHiveForm(request.POST)
         if form.is_valid():
+            user = request.user
+            profile = ChProfile.objects.get(user=user)
+
             hive_name = form.cleaned_data['name']
             hive = form.save(commit=False)
             hive.name_url = hive_name.replace(" ", "_")
             hive.save()
 
-            user = request.user
-            profile = ChProfile.objects.get(user=user)
-
             # Creating public chat of hive
             chat = ChChat()
-            chat.set_hive(hive=hive)
+            chat.set_hive(hive=hive)  # TODO use this?
             chat.set_channel(replace_unicode(hive.name_url))
             chat.save()
 
+            # hive.chat = chat
+
             # Creating subscription
-            user = request.user
-            profile = ChProfile.objects.get(user=user)
             subscription = ChSubscription()
             subscription.set_hive(hive=hive)
             subscription.set_profile(profile=profile)
-            subscription.set_chat(chat=chat)
             subscription.save()
             # return HttpResponseRedirect("/create_hive/create/")
             return HttpResponseRedirect("/home/")
@@ -64,20 +63,24 @@ def create_chat(request, hive_url, public_name):
         profile = ChProfile.objects.get(user=user)
         invited = ChProfile.objects.get(public_name=public_name)
 
-        profile_subscriptions = ChSubscription.objects.select_related().filter(profile=profile, hive__isnull=True)
+        profile_subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
         invited_subscription = ChSubscription.objects.none()
         for profile_subscription in profile_subscriptions:
-            invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
-            print(invited_subscription.chat.channel_unicode)
-            if invited_subscription:
+            try:
+                invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
+            except profile_subscription.DoesNotExist:
                 break
 
         if not invited_subscription:
             # Creating private chat
             chat = ChChat()
             chat.set_channel(replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url))
-            chat.join(profile)
-            chat.join(invited)
+            subscription1 = ChSubscription(chat=chat, profile=profile)
+            subscription1.save()
+            subscription2 = ChSubscription(chat=chat, profile=invited)
+            subscription2.save()
+            # chat.join(profile)
+            # chat.join(invited)
             chat.save()
 
             return HttpResponseRedirect("/chat/" + chat.channel_unicode)

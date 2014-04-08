@@ -185,6 +185,8 @@ class ChHive(models.Model):
     category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     creation_date = models.DateField(auto_now=True)
 
+    # chat = models.OneToOneField(ChChat, related_name='chat', null=False, blank=False)
+
     def __str__(self):
         return u"%s" % self.name
 
@@ -221,6 +223,7 @@ class ChChat(models.Model):
         subscription = ChSubscription()
         subscription.set_profile(profile)
         subscription.set_chat(self)
+        subscription.save()
         return
 
         # def __unicode__(self):
