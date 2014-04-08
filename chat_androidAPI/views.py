@@ -126,7 +126,8 @@ def login_v2(request):
                     except ChSubscription.DoesNotExist:
                         return HttpResponse("Subscription not found")
 
-                    answer = json.dumps({'status': status, 'profile': profile, 'hives_subscribed': hives},
+                    answer = json.dumps({'status': status, 'profile': json.JSONEncoder.encode(profile),
+                                         'hives_subscribed': json.JSONEncoder.encode(hives)},
                                         cls=DjangoJSONEncoder)
 
                     return HttpResponse(answer)
