@@ -192,8 +192,15 @@ class ChHive(models.Model):
 
 
 class ChChat(models.Model):
+    # Chat TYPE definitions
+    TYPE = (
+        ('public', 'public'),
+        ('private', 'private'),
+    )
+
     # Relation between chat and hive
-    hive = models.OneToOneField(ChHive, related_name="hive", null=True, blank=True)
+    type = models.CharField(max_length=32, choices=TYPE, default='private')
+    hive = models.ForeignKey(ChHive, related_name="hive", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
 
     # Attributes of the Chat
@@ -213,6 +220,14 @@ class ChChat(models.Model):
         :return: None
         """
         self.channel_unicode = 'presence-' + channel_unicode
+        return
+
+    def set_type(self, type):
+        """
+        :param channel_unicode: Pusher id for this chat
+        :return: None
+        """
+        self.type = type
         return
 
     def join(self, profile):

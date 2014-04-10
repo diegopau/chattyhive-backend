@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from django.db.models import Field
+
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -30,7 +32,8 @@ def create_hive(request):
 
             # Creating public chat of hive
             chat = ChChat()
-            chat.set_hive(hive=hive)  # TODO use this?
+            chat.set_hive(hive=hive)
+            chat.set_type('public')
             chat.set_channel(replace_unicode(hive.name_url))
             chat.save()
 
@@ -62,26 +65,32 @@ def create_chat(request, hive_url, public_name):
         user = request.user
         profile = ChProfile.objects.get(user=user)
         invited = ChProfile.objects.get(public_name=public_name)
+        hive = ChHive.objects.get(name_url=hive_url)
+        if profile == invited:
+            raise Http404
 
         profile_subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
         invited_subscription = ChSubscription.objects.none()
-        for profile_subscription in profile_subscriptions:
-            try:
-                invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
-            except profile_subscription.DoesNotExist:
-                break
+        if profile_subscriptions:
+            for profile_subscription in profile_subscriptions:
+                try:
+                    if profile_subscription.chat:
+                        invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
+                except profile_subscription.DoesNotExist:
+                    break
 
         if not invited_subscription:
             # Creating private chat
             chat = ChChat()
+            chat.set_hive(hive=hive)
+            chat.set_type('private')
             chat.set_channel(replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url))
+            chat.save()
+
             subscription1 = ChSubscription(chat=chat, profile=profile)
             subscription1.save()
             subscription2 = ChSubscription(chat=chat, profile=invited)
             subscription2.save()
-            # chat.join(profile)
-            # chat.join(invited)
-            chat.save()
 
             return HttpResponseRedirect("/chat/" + chat.channel_unicode)
         else:
@@ -125,14 +134,11 @@ def join(request, hive_name):
                 hive_appeared = True
 
         if not hive_appeared:
-            # Getting public chat of hive
-            chat = ChChat.objects.get(hive=hive_joining)
 
             # Creating subscription
             subscription = ChSubscription()
             subscription.set_hive(hive=hive_joining)
             subscription.set_profile(profile=profile)
-            subscription.set_chat(chat=chat)
             subscription.save()
             return HttpResponseRedirect("/home/")
 
@@ -154,7 +160,7 @@ def leave(request, hive_name):
         username = request.user
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
-        hive_leaving = ChHive.objects.get(name=hive_name)
+        hive_leaving = ChHive.objects.get(name_url=hive_name)
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
@@ -194,7 +200,8 @@ def home(request):
                         hive_appeared = True
                 if not hive_appeared:
                     # Adding the hive to the home view
-                    hives.append(subscription.hive)
+                    if subscription.hive:
+                        hives.append(subscription.hive)
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
         return render(request, "core/home.html", {
@@ -309,7 +316,7 @@ def hive(request, hive_url):
 
     if request.method == 'GET':
         hive = ChHive.objects.get(name_url=hive_url)
-        chat = ChChat.objects.get(hive=hive)
+        chat = ChChat.objects.get(hive=hive, type='public')
         subscriptions = ChSubscription.objects.filter(hive=hive)
         profiles = []
         for subscription in subscriptions:
