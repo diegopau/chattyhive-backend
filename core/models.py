@@ -4,7 +4,9 @@ __author__ = 'lorenzo'
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django import forms
+from django.utils.http import urlquote
 from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
+import hashlib
 
 
 class ChUserManager(UserManager):
@@ -320,11 +322,13 @@ class MsgForm(forms.Form):
 ### ==========================================================
 
 def replace_unicode(string):
-    string = string.replace(u'ñ', "__nh__")
-    string = string.replace(u'Ñ', "__Nh__")
-    string = string.replace(u'á', "__atilde__")
-    string = string.replace(u'é', "__etilde__")
-    string = string.replace(u'í', "__itilde__")
-    string = string.replace(u'ó', "__otilde__")
-    string = string.replace(u'ú', "__utilde__")
+    string = urlquote(string)
+    string = hashlib.sha1(string.encode('utf-8')).hexdigest()
+    # string = string.replace(u'ñ', "__nh__")
+    # string = string.replace(u'Ñ', "__Nh__")
+    # string = string.replace(u'á', "__atilde__")
+    # string = string.replace(u'é', "__etilde__")
+    # string = string.replace(u'í', "__itilde__")
+    # string = string.replace(u'ó', "__otilde__")
+    # string = string.replace(u'ú', "__utilde__")
     return string
