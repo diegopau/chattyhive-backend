@@ -1,3 +1,5 @@
+__author__ = 'lorenzo'
+
 import django
 import json
 from django.contrib.auth import authenticate
@@ -5,11 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 from core.models import ChUser, ChProfile, ChUserManager, ChSubscription
 from django.core.serializers.json import DjangoJSONEncoder
-from pprint import pprint
-
-
-__author__ = 'lorenzo'
-
+# from pprint import pprint
 from django.http import HttpResponse, Http404
 import pusher
 
@@ -81,7 +79,6 @@ def chat(request):
 def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
-        # print(status)  # PRINT
         return HttpResponse(json.dumps({'csrf': csrf}),
                             mimetype="application/json")
     else:
@@ -92,13 +89,12 @@ def login_v2(request):
     if request.method == 'POST':
         # user = request.POST.get("user")
         # passw = request.POST.get("pass")
-        aux3 = request.body
-        data = json.loads(aux3.decode('utf-8'))
+        aux = request.body
+        data = json.loads(aux.decode('utf-8'))
         user = data['user']
         passw = data['pass']
         logs = {"user": user, "pass": passw}
-        # print(aux3)
-        print(logs)
+        print(logs)  # PRINT
 
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
@@ -137,10 +133,11 @@ def login_v2(request):
                 else:
                     status = 'ERROR'
                     return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                        cls=DjangoJSONEncoder))
+                                        cls=DjangoJSONEncoder), mimetype="application/json")
         else:
             status = 'ERROR'
-            return HttpResponse(json.dumps({'status': status, "logs": logs}, cls=DjangoJSONEncoder))
+            return HttpResponse(json.dumps({'status': status, "logs": logs},
+                                           cls=DjangoJSONEncoder), mimetype="application/json")
     else:
         raise Http404
 
@@ -158,8 +155,8 @@ def explore(request):
             hives = None
             status = "NO HIVES"
 
-        answer = json.dumps({'status': status, 'hives': hive_array})
-        return HttpResponse(answer)
+        answer = json.dumps({'status': status, 'hives': hive_array}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
 
 
 def email_check(request):
@@ -171,7 +168,9 @@ def email_check(request):
     if request.method == 'POST':
 
         # Getting email from POST param
-        email = request.POST.get('email')
+        aux = request.body
+        data = json.loads(aux.decode('utf-8'))
+        email = data['email']
 
         username = email
         # print(email + '_ANDROID')  # PRINT
@@ -183,11 +182,11 @@ def email_check(request):
         except ObjectDoesNotExist:
             status = "OK"
 
-        return HttpResponse(json.dumps({'status': status}))
+        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
 
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}))
+        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
 
 
 def register(request):
@@ -199,17 +198,20 @@ def register(request):
     if request.method == 'POST':
 
         # Getting all parameters from POST
-        email = request.POST.get('email')
-        pass1 = request.POST.get('pass1')
-        public_name = request.POST.get('public_name')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        sex = request.POST.get('sex')
-        language = request.POST.get('language')
-        private_show_age = request.POST.get('private_show_age')
-        location = request.POST.get('location')
-        public_show_age = request.POST.get('public_show_age')
-        show_location = request.POST.get('show_location')
+        aux = request.body
+        data = json.loads(aux.decode('utf-8'))
+
+        email = data['email']
+        pass1 = data['pass1']
+        public_name = data['public_name']
+        first_name = data['first_name']
+        last_name = data['last_name']
+        sex = data['sex']
+        language = data['language']
+        private_show_age = data['private_show_age']
+        location = data['location']
+        public_show_age = data['public_show_age']
+        show_location = data['show_location']
 
         username = email
         password = pass1
