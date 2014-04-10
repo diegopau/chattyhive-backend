@@ -185,18 +185,23 @@ class ChHive(models.Model):
     category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     creation_date = models.DateField(auto_now=True)
 
+    # chat = models.OneToOneField(ChChat, related_name='chat', null=False, blank=False)
+
     def __str__(self):
         return u"%s" % self.name
 
 
 class ChChat(models.Model):
-    # Relation between chat and hive
-    hive = models.OneToOneField(ChHive, related_name="hive", null=True, blank=True)
-    channel_unicode = models.CharField(max_length=60, unique=True)
+    # Chat TYPE definitions
+    TYPE = (
+        ('public', 'public'),
+        ('private', 'private'),
+    )
 
-    # Relations between chat and its users
-    user1 = models.ForeignKey(ChUser, related_name="user_1", null=True, blank=True)
-    user2 = models.ForeignKey(ChUser, related_name="user_2", null=True, blank=True)
+    # Relation between chat and hive
+    type = models.CharField(max_length=32, choices=TYPE, default='private')
+    hive = models.ForeignKey(ChHive, related_name="hive", null=True, blank=True)
+    channel_unicode = models.CharField(max_length=60, unique=True)
 
     # Attributes of the Chat
     date = models.DateTimeField(auto_now=True)
@@ -217,6 +222,14 @@ class ChChat(models.Model):
         self.channel_unicode = 'presence-' + channel_unicode
         return
 
+    def set_type(self, type):
+        """
+        :param channel_unicode: Pusher id for this chat
+        :return: None
+        """
+        self.type = type
+        return
+
     def join(self, profile):
         """
         :param profile: Object profile who wants to join to this chat
@@ -225,6 +238,7 @@ class ChChat(models.Model):
         subscription = ChSubscription()
         subscription.set_profile(profile)
         subscription.set_chat(self)
+        subscription.save()
         return
 
         # def __unicode__(self):
@@ -265,8 +279,8 @@ class ChAnswer(ChMessage):
 class ChSubscription(models.Model):
     # Subscription object which relates Profiles with Hives/Chats
     profile = models.ForeignKey(ChProfile, unique=False)
-    hive = models.ForeignKey(ChHive, null=True, blank=True)
-    chat = models.ForeignKey(ChChat, null=True, blank=True)
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscription')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscription')
 
     def set_chat(self, chat):
         """

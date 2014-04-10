@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hive</title>
+</head>
+<body>
+    <a href="/home/">Home</a><br />
+    <br />
+    <li>
+        :{{ hive.name }} -> {{ hive.description }} {{ hive.category }}<br />
+        <a href="/chat/{{ chat.channel_unicode }}"> public chat</a>
+    </li>
+    <br />
+    {% for profile in profiles %}
+        <li>
+            <a href="/create_chat/{{ hive.name_url }}/{{ profile.public_name }}">{{ profile.public_name }}</a>  (<a href="/profile/{{ profile.public_name }}">profile</a>)<br />
+        </li>
+    {% endfor %}
+
+
+</body>
+</html>

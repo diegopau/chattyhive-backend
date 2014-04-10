@@ -22,10 +22,10 @@
     <br />
     My Hives
     <br />
-    {% for data in hives %}
+    {% for hive in hives %}
       <li>
-        <a href="/chat/{{ data }}">{{ data }}</a>
-        <a href="/leave/{{ data }}">leave</a>
+        <a href="/hive/{{ hive.name_url }}">{{ hive.name }}</a>
+        <a href="/leave/{{ hive.name_url }}">leave</a>
       </li>
     {% endfor %}
 
