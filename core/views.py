@@ -24,13 +24,14 @@ def create_hive(request):
             hive_name = form.cleaned_data['name']
             hive = form.save(commit=False)
             hive.name_url = hive_name.replace(" ", "_")
+            hive.name_url = replace_unicode(hive.name_url)
             print(hive.name_url)
             # hive.name_url = hashlib.sha256(hive_name).hexdigest()
             try:
-                ChHive.objects.filter(name_url=hive.name_url)
+                ChHive.objects.get(name_url=hive.name_url)
                 return HttpResponse("This hive already exists")
             except ChHive.DoesNotExist:
-                hive.name_url = replace_unicode(hive_name)
+                # hive.name_url = replace_unicode(hive_name)
                 hive.save()
 
             user = request.user
