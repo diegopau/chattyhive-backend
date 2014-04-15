@@ -8,7 +8,9 @@
 {#    <script type="text/javascript" src="{{STATIC_URL}}js/chat.js"></script>#}
 </head>
 <body>
-    <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
+    <div align="right">
+        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
+    </div>
     <a href="/home/chats/">Home</a>
     <br />
     Welcome, {{ user }}!
@@ -126,26 +128,6 @@
                 return false;
             });
 
-            // Button logout behaviour when clicked
-            $('#btn_logout').on('click', function()
-            {
-                $.ajax({
-                    type: "POST",
-                    url: "/logout/",
-                    headers: {"X-CSRFToken":csrftoken},
-                    data: "",
-                    success: function(newData){
-                        alert(newData);
-                        //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/";
-                    },
-                    failure: function(errMsg) {
-                        alert(errMsg);
-                    }
-                });
-                return false;
-            });
-
             // Button load behaviour when clicked
             $('#btn_load').on('click', function()
             {
@@ -185,6 +167,7 @@
                 return false;
             });
 
+            // Button logout behaviour when clicked
             $('#btn_logout').on('click', function()
             {
                 var csrftoken = $.cookie('csrftoken');
