@@ -265,6 +265,7 @@ def chat(request, hive_url):
         return HttpResponse("Server Ok")
     else:
         #if GET hive_url is the hive URL
+        hive_url = hive_url.replace(" ", "_")
         hive_url = replace_unicode(hive_url)
         hive = ChHive.objects.get(name_url=hive_url)
         chat = ChChat.objects.get(hive=hive)
