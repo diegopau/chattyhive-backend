@@ -178,7 +178,7 @@ def leave(request, hive_name):
 
 
 @login_required
-def home(request):
+def hives(request):
     """
     :param request:
     :return: Home web page
@@ -204,9 +204,33 @@ def home(request):
                         hives.append(subscription.hive)
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
-        return render(request, "core/home.html", {
+        return render(request, "core/home_hives.html", {
             'hives': hives
         })
+
+@login_required
+def chats(request):
+
+    if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+
+        try:
+            subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
+            chats = []
+            for subscription in subscriptions:
+                if subscription.chat:
+                    chats.append(subscription.chat)
+
+        except ChSubscription.DoesNotExist:
+            return HttpResponse("Subscription not found")
+
+        return render(request, "core/home_chats.html", {
+            'chats': chats
+        })
+
+    else:
+        raise Http404
 
 
 @login_required

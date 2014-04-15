@@ -8,10 +8,10 @@
 {#    <script type="text/javascript" src="{{STATIC_URL}}js/chat.js"></script>#}
 </head>
 <body>
-    <a href="/home/">Home</a>
+    <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
+    <a href="/home/chats/">Home</a>
     <br />
     Welcome, {{ user }}!
-    <button type="button" id="btn_logout" style="text-align: right">Logout</button><br />
     Hive: {{ hive }}<br />
     <br /><br /><button type="button" id="btn_load" style="text-align: right">Load previous messages</button>
         <p id="chat_field">
@@ -177,6 +177,26 @@
                     success: function(newData){
                         messages = JSON.parse(newData)
                         reload(messages)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+
+            $('#btn_logout').on('click', function()
+            {
+                var csrftoken = $.cookie('csrftoken');
+                $.ajax({
+                    type: "POST",
+                    url: "/logout/",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        alert(newData);
+                        //$.removeCookie(); TODO toggle to remove browser cookies
+                        location.href="/";
                     },
                     failure: function(errMsg) {
                         alert(errMsg);
