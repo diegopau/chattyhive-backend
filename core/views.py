@@ -37,12 +37,8 @@ def create_hive(request):
             chat.set_channel(replace_unicode(hive.name_url))
             chat.save()
 
-            # hive.chat = chat
-
             # Creating subscription
-            subscription = ChSubscription()
-            subscription.set_hive(hive=hive)
-            subscription.set_profile(profile=profile)
+            subscription = ChSubscription(chat=chat, hive=hive, profile=profile)
             subscription.save()
             # return HttpResponseRedirect("/create_hive/create/")
             return HttpResponseRedirect("/home/")
@@ -74,10 +70,10 @@ def create_chat(request, hive_url, public_name):
         if profile_subscriptions:
             for profile_subscription in profile_subscriptions:
                 try:
-                    if profile_subscription.chat:
+                    if profile_subscription.chat and profile_subscription.chat.type == 'private':
                         invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
                 except profile_subscription.DoesNotExist:
-                    break
+                    continue
 
         if not invited_subscription:
             # Creating private chat
@@ -111,6 +107,7 @@ def join(request, hive_name):
         user = request.user
         profile = ChProfile.objects.get(user=user)
         hive_joining = ChHive.objects.get(name=hive_name)
+        public_chat = ChChat.objects.get(hive=hive_joining, type='public')
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
@@ -135,10 +132,8 @@ def join(request, hive_name):
 
         if not hive_appeared:
 
-            # Creating subscription
-            subscription = ChSubscription()
-            subscription.set_hive(hive=hive_joining)
-            subscription.set_profile(profile=profile)
+             # Creating subscription
+            subscription = ChSubscription(chat=public_chat, hive=hive_joining, profile=profile)
             subscription.save()
             return HttpResponseRedirect("/home/")
 
@@ -326,6 +321,7 @@ def chat(request, chat_url):
         form = MsgForm()
         return render(request, "core/chat.html", {
             'user': user.username,
+            'hive': chat.hive,
             'app_key': app_key,
             'key': key,
             'url': chat_url,
