@@ -13,10 +13,10 @@
     </div>
     <a href="/home/">Home</a><br />
     <br />
-    <li>
-        :{{ hive.name }} -> {{ hive.description }} {{ hive.category }}<br />
+    <div>
+        :{{ hive.name }} -- <a href="/hive_description/{{ hive.name_url }}">Desciption</a> <br />
         <a href="/chat/{{ chat.channel_unicode }}"> public chat</a>
-    </li>
+    </div>
     <br />
     <button type="button" id="btn_up" style="text-align: right">Up</button>
     <p id="profiles_list">
