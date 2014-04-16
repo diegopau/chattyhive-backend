@@ -333,20 +333,48 @@ def chat(request, chat_url):
 
 @login_required
 def hive(request, hive_url):
-
+    """
+    :param request:
+    :param hive_url: Url of the hive, which will be used for the query
+    :return: hive view with users and public chat link
+    """
     if request.method == 'GET':
         hive = ChHive.objects.get(name_url=hive_url)
         chat = ChChat.objects.get(hive=hive, type='public')
-        subscriptions = ChSubscription.objects.filter(hive=hive)
-        profiles = []
-        for subscription in subscriptions:
-            profiles.append(subscription.profile)
+        # subscriptions = ChSubscription.objects.filter(hive=hive)[0:5]
+        # profiles = []
+        # for subscription in subscriptions:
+        #     profiles.append(subscription.profile)
         return render(request, "core/hive.html", {
             'hive': hive,
             'chat': chat,
-            'profiles': profiles
         })
 
+    else:
+        raise Http404
+
+
+@login_required
+def get_hive_users(request, hive_url, init, interval):
+    """
+    :param request:
+    :param hive_url: Url of the hive, which will be used for the query
+    :param init: ID of the first message to return
+    :param interval: Number of messages to return
+    :return: *interval* users from *init*
+    """
+    if request.method == 'GET':
+        hive = ChHive.objects.get(name_url=hive_url)
+        if init == 'first':
+            subscriptions = ChSubscription.objects.filter(hive=hive)[0:int(interval)]
+        elif init.isnumeric():
+            subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init)+int(interval)]
+        else:
+            raise Http404
+        profiles = []
+        for subscription in subscriptions:
+            profiles.append({"public_name": subscription.profile.public_name})
+        return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
     else:
         raise Http404
 
