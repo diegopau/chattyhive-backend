@@ -5,7 +5,7 @@ import json
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
-from core.models import ChUser, ChProfile, ChUserManager, ChSubscription
+from core.models import ChUser, ChProfile, ChUserManager, ChSubscription, ChHive
 from django.core.serializers.json import DjangoJSONEncoder
 # from pprint import pprint
 from django.http import HttpResponse, Http404
