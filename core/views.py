@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 from django.db.models import Field
 
-__author__ = 'lorenzo'
+__author__ = 'xurxo'
 
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse, Http404
