@@ -1,14 +1,15 @@
-__author__ = 'lorenzo'
+from django.utils import timezone
+
+__author__ = 'xulegaspi'
 
 import django
 import json
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
-from core.models import ChUser, ChProfile, ChUserManager, ChSubscription, ChHive, ChChat
+from core.models import ChUser, ChProfile, ChUserManager, ChSubscription, ChHive, ChChat, ChMessage
 from django.core.serializers.json import DjangoJSONEncoder
-# from pprint import pprint
-from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.http import HttpResponse, Http404
 import pusher
 
 
@@ -152,7 +153,6 @@ def explore(request):
                 hive_array.append(hive.toJSON())
             status = "OK"
         except ChHive.DoesNotExist:
-            hives = None
             status = "NO HIVES"
 
         answer = json.dumps({'status': status, 'hives': hive_array}, cls=DjangoJSONEncoder)
@@ -179,6 +179,8 @@ def email_check(request):
         try:
             if ChUser.objects.get(username=username) is not None:
                 status = "USER_ALREADY_EXISTS"
+            else:
+                status = "NONE"
         except ObjectDoesNotExist:
             status = "OK"
 
@@ -306,13 +308,13 @@ def join(request):
         # Joining to this hive
         if not hive_appeared:
             # Getting public chat of hive
-            chat = ChChat.objects.get(hive=hive_joining)
+            chat2 = ChChat.objects.get(hive=hive_joining)
 
             # Creating subscription
             subscription = ChSubscription()
             subscription.set_hive(hive=hive_joining)
             subscription.set_profile(profile=profile)
-            subscription.set_chat(chat=chat)
+            subscription.set_chat(chat=chat2)
             subscription.save()
 
             status = 'SUBSCRIBED'
@@ -321,5 +323,56 @@ def join(request):
         else:
             status = 'ALREADY_SUBSCRIBED'
             return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+    else:
+        raise Http404
+
+
+def chat_v2(request):
+    # Variable declaration
+    app_key = "55129"
+    key = 'f073ebb6f5d1b918e59e'
+    secret = '360b346d88ee47d4c230'
+    event = 'msg'
+
+    # GET vs POST
+    if request.method == 'POST':
+        # Getting params from POST
+        aux = request.body
+        data = json.loads(aux.decode('utf-8'))
+        hive_name = data['hive']
+        username = data['user']
+        msg = data['message']
+        timestamp = data['timestamp']
+
+        # Processing params to get info in server
+        user = ChUser.objects.get(username=username)
+        profile = ChProfile.objects.get(user=user)
+        hive = ChHive.objects.get(name=hive_name)
+        # hive_url = hive.name_url
+
+        chat2 = ChChat.objects.get(hive=hive)
+
+        p = pusher.Pusher(
+            app_id=app_key,
+            key=key,
+            secret=secret,
+            encoder=DjangoJSONEncoder,
+        )
+        message = ChMessage(profile=profile, chat=chat2)
+        message.date = timezone.now()
+        message.content_type = 'text'
+        message.content = msg
+
+        p[chat.channel_unicode].trigger(event, {"username": user.username,
+                                                "public_name": profile.public_name,
+                                                "message": msg,
+                                                "timestamp": timestamp,
+                                                "server_time": message.date.astimezone(),
+                                                })
+
+        message.save()
+
+        status = 'MESSAGE_SENT'
+        return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
     else:
         raise Http404
