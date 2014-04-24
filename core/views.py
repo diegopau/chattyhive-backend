@@ -28,13 +28,21 @@ def create_hive(request):
             hive_name = form.cleaned_data['name']
             hive = form.save(commit=False)
             hive.name_url = hive_name.replace(" ", "_")
-            hive.save()
+            hive.name_url = replace_unicode(hive.name_url)
+            print(hive.name_url)
+            # hive.name_url = hashlib.sha256(hive_name).hexdigest()
+            try:
+                ChHive.objects.get(name_url=hive.name_url)
+                return HttpResponse("This hive already exists")
+            except ChHive.DoesNotExist:
+                # hive.name_url = replace_unicode(hive_name)
+                hive.save()
 
             # Creating public chat of hive
             chat = ChChat()
             chat.set_hive(hive=hive)
             chat.set_type('public')
-            chat.set_channel(replace_unicode(hive.name_url))
+            chat.set_channel(hive.name_url)
             chat.save()
 
             # Creating subscription
