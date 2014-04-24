@@ -96,7 +96,7 @@ def create_chat(request, hive_url, public_name):
 
 
 @login_required
-def join(request, hive_name):
+def join(request, hive_url):
     """
     :param request:
     :param hive_name: Name of the hive that will be joined to
@@ -106,7 +106,7 @@ def join(request, hive_name):
         # Getting needed information
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        hive_joining = ChHive.objects.get(name=hive_name)
+        hive_joining = ChHive.objects.get(name_url=hive_url)
         public_chat = ChChat.objects.get(hive=hive_joining, type='public')
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
@@ -144,10 +144,10 @@ def join(request, hive_name):
 
 
 @login_required
-def leave(request, hive_name):
+def leave(request, hive_url):
     """
     :param request:
-    :param hive_name:
+    :param hive_url:
     :return:
     """
     if request.method == 'GET':
@@ -155,14 +155,18 @@ def leave(request, hive_name):
         username = request.user
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
-        hive_leaving = ChHive.objects.get(name_url=hive_name)
+        hive_leaving = ChHive.objects.get(name_url=hive_url)
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
-            subscriptions = ChSubscription.objects.all()
-            subscriptions = subscriptions.filter(profile=profile)
-            subscription = subscriptions.filter(hive=hive_leaving)
-            subscription.delete()
+            subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
+            for subscription in subscriptions:
+                chat = subscription.chat
+                if chat.hive == hive_leaving:
+                    if chat.type == 'private':
+                        chat.delete()
+                    else:
+                        subscription.delete()
 
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
@@ -333,20 +337,70 @@ def chat(request, chat_url):
 
 @login_required
 def hive(request, hive_url):
-
+    """
+    :param request:
+    :param hive_url: Url of the hive, which will be used for the query
+    :return: hive view with users and public chat link
+    """
     if request.method == 'GET':
         hive = ChHive.objects.get(name_url=hive_url)
         chat = ChChat.objects.get(hive=hive, type='public')
-        subscriptions = ChSubscription.objects.filter(hive=hive)
-        profiles = []
-        for subscription in subscriptions:
-            profiles.append(subscription.profile)
         return render(request, "core/hive.html", {
             'hive': hive,
             'chat': chat,
-            'profiles': profiles
         })
 
+    else:
+        raise Http404
+
+
+@login_required
+def hive_description(request, hive_url):
+    """
+    :param request:
+    :param hive_url: Url of the hive, which will be used for the query
+    :return: hive view with users and public chat link
+    """
+    if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        hive = ChHive.objects.get(name_url=hive_url)
+        try:
+            ChSubscription.objects.get(hive=hive, profile=profile)
+            subscribed = True
+        except ChSubscription.DoesNotExist:
+            subscribed = False
+
+        return render(request, "core/hive_description.html", {
+            'hive': hive,
+            'subscribed': subscribed,
+        })
+
+    else:
+        raise Http404
+
+
+@login_required
+def get_hive_users(request, hive_url, init, interval):
+    """
+    :param request:
+    :param hive_url: Url of the hive, which will be used for the query
+    :param init: ID of the first message to return
+    :param interval: Number of messages to return
+    :return: *interval* users from *init*
+    """
+    if request.method == 'GET':
+        hive = ChHive.objects.get(name_url=hive_url)
+        if init == 'first':
+            subscriptions = ChSubscription.objects.filter(hive=hive)[0:int(interval)]
+        elif init.isnumeric():
+            subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init)+int(interval)]
+        else:
+            raise Http404
+        profiles = []
+        for subscription in subscriptions:
+            profiles.append({"public_name": subscription.profile.public_name})
+        return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
     else:
         raise Http404
 
