@@ -147,7 +147,7 @@ def join(request, hive_url):
 def leave(request, hive_url):
     """
     :param request:
-    :param hive_name:
+    :param hive_url:
     :return:
     """
     if request.method == 'GET':
@@ -159,10 +159,14 @@ def leave(request, hive_url):
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
-            subscriptions = ChSubscription.objects.all()
-            subscriptions = subscriptions.filter(profile=profile)
-            subscription = subscriptions.filter(hive=hive_leaving)
-            subscription.delete()
+            subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
+            for subscription in subscriptions:
+                chat = subscription.chat
+                if chat.hive == hive_leaving:
+                    if chat.type == 'private':
+                        chat.delete()
+                    else:
+                        subscription.delete()
 
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
