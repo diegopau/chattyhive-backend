@@ -48,12 +48,12 @@
                 var profile = users[0];
                 $('#profiles_list').html('<a href="/create_chat/' + hive_url + '/' + profile.public_name + '">@' +
                                           profile.public_name + '</a>  (<a href="/profile/' + profile.public_name +
-                                          '">profile</a>)<br />');
+                                          '/public">profile</a>)<br />');
                 for(i = 1; i < users.length; i++){
                     profile = users[i]
                     $('#profiles_list').html($('#profiles_list').html() +
                         '<a href="/create_chat/' + hive_url + '/' + profile.public_name + '">@' + profile.public_name +
-                        '</a>  (<a href="/profile/' + profile.public_name + '">profile</a>)<br />'
+                        '</a>  (<a href="/profile/' + profile.public_name + '/public">profile</a>)<br />'
                     );
                 }
             }

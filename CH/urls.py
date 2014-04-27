@@ -44,7 +44,7 @@ urlpatterns = patterns('',
     url(r'^confirm_email/(\w+)/$', 'email_confirmation.views.confirm_email', name='email_confirmation'),
     url(r'^email_confirmed/$', 'email_confirmation.views.email_confirmed', name='email_confirmed'),
 
-    url(r'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
+    url(r'^profile/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^android_test/', 'core.views.android_test', name='android_test'),
     url(r'^test/', 'core.views.test', name='test'),
 
