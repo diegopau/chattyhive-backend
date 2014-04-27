@@ -23,10 +23,12 @@ urlpatterns = patterns('',
     url(r'^create_hive/$', 'core.views.create_hive', name='create_hive'),
     url(r'^create_chat/(?P<hive_url>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
         'core.views.create_chat', name='create_chat'),
+
     url(r'^home/$', 'core.views.hives', name='home'),
     url(r'^home/hives/$', 'core.views.hives', name='hives'),
     url(r'^home/chats/$', 'core.views.chats', name='chats'),
     url(r'^explore/$', 'core.views.explore', name='explore'),
+
     url(r'^join/(?P<hive_url>[-a-zA-Z0-9ñÑáéíóú¿¡!?_ ]+)/', 'core.views.join', name='join'),
     url(r'^leave/(?P<hive_url>[-a-zA-Z0-9ñÑáéíóú¿¡!?_ ]+)/', 'core.views.leave', name='leave'),
     url(r'^hive/(?P<hive_url>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/', 'core.views.hive', name='hive'),
@@ -34,13 +36,15 @@ urlpatterns = patterns('',
         'core.views.hive_description', name='hive_description'),
     url(r'^hive_users/(?P<hive_url>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<init>[0-9first]+)-(?P<interval>[0-9]+)/',
         'core.views.get_hive_users', name='get_hive_users'),
+
     url(r'^chat/(?P<chat_url>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/', 'core.views.chat', name='chat'),
     url(r'^messages/(?P<chat_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<init>[0-9last]+)-(?P<interval>[0-9]+)/',
         'core.views.get_messages', name='get_messages'),
+
     url(r'^confirm_email/(\w+)/$', 'email_confirmation.views.confirm_email', name='email_confirmation'),
     url(r'^email_confirmed/$', 'email_confirmation.views.email_confirmed', name='email_confirmed'),
 
-    url(r'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
+    url(r'^profile/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^android_test/', 'core.views.android_test', name='android_test'),
     url(r'^test/', 'core.views.test', name='test'),
 
