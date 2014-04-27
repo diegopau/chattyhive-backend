@@ -140,7 +140,7 @@ def join(request, hive_url):
 
         if not hive_appeared:
 
-             # Creating subscription
+        # Creating subscription
             subscription = ChSubscription(chat=public_chat, hive=hive_joining, profile=profile)
             subscription.save()
             return HttpResponseRedirect("/home/")
@@ -215,9 +215,9 @@ def hives(request):
             'hives': hives
         })
 
+
 @login_required
 def chats(request):
-
     if request.method == 'GET':
         user = request.user
         profile = ChProfile.objects.get(user=user)
@@ -227,7 +227,10 @@ def chats(request):
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
-                    chats.append(subscription.chat)
+                    subscribed = []
+                    if subscription.chat.type == 'private':
+                        subscribed = ChSubscription.objects.select_related().filter(chat=subscription.chat).exclude(profile=profile).get().profile.public_name
+                    chats.append({"chat": subscription.chat, "subscribed": subscribed})
 
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
@@ -286,7 +289,7 @@ def profile(request, public_name, private):
                         "language": profile_view.language,
                         "sex": profile_view.sex,
                         "allowed": allowed
-                        }
+                }
                 return render(request, "core/private_profile.html", {
                     "profile": data
                 })
@@ -296,7 +299,7 @@ def profile(request, public_name, private):
                         "location": profile_view.location,
                         "show_age": profile_view.public_show_age,
                         "allowed": allowed
-                        }
+                }
                 return render(request, "core/public_profile.html", {
                     "profile": data
                 })
@@ -343,7 +346,7 @@ def chat(request, chat_url):
                                                 "message": msg,
                                                 "timestamp": timestamp,
                                                 "server_time": message.date.astimezone(),
-                                                })
+        })
 
         message.save()
         return HttpResponse("Server Ok")
@@ -422,7 +425,7 @@ def get_hive_users(request, hive_url, init, interval):
         if init == 'first':
             subscriptions = ChSubscription.objects.filter(hive=hive)[0:int(interval)]
         elif init.isnumeric():
-            subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init)+int(interval)]
+            subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init) + int(interval)]
         else:
             raise Http404
         profiles = []
