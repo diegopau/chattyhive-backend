@@ -258,32 +258,36 @@ def explore(request):
 
 
 @login_required
-def profile(request, private):
+def profile(request, public_name, private):
     """
     :param request:
     :param private: Type of profile which is going to be shown, private or public
     :return: Profile web page which contains your personal info
     """
     user = request.user
-    if request.method == 'GET':
-        try:
-            profile = ChProfile.objects.get(user=user)
-        except ChProfile.DoesNotExist:
-            profile = None
-        if private == "private":
-            data = {"first_name": profile.first_name, "surname": profile.last_name, "language": profile.language,
-                    "sex": profile.sex}
-            return render(request, "core/private_profile.html", {
-                "profile": data
-            })
-        elif private == "public":
-            data = {"public_name": profile.public_name, "language": profile.language,
-                    "location": profile.location, "show_age": profile.public_show_age}
-            return render(request, "core/public_profile.html", {
-                "profile": data
-            })
-        else:
-            return HttpResponse("Error")
+    profile = ChProfile.objects.get(user=user)
+    if public_name != profile.public_name and private == 'private':
+        raise Http404
+    else:
+        if request.method == 'GET':
+            try:
+                profile = ChProfile.objects.get(user=user)
+            except ChProfile.DoesNotExist:
+                profile = None
+            if private == "private":
+                data = {"first_name": profile.first_name, "surname": profile.last_name, "language": profile.language,
+                        "sex": profile.sex}
+                return render(request, "core/private_profile.html", {
+                    "profile": data
+                })
+            elif private == "public":
+                data = {"public_name": profile.public_name, "language": profile.language,
+                        "location": profile.location, "show_age": profile.public_show_age}
+                return render(request, "core/public_profile.html", {
+                    "profile": data
+                })
+            else:
+                return HttpResponse("Error")
 
 
 @login_required
