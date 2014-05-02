@@ -373,13 +373,22 @@ def hive(request, hive_url):
     :param hive_url: Url of the hive, which will be used for the query
     :return: hive view with users and public chat link
     """
+
     if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name_url=hive_url)
-        chat = ChChat.objects.get(hive=hive, type='public')
-        return render(request, "core/hive.html", {
-            'hive': hive,
-            'chat': chat,
-        })
+        try:
+            ChSubscription.objects.get(hive=hive, profile=profile)
+            chat = ChChat.objects.get(hive=hive, type='public')
+            return render(request, "core/hive.html", {
+                'hive': hive,
+                'chat': chat,
+            })
+        except ChSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
 
     else:
         raise Http404
@@ -421,19 +430,29 @@ def get_hive_users(request, hive_url, init, interval):
     :return: *interval* users from *init*
     """
     if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name_url=hive_url)
-        if init == 'first':
-            subscriptions = ChSubscription.objects.filter(hive=hive)[0:int(interval)]
-        elif init.isnumeric():
-            subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init) + int(interval)]
-        else:
-            raise Http404
-        profiles = []
-        for subscription in subscriptions:
-            profiles.append({"public_name": subscription.profile.public_name})
-        return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
+        try:
+            ChSubscription.objects.get(hive=hive, profile=profile)
+            if init == 'first':
+                subscriptions = ChSubscription.objects.filter(hive=hive)[0:int(interval)]
+            elif init.isnumeric():
+                subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init) + int(interval)]
+            else:
+                raise Http404
+            profiles = []
+            for subscription in subscriptions:
+                profiles.append({"public_name": subscription.profile.public_name})
+            return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
+
+        except ChSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
     else:
         raise Http404
+
 
 
 @login_required
