@@ -229,7 +229,8 @@ def chats(request):
                 if subscription.chat:
                     subscribed = []
                     if subscription.chat.type == 'private':
-                        subscribed = ChSubscription.objects.select_related().filter(chat=subscription.chat).exclude(profile=profile).get().profile.public_name
+                        subscribed = ChSubscription.objects.select_related().filter(chat=subscription.chat).exclude(
+                            profile=profile).get().profile.public_name
                     chats.append({"chat": subscription.chat, "subscribed": subscribed})
 
         except ChSubscription.DoesNotExist:
@@ -316,9 +317,10 @@ def chat(request, chat_url):
     :param chat_url: Url of the chat
     :return: Chat web page which allows to chat with users who joined the same channel
     """
-    # Variable declaration
+    # info retrieval
     user = request.user
     profile = ChProfile.objects.get(user=user)
+    chat = ChChat.objects.get(channel_unicode=chat_url)
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
@@ -326,44 +328,57 @@ def chat(request, chat_url):
 
     # GET vs POST
     if request.method == 'POST':
-        chat = ChChat.objects.get(channel_unicode=chat_url)
 
-        msg = request.POST.get("message")
-        timestamp = request.POST.get("timestamp")
-        p = pusher.Pusher(
-            app_id=app_key,
-            key=key,
-            secret=secret,
-            encoder=DjangoJSONEncoder,
-        )
-        message = ChMessage(profile=profile, chat=chat)
-        message.date = timezone.now()
-        message.content_type = 'text'
-        message.content = msg
+        try:
+            ChSubscription.objects.get(chat=chat, profile=profile)
+            msg = request.POST.get("message")
+            timestamp = request.POST.get("timestamp")
+            p = pusher.Pusher(
+                app_id=app_key,
+                key=key,
+                secret=secret,
+                encoder=DjangoJSONEncoder,
+            )
+            message = ChMessage(profile=profile, chat=chat)
+            message.date = timezone.now()
+            message.content_type = 'text'
+            message.content = msg
 
-        p[chat.channel_unicode].trigger(event, {"username": user.username,
-                                                "public_name": profile.public_name,
-                                                "message": msg,
-                                                "timestamp": timestamp,
-                                                "server_time": message.date.astimezone(),
-        })
+            p[chat.channel_unicode].trigger(event, {"username": user.username,
+                                                    "public_name": profile.public_name,
+                                                    "message": msg,
+                                                    "timestamp": timestamp,
+                                                    "server_time": message.date.astimezone(),
+            })
 
-        message.save()
-        return HttpResponse("Server Ok")
+            message.save()
+            return HttpResponse("Server Ok")
+
+        except ChSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
+    # GET
     else:
-        chat = ChChat.objects.get(channel_unicode=chat_url)
+        try:
+            ChSubscription.objects.get(chat=chat, profile=profile)
 
-        form = MsgForm()
-        return render(request, "core/chat.html", {
-            'user': user.username,
-            'hive': chat.hive,
-            'app_key': app_key,
-            'key': key,
-            'url': chat_url,
-            'channel': chat.channel_unicode,
-            'event': event,
-            'form': form,
-        })
+            form = MsgForm()
+            return render(request, "core/chat.html", {
+                'user': user.username,
+                'hive': chat.hive,
+                'app_key': app_key,
+                'key': key,
+                'url': chat_url,
+                'channel': chat.channel_unicode,
+                'event': event,
+                'form': form,
+            })
+
+        except ChSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
 
 
 @login_required
@@ -454,7 +469,6 @@ def get_hive_users(request, hive_url, init, interval):
         raise Http404
 
 
-
 @login_required
 def get_messages(request, chat_name, init, interval):
     """
@@ -464,35 +478,38 @@ def get_messages(request, chat_name, init, interval):
     :param interval: Number of messages to return
     :return: *interval* messages from *init*
     """
-    # Variable declaration
-    user = request.user
-    profile = ChProfile.objects.get(user=user)
-    chat = ChChat.objects.get(channel_unicode=chat_name)
-    hive = chat.hive
-    try:
-        ChSubscription.objects.get(profile=profile, hive=hive)
-    except ChSubscription.DoesNotExist:
-        return HttpResponse("You are not subscribed to this chat")
 
     # GET vs POST
     if request.method == 'GET':
-        # chat = ChChat.objects.get(hive=hive)
-        if init == 'last':
-            messages = ChMessage.objects.filter(chat=chat).order_by('-id')[0:int(interval)]
-        elif init.isnumeric():
-            messages = ChMessage.objects.filter(chat=chat, id__lte=int(init)).order_by('-id')[0:int(interval)]
-        else:
-            raise Http404
-        messages_row = []
-        for message in messages:
-            messages_row.append({"username": message.profile.user.username,
-                                 "public_name": message.profile.public_name,
-                                 "message": message.content,
-                                 "timestamp": message.date.astimezone(),
-                                 "server_time": message.date.astimezone(),
-                                 "id": message.id
-            })
-        return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
+
+        # info retrieval
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        chat = ChChat.objects.get(channel_unicode=chat_name)
+        hive = chat.hive
+
+        try:
+            ChSubscription.objects.get(profile=profile, hive=hive)
+            if init == 'last':
+                messages = ChMessage.objects.filter(chat=chat).order_by('-id')[0:int(interval)]
+            elif init.isnumeric():
+                messages = ChMessage.objects.filter(chat=chat, id__lte=int(init)).order_by('-id')[0:int(interval)]
+            else:
+                raise Http404
+            messages_row = []
+            for message in messages:
+                messages_row.append({"username": message.profile.user.username,
+                                     "public_name": message.profile.public_name,
+                                     "message": message.content,
+                                     "timestamp": message.date.astimezone(),
+                                     "server_time": message.date.astimezone(),
+                                     "id": message.id
+                })
+            return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
+        except ChSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
     else:
         raise Http404
 
