@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from django.db import IntegrityError
+
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -20,6 +22,8 @@ from email_confirmation import *
 
 
 def login_view(request):
+    if request.user.is_authenticated():
+        return HttpResponseRedirect("/home")
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -44,36 +48,42 @@ def login_view(request):
 
 
 def create_user_view(request):
+    if request.user.is_authenticated():
+        return HttpResponseRedirect("/home")
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
-            email = form.cleaned_data['email']
-            username = email        # TODO temporal solution, should be changed
-            password = uuid4().hex  # this password will be used until the user enter a new one
-
-            # Checking already existing user
             try:
-                if ChUser.objects.get(username=username) is not None:
-                    return HttpResponse("Username already exists. Please, choose other")
-            # if the user ist not already created, we create a new one
-            except ObjectDoesNotExist:
+                email = form.cleaned_data['email']
+                username = email        # TODO temporal solution, should be changed
+                password = uuid4().hex  # this password will be used until the user enter a new one
                 manager = ChUserManager()
                 user = manager.create_user(username, email, password)
 
-            # Profile creation
-            profile = ChProfile(user=user)
-            profile.save()
+                # Profile creation
+                profile = ChProfile(user=user)
+                profile.save()
 
-            user2 = authenticate(username=username, password=password)
-            if user is not None:
-                if user.is_active:
-                    login(request, user2)
+                user2 = authenticate(username=username, password=password)
+                if user is not None:
+                    if user.is_active:
+                        login(request, user2)
+                    else:
+                        return HttpResponse("ERROR, inactive user")
                 else:
-                    return HttpResponse("ERROR, inactive user")
-            else:
-                return HttpResponse("UNKNOWN ERROR")
+                    return HttpResponse("UNKNOWN ERROR")
 
-            return HttpResponseRedirect("/create_user/register1/")
+                return HttpResponseRedirect("/create_user/register1/")
+
+            # if the email is already used
+            except IntegrityError:
+                form = CreateUserForm()
+                return render(request, "login/registration.html", {
+                    'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
+                    'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
+                    'form': form,
+                    'error': 'email',
+                })
 
         else:
             return HttpResponse("ERROR, invalid form")
@@ -147,26 +157,39 @@ def register_three(request):
             password2 = form.cleaned_data['password2']
 
             if password == password2:  # Checking correct password written twice
-                user.username = username
-                user.set_password(password)
-                user.save()
+                try:
+                    user.username = username
+                    user.set_password(password)
+                    user.save()
 
-                profile = ChProfile.objects.get(user=user)
-                # mail_manager = EmailAddressManager()
-                print(profile)  # PRINT
-                mail_address = EmailAddress.objects.add_email(user=profile, email=email)
-                # mail_address
-                # mail_address.user = profile
-                # mail_address.email = email
-                # mail_address.save()
-                # email_address.set_as_primary(conditional=True)
-                # email_address.save()
+                    profile = ChProfile.objects.get(user=user)
+                    # mail_manager = EmailAddressManager()
+                    print(profile)  # PRINT
+                    mail_address = EmailAddress.objects.add_email(user=profile, email=email)
+                    # mail_address
+                    # mail_address.user = profile
+                    # mail_address.email = email
+                    # mail_address.save()
+                    # email_address.set_as_primary(conditional=True)
+                    # email_address.save()
 
-                # Send confirmation email here
-                # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+                    # Send confirmation email here
+                    # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+
+                # if the email is already used
+                except IntegrityError:
+                    form = RegistrationFormThree()
+                    return render(request, "login/create_user.html", {
+                        'form': form,
+                        'error': 'email',
+                    })
 
             else:
-                return HttpResponse("Passwords don't match")
+                form = RegistrationFormThree()
+                return render(request, "login/create_user.html", {
+                    'form': form,
+                    'error': 'password',
+                })
 
             return HttpResponseRedirect("/home/")
 
@@ -187,6 +210,7 @@ def register_three(request):
             })
         return render(request, "login/create_user.html", {
             'form': form,
+            'error': 'none',
         })
 
 
