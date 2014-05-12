@@ -42,7 +42,17 @@ class EmailAddressManager(models.Manager):
             return self.get(user=user, primary=True)
         except EmailAddress.DoesNotExist:
             return None
-    
+
+    def check_confirmation(self, user):
+        try:
+            email = EmailAddress.objects.get(user=user)
+            if not email.verified:
+                email.user.is_active = False
+                return None
+            return None
+        except EmailAddress.DoesNotExist:
+            return None
+
     def get_users_for(self, email):
         """
         returns a list of users with the given email.

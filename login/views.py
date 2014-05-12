@@ -29,6 +29,7 @@ def login_view(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
+                    EmailAddress.objects.check_confirmation(user)
                     return HttpResponseRedirect("/home/")
                 else:
                     return HttpResponse("ERROR, inactive user")
