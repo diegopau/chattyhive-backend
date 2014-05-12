@@ -28,9 +28,7 @@
     </form>
 
 
-    {% if error == 'password' %}
-        <p>Passwords don't match</p>
-    {% elif error == 'email' %}
+    {% if error == 'email' %}
         <p>This email already exists. Please, choose other</p>
     {% endif %}
     <form action="/create_user/" method="post">{% csrf_token %}

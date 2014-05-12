@@ -22,6 +22,8 @@ from email_confirmation import *
 
 
 def login_view(request):
+    if request.user.is_authenticated():
+        return HttpResponseRedirect("/home")
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -46,6 +48,8 @@ def login_view(request):
 
 
 def create_user_view(request):
+    if request.user.is_authenticated():
+        return HttpResponseRedirect("/home")
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
@@ -181,7 +185,11 @@ def register_three(request):
                     })
 
             else:
-                return HttpResponse("Passwords don't match")
+                form = RegistrationFormThree()
+                return render(request, "login/create_user.html", {
+                    'form': form,
+                    'error': 'password',
+                })
 
             return HttpResponseRedirect("/home/")
 
