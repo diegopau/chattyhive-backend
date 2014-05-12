@@ -363,12 +363,12 @@ def chat_v2(request):
         message.content_type = 'text'
         message.content = msg
 
-        p[chat.channel_unicode].trigger(event, {"username": user.username,
-                                                "public_name": profile.public_name,
-                                                "message": msg,
-                                                "timestamp": timestamp,
-                                                "server_time": message.date.astimezone(),
-                                                })
+        p[chat2.channel_unicode].trigger(event, {"username": user.username,
+                                                 "public_name": profile.public_name,
+                                                 "message": msg,
+                                                 "timestamp": timestamp,
+                                                 "server_time": message.date.astimezone(),
+                                                 })
 
         message.save()
 
