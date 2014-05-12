@@ -49,6 +49,22 @@ urlpatterns = patterns('',
     # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
 
     ### ======================================================== ###
+    ###                     Widget - URLS                       ###
+    ### ======================================================== ###
+
+    # url(r'^android.login/(?P<user>[a-zA-Z]+)/', 'chat_androidAPI.views.login', name='login'),
+    url(r'^widget.start_session/', 'chat_androidAPI.views.start_session', name='start_session'),
+    url(r'^widget.login/', 'chat_androidAPI.views.login_v2', name='login'),
+    url(r'^widget.register/', 'chat_androidAPI.views.register', name='register'),
+    url(r'^widget.explore/', 'chat_androidAPI.views.explore', name='explore'),
+    url(r'^widget.join/', 'chat_androidAPI.views.join', name='join'),
+    url(r'^widget.chat/', 'chat_androidAPI.views.chat_v2', name='chat'),
+    url(r'^widget.email_check/', 'chat_androidAPI.views.email_check', name='email_check'),
+    url(r'^widget.messages/(?P<chat_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<last_message>[0-9]+)-(?P<interval>[0-9]+)/',
+                                                                        'core.views.get_messages', name='get_messages'),
+    # url(r'^android.logout/', 'chat_androidAPI.views.logout', name='logout')
+
+    ### ======================================================== ###
     ###                   Social_auth - URLS                     ###
     ### ======================================================== ###
 
