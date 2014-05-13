@@ -43,14 +43,17 @@ class EmailAddressManager(models.Manager):
         except EmailAddress.DoesNotExist:
             return None
 
-    def check_confirmation(self, user):
+    def check_confirmation(self, email):
         try:
-            email = EmailAddress.objects.get(user=user)
+            email = self.get(email=email)
             if not email.verified:
-                email.user.is_active = False
+                email.user.user.is_active = False
+                email.user.user.save()
+                print("Setting user.active to false")
                 return None
             return None
         except EmailAddress.DoesNotExist:
+            print("Exception")
             return None
 
     def get_users_for(self, email):

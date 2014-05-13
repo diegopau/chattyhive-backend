@@ -29,9 +29,13 @@ def login_view(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
-                    EmailAddress.objects.check_confirmation(user)
+                    if EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
+                        EmailAddress.objects.check_confirmation(username)
+                    # print(EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))))
+                    # print("checked")
                     return HttpResponseRedirect("/home/")
                 else:
+                    # TODO set an html to resend confirmation
                     return HttpResponse("ERROR, inactive user")
             else:
                 return HttpResponse("ERROR, incorrect password or login")
