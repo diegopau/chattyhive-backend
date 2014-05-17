@@ -94,9 +94,13 @@ class ChProfile(models.Model):
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
+    birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
     timezone = models.DateField(auto_now=True, auto_now_add=True)
     location = models.TextField()   # todo location
+    private_status = models.CharField(max_length=140, blank=True, null=True)
+    public_status = models.CharField(max_length=140, blank=True, null=True)
+
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
     show_location = models.BooleanField(default=False)
