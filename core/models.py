@@ -1,4 +1,7 @@
 # -*- encoding: utf-8 -*-
+from django.conf.global_settings import LANGUAGES
+from django.core.validators import RegexValidator
+
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -82,19 +85,18 @@ class ChProfile(models.Model):
         ('male', 'Male'),
         ('female', 'Female')
     )
-    LANGUAGE_CHOICES = (
-        ('es-es', 'Spanish'),
-        ('en-gb', 'English')
-    )
 
     # All the fields for the model Profile
-    public_name = models.CharField(max_length=30)
+    public_name = models.CharField(max_length=30,
+                                   unique=True,
+                                   validators=[RegexValidator(r'^[0-9a-zA-Z_]*$',
+                                                             'Only alphanumeric characters an "_" are allowed.')])
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
-    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='es-es')
+    language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
     timezone = models.DateField(auto_now=True, auto_now_add=True)
-    location = models.TextField()
+    location = models.TextField()   # todo location
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
     show_location = models.BooleanField(default=False)
@@ -138,7 +140,8 @@ class ChProfile(models.Model):
         :param char_language: Language of the Profile
         :return: None
         """
-        self.language = char_language
+        if not char_language:
+            self.language = char_language
 
     def set_location(self, text_location):
         """

@@ -1,3 +1,5 @@
+import re
+
 __author__ = 'lorenzo'
 
 from uuid import uuid4
@@ -72,7 +74,19 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
     if user:
         if kwargs.get('is_new'):
             profile = ChProfile.objects.get(user__username=user)
-            profile.set_public_name(details.get('username'))
+            original_name = re.sub('[.-]', '_', details.get('username'))
+            original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)
+            public_name = original_name
+            ii = 0
+            while True:
+                try:
+                    ChProfile.objects.get(public_name=public_name)
+                except ChProfile.DoesNotExist:
+                    break
+                ii += 1
+                public_name = original_name + '_' + str(ii)
+
+            profile.set_public_name(public_name)
             profile.set_first_name(details.get('first_name'))
             profile.set_last_name(details.get('last_name'))
             profile.set_sex(details.get('sex'))
@@ -102,11 +116,14 @@ class ChGooglePlusAuth(GooglePlusAuth):
 
     def get_user_details(self, response):
         """Return user details from Orkut account"""
-        lang_provided = response.get('lang')
-        if lang_provided == 'es':             # todo how to get/show language
-            language = 'es-es'
-        else:
-            language = 'en-gb'
+
+        language = response.get('lang')
+        # lang_provided = response.get('lang')
+        # if lang_provided == 'es':             # todo how to get/show language
+        #     language = 'es-es'
+        # else:
+        #     language = 'en-gb'
+
         return {'username': response.get('email', '').split('@', 1)[0],     # First part of the email as profile public
                 'email': response.get('email', ''),                         # name, is not the user username
                 'fullname': response.get('name', ''),
@@ -141,11 +158,12 @@ class ChTwitterOAuth(TwitterOAuth):
         # user must enter a valid email in the last step of user creation
         email = response['screen_name'] + '@twitter.com'
 
-        lang_provided = response.get('lang')
-        if lang_provided == 'es':             # todo how to get/show language
-            language = 'es-es'
-        else:
-            language = 'en-gb'
+        language = response.get('lang')
+        # lang_provided = response.get('lang')
+        # if lang_provided == 'es':             # todo how to get/show language
+        #     language = 'es-es'
+        # else:
+        #     language = 'en-gb'
 
         return {'username': response['screen_name'],
                 'email': email,  # not supplied?
@@ -172,15 +190,16 @@ class ChFacebookOAuth2(FacebookOAuth2):
     def get_user_details(self, response):
         """Return user details from Facebook account"""
 
-        lang_provided = response.get('lang')
-        if lang_provided == 'es':             # todo how to get/show language
-            language = 'es-es'
-        else:
-            language = 'en-gb'
+        language = response.get('lang')
+        # lang_provided = response.get('lang')
+        # if lang_provided == 'es':             # todo how to get/show language
+        #     language = 'es-es'
+        # else:
+        #     language = 'en-gb'
 
         picture = 'http://graph.facebook.com/' + response.get('id') + '/picture'
 
-        return {'username': response.get('username', response.get('name')),
+        return {'username': response.get('username', response.get('email')).split('@', 1)[0],
                 'email': response.get('email', ''),
                 'fullname': response.get('name', ''),
                 'first_name': response.get('first_name', ''),

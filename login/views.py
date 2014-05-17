@@ -91,7 +91,7 @@ def create_user_view(request):
         form = CreateUserForm()
         return render(request, "login/registration.html", {
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
-            'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
+            'plus_scope': ' '.join('https://www.googleapis.com/auth/plus.login'),
             'form': form
         })
 
