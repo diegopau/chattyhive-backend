@@ -139,6 +139,13 @@ class ChProfile(models.Model):
         """
         self.sex = char_sex
 
+    def set_birth_date(self, char_birth_date):
+        """
+        :param char_sex: Sex of the Profile
+        :return: None
+        """
+        self.birth_date = char_birth_date
+
     def set_language(self, char_language):
         """
         :param char_language: Language of the Profile
@@ -153,6 +160,20 @@ class ChProfile(models.Model):
         :return: None
         """
         self.location = text_location
+
+    def set_private_status(self, text_private_status):
+        """
+        :param text_location: Location of the Profile
+        :return: None
+        """
+        self.private_status = text_private_status
+
+    def set_public_status(self, text_public_status):
+        """
+        :param text_location: Location of the Profile
+        :return: None
+        """
+        self.public_status = text_public_status
 
     def set_private_show_age(self, boolean_show):
         """
@@ -336,6 +357,12 @@ class CreateHiveForm(forms.ModelForm):
 
 class MsgForm(forms.Form):
     write_your_message = forms.CharField(max_length=128)
+
+
+class PrivateProfileForm(forms.Form):
+    class Meta:
+        model = ChProfile
+        fields = ('first_name', 'surname', 'birth_date', 'language', 'sex')
 
 
 ### ==========================================================
