@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from django.db import IntegrityError
+from django.forms.models import inlineformset_factory
 
 __author__ = 'lorenzo'
 
@@ -113,12 +114,14 @@ def register_one(request):
             'first_name': profile.first_name,
             'last_name': profile.last_name,
             'sex': profile.sex,
-            'language': profile.language,
+            # 'language': dual_form,
             'private_show_age': profile.private_show_age,
             'location': profile.location,
         })
+        dual_form = inlineformset_factory(ChProfile, LanguageModel, extra=1)
+        form2 = dual_form(instance=profile)
         return render(request, "login/registration_1.html", {
-            'form': form
+            'form': form2
         })
 
 
@@ -138,7 +141,7 @@ def register_two(request):
         form = RegistrationFormTwo(initial={
             'public_name': profile.public_name,
             'public_show_age': profile.public_show_age,
-            'show_location': profile.show_location,
+            'show_location': profile.public_show_location,
         })
         return render(request, "login/registration_2.html", {
             'form': form
@@ -163,18 +166,8 @@ def register_three(request):
                     user.save()
 
                     profile = ChProfile.objects.get(user=user)
-                    # mail_manager = EmailAddressManager()
-                    print(profile)  # PRINT
-                    mail_address = EmailAddress.objects.add_email(user=profile, email=email)
-                    # mail_address
-                    # mail_address.user = profile
-                    # mail_address.email = email
-                    # mail_address.save()
-                    # email_address.set_as_primary(conditional=True)
-                    # email_address.save()
-
-                    # Send confirmation email here
-                    # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+                    profile.set_private_status('¡Soy nuevo en chattyhive!')
+                    profile.set_public_status('¡Soy nuevo en chattyhive!')
 
                 # if the email is already used
                 except IntegrityError:
