@@ -101,27 +101,31 @@ def create_user_view(request):
 def register_one(request):
     user = request.user
     profile = ChProfile.objects.get(user=user)
+    language_formset = inlineformset_factory(ChProfile, LanguageModel, extra=2)
     if request.method == 'POST':
 
-        form = RegistrationFormOne(request.POST, instance=profile)
-        if form.is_valid():
-            form.save()
+        form1 = RegistrationFormOne(request.POST, prefix="form1", instance=profile)
+        form2 = language_formset(request.POST, prefix="form2", instance=profile)
+        if form1.is_valid() and form2.is_valid():
+            form1.save()
+            form2.save()
             return HttpResponseRedirect("/create_user/register2/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = RegistrationFormOne(initial={
+        form1 = RegistrationFormOne(initial={
             'first_name': profile.first_name,
             'last_name': profile.last_name,
             'sex': profile.sex,
-            # 'language': dual_form,
             'private_show_age': profile.private_show_age,
             'location': profile.location,
-        })
-        dual_form = inlineformset_factory(ChProfile, LanguageModel, extra=1)
-        form2 = dual_form(instance=profile)
+            },
+            prefix="form1"
+        )
+        form2 = language_formset(instance=profile, prefix="form2")
         return render(request, "login/registration_1.html", {
-            'form': form2
+            'form1': form1,
+            'form2': form2
         })
 
 

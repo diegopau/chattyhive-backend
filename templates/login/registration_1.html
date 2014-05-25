@@ -5,10 +5,8 @@
 </head>
 <body>
 <form action="/create_user/register1/" method="post">{% csrf_token %}
-    {% for form2 in form%}
+        {{ form1.as_p }}
         {{ form2.as_p }}
-    {% endfor %}
-{#        {{ form.as_p }}#}
     <input type="submit" value="Submit" />
 </form>
 </body>

@@ -24,7 +24,7 @@ class RegistrationFormOne(forms.ModelForm):
 class RegistrationFormTwo(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('public_name', 'public_show_age', 'public_show_location')
+        fields = ('public_name', 'public_show_age', 'public_show_location', 'public_show_sex')
 
 
 class RegistrationFormThree(forms.Form):
