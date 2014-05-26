@@ -196,19 +196,49 @@ class LanguageModel(models.Model):
     language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
 
 
-class ChHive(models.Model):
-    # Category definitions
-    CATEGORY = (
-        ('sports', 'Sports'),
-        ('science', 'Science'),
-        ('free-time', 'Free Time')
+class ChCategory (models.Model):
+    # Groups definitions
+    GROUPS = (
+        ('Aficiones y ocio', 'Aficiones y ocio'),
+        ('Amor y amistad', 'Amor y amistad'),
+        ('Arte y eventos culturales', 'Arte y eventos culturales'),
+        ('Ciencias naturales', 'Ciencias naturales'),
+        ('Ciencias sociales', 'Ciencias sociales'),
+        ('Cine y TV', 'Cine y TV'),
+        ('Compras y mercadillo', 'Compras y mercadillo'),
+        ('Comunidades', 'Comunidades'),
+        ('Conocer gente', 'Conocer gente'),
+        ('Deporte', 'Deporte'),
+        ('Educación', 'Educación'),
+        ('Estilo de vida', 'Estilo de vida'),
+        ('Familia y hogar', 'Familia y hogar'),
+        ('Internet', 'Internet'),
+        ('Libros y cómics', 'Libros y cómics'),
+        ('Motor', 'Motor'),
+        ('Música', 'Música'),
+        ('Noticias y actualidad', 'Noticias y actualidad'),
+        ('Política y activismo', 'Política y activismo'),
+        ('Salud', 'Salud'),
+        ('Sitios, empresas y marcas', 'Sitios, empresas y marcas'),
+        ('Tecnología e informática', 'Tecnología e informática'),
+        ('Trabajo y negocios', 'Trabajo y negocios'),
+        ('Viajes y turismo', 'Viajes y turismo'),
+        ('Videojuegos', 'Videojuegos'),
     )
 
+    name = models.CharField(max_length=32, unique=True)
+    description = models.CharField(max_length=140)
+    group = models.CharField(max_length=32, choices=GROUPS)
+
+
+class ChHive(models.Model):
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
     name_url = models.CharField(max_length=60, unique=True)
     description = models.TextField()
-    category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
+    # category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
+    category = models.ForeignKey(ChCategory)
+    creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
 
     # chat = models.OneToOneField(ChChat, related_name='chat', null=False, blank=False)
