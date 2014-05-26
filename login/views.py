@@ -62,7 +62,7 @@ def create_user_view(request):
                 user = manager.create_user(username, email, password)
 
                 # Profile creation
-                profile = ChProfile(user=user)
+                profile = ChProfile(user=user, public_name=username)  # temporal profile name
                 profile.save()
 
                 user2 = authenticate(username=username, password=password)
