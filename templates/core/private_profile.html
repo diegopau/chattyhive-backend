@@ -7,12 +7,19 @@
     <a href="/home/">Home</a><br />
     Private  <a href="/profile/{{ profile.public_name }}/public">Public</a>
     <br />
+    {{ profile.private_status }}
+    <br />
     <br />
     Info
     <br />
-      <li>
-          First Name: {{ profile.first_name }}
-      </li>
-    <li>Surname: {{ profile.surname }}</li><li>Language: {{ profile.language }}</li><li>Sex: {{ profile.sex }}</li>
+    <li>First Name: {{ profile.first_name }}</li>
+    <li>Surname: {{ profile.surname }}</li>
+    <li>Birth date: {{ profile.birth_date }}</li>
+    <li>Languages:
+        {% for language in languages %}
+            {{ language.language }},
+        {% endfor %}
+        </li>
+    <li>Sex: {{ profile.sex }}</li>
 </body>
 </html>

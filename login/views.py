@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from django.db import IntegrityError
+from django.forms.models import inlineformset_factory
 
 __author__ = 'lorenzo'
 
@@ -61,7 +62,7 @@ def create_user_view(request):
                 user = manager.create_user(username, email, password)
 
                 # Profile creation
-                profile = ChProfile(user=user)
+                profile = ChProfile(user=user, public_name=username)  # temporal profile name
                 profile.save()
 
                 user2 = authenticate(username=username, password=password)
@@ -100,25 +101,31 @@ def create_user_view(request):
 def register_one(request):
     user = request.user
     profile = ChProfile.objects.get(user=user)
+    language_formset = inlineformset_factory(ChProfile, LanguageModel, extra=2)
     if request.method == 'POST':
 
-        form = RegistrationFormOne(request.POST, instance=profile)
-        if form.is_valid():
-            form.save()
+        form1 = RegistrationFormOne(request.POST, prefix="form1", instance=profile)
+        form2 = language_formset(request.POST, prefix="form2", instance=profile)
+        if form1.is_valid() and form2.is_valid():
+            form1.save()
+            form2.save()
             return HttpResponseRedirect("/create_user/register2/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = RegistrationFormOne(initial={
+        form1 = RegistrationFormOne(initial={
             'first_name': profile.first_name,
             'last_name': profile.last_name,
             'sex': profile.sex,
-            'language': profile.language,
             'private_show_age': profile.private_show_age,
             'location': profile.location,
-        })
+            },
+            prefix="form1"
+        )
+        form2 = language_formset(instance=profile, prefix="form2")
         return render(request, "login/registration_1.html", {
-            'form': form
+            'form1': form1,
+            'form2': form2
         })
 
 
@@ -138,7 +145,7 @@ def register_two(request):
         form = RegistrationFormTwo(initial={
             'public_name': profile.public_name,
             'public_show_age': profile.public_show_age,
-            'show_location': profile.show_location,
+            'show_location': profile.public_show_location,
         })
         return render(request, "login/registration_2.html", {
             'form': form
@@ -163,18 +170,8 @@ def register_three(request):
                     user.save()
 
                     profile = ChProfile.objects.get(user=user)
-                    # mail_manager = EmailAddressManager()
-                    print(profile)  # PRINT
-                    mail_address = EmailAddress.objects.add_email(user=profile, email=email)
-                    # mail_address
-                    # mail_address.user = profile
-                    # mail_address.email = email
-                    # mail_address.save()
-                    # email_address.set_as_primary(conditional=True)
-                    # email_address.save()
-
-                    # Send confirmation email here
-                    # send_mail(SUBJECT, MESSAGE, FROM_MAIL, TO_LIST, FAIL_SILENTLY)
+                    profile.set_private_status('¡Soy nuevo en chattyhive!')
+                    profile.set_public_status('¡Soy nuevo en chattyhive!')
 
                 # if the email is already used
                 except IntegrityError:

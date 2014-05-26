@@ -287,22 +287,24 @@ def profile(request, public_name, private):
                 data = {"public_name": profile_view.public_name,
                         "first_name": profile_view.first_name,
                         "surname": profile_view.last_name,
-                        "language": profile_view.language,
                         "sex": profile_view.sex,
                         "allowed": allowed
                 }
+                languages = LanguageModel.objects.filter(profile=profile)
                 return render(request, "core/private_profile.html", {
-                    "profile": data
+                    "profile": data,
+                    "languages": languages
                 })
             elif private == "public":
                 data = {"public_name": profile_view.public_name,
-                        "language": profile_view.language,
                         "location": profile_view.location,
                         "show_age": profile_view.public_show_age,
                         "allowed": allowed
                 }
+                languages = LanguageModel.objects.filter(profile=profile)
                 return render(request, "core/public_profile.html", {
-                    "profile": data
+                    "profile": data,
+                    "languages": languages
                 })
             else:
                 return HttpResponse("Error")

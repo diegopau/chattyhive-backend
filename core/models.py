@@ -1,4 +1,7 @@
 # -*- encoding: utf-8 -*-
+from django.conf.global_settings import LANGUAGES
+from django.core.validators import RegexValidator
+
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -43,30 +46,11 @@ class ChUserManager(UserManager):
 
 
 class ChUser(AbstractUser):
-    ##****************Key Fields****************#
-    # username = AbstractUser
-    # email = AbstractUser
-    #****************Info Fields****************#
-    # first_name = AbstractUser
-    # last_name = AbstractUser
-    # birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
-    # sex =
-    # language =
-    # timezone =
-    #****************Control Fields****************#
     is_authenticated = models.BooleanField(default=False)
 
     objects = ChUserManager()
 
-    # REQUIRED_FIELDS = ['email', 'Name', 'LastName']
     USERNAME_FIELD = 'username'
-    # REQUIRED_FIELDS = 'email'
-
-    # def get_full_name(self):
-    #     return "% % %"(self.username)
-
-    # def get_short_name(self):
-    #     return "% % %"(self.username)
 
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
@@ -75,29 +59,34 @@ class ChUser(AbstractUser):
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
-    # user = models.ForeignKey(ChUser, unique=True)
 
     # Here are the choices definitions
     SEX = (
         ('male', 'Male'),
         ('female', 'Female')
     )
-    LANGUAGE_CHOICES = (
-        ('es-es', 'Spanish'),
-        ('en-gb', 'English')
-    )
 
     # All the fields for the model Profile
-    public_name = models.CharField(max_length=30)
+    public_name = models.CharField(max_length=30,
+                                   unique=True,
+                                   validators=[RegexValidator(r'^[0-9a-zA-Z_]*$',
+                                                             'Only alphanumeric characters an "_" are allowed.')])
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
-    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='es-es')
+    birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
+    # language is a multi value field now, related_name='languages'
     timezone = models.DateField(auto_now=True, auto_now_add=True)
-    location = models.TextField()
+    location = models.TextField(null=True, blank=True)   # todo location
+    private_status = models.CharField(max_length=140, blank=True, null=True)
+    public_status = models.CharField(max_length=140, blank=True, null=True)
+
+    # color = models.
+
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
-    show_location = models.BooleanField(default=False)
+    public_show_location = models.BooleanField(default=False)
+    public_show_sex = models.BooleanField(default=False)
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
     # todo image fields
@@ -133,12 +122,28 @@ class ChProfile(models.Model):
         """
         self.sex = char_sex
 
-    def set_language(self, char_language):
+    def set_birth_date(self, char_birth_date):
+        """
+        :param char_sex: Sex of the Profile
+        :return: None
+        """
+        self.birth_date = char_birth_date
+
+    def add_language(self, char_language):
         """
         :param char_language: Language of the Profile
         :return: None
         """
-        self.language = char_language
+        language = LanguageModel(profile=self, language=char_language)
+        language.save()
+
+    def remove_language(self, char_language):
+        """
+        :param char_language: Language of the Profile
+        :return: None
+        """
+        language = LanguageModel.objects.get(profile=self, language=char_language)
+        language.delete()
 
     def set_location(self, text_location):
         """
@@ -146,6 +151,20 @@ class ChProfile(models.Model):
         :return: None
         """
         self.location = text_location
+
+    def set_private_status(self, text_private_status):
+        """
+        :param text_location: Location of the Profile
+        :return: None
+        """
+        self.private_status = text_private_status
+
+    def set_public_status(self, text_public_status):
+        """
+        :param text_location: Location of the Profile
+        :return: None
+        """
+        self.public_status = text_public_status
 
     def set_private_show_age(self, boolean_show):
         """
@@ -166,10 +185,15 @@ class ChProfile(models.Model):
         :param boolean_show: Permission of showing the location of the Profile
         :return: None
         """
-        self.show_location = boolean_show
+        self.public_show_location = boolean_show
 
     def __str__(self):
         return u"%s - Personal Profile" % self.user
+
+
+class LanguageModel(models.Model):
+    profile = models.ForeignKey(ChProfile, related_name='languages')
+    language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
 
 
 class ChHive(models.Model):
@@ -329,6 +353,12 @@ class CreateHiveForm(forms.ModelForm):
 
 class MsgForm(forms.Form):
     write_your_message = forms.CharField(max_length=128)
+
+
+class PrivateProfileForm(forms.Form):
+    class Meta:
+        model = ChProfile
+        fields = ('first_name', 'surname', 'birth_date', 'language', 'sex')
 
 
 ### ==========================================================

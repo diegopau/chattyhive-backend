@@ -1,7 +1,9 @@
+from django.forms.models import inlineformset_factory
+
 __author__ = 'lorenzo'
 
 from django import forms
-from core.models import ChProfile
+from core.models import ChProfile, LanguageModel
 
 
 class LoginForm(forms.Form):
@@ -16,13 +18,13 @@ class CreateUserForm(forms.Form):
 class RegistrationFormOne(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('first_name', 'last_name', 'sex', 'language', 'private_show_age', 'location')
+        fields = ('first_name', 'last_name', 'sex', 'private_show_age', 'location')
 
 
 class RegistrationFormTwo(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('public_name', 'public_show_age', 'show_location')
+        fields = ('public_name', 'public_show_age', 'public_show_location', 'public_show_sex')
 
 
 class RegistrationFormThree(forms.Form):

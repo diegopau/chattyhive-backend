@@ -1,3 +1,5 @@
+import re
+
 __author__ = 'lorenzo'
 
 from uuid import uuid4
@@ -72,7 +74,22 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
     if user:
         if kwargs.get('is_new'):
             profile = ChProfile.objects.get(user__username=user)
-            profile.set_public_name(details.get('username'))
+            # we only allow alphanumeric characters and '_'
+            original_name = re.sub('[.-]', '_', details.get('username'))    # '.' and '-' replaced by '_'
+            original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)     # other not allowed characters eliminated
+            public_name = original_name
+
+            # if the name already exists we offer the name plus '_<number>'
+            ii = 0
+            while True:
+                try:
+                    ChProfile.objects.get(public_name=public_name)
+                except ChProfile.DoesNotExist:
+                    break
+                ii += 1
+                public_name = original_name + '_' + str(ii)
+
+            profile.set_public_name(public_name)
             profile.set_first_name(details.get('first_name'))
             profile.set_last_name(details.get('last_name'))
             profile.set_sex(details.get('sex'))
@@ -102,11 +119,7 @@ class ChGooglePlusAuth(GooglePlusAuth):
 
     def get_user_details(self, response):
         """Return user details from Orkut account"""
-        lang_provided = response.get('lang')
-        if lang_provided == 'es':             # todo how to get/show language
-            language = 'es-es'
-        else:
-            language = 'en-gb'
+
         return {'username': response.get('email', '').split('@', 1)[0],     # First part of the email as profile public
                 'email': response.get('email', ''),                         # name, is not the user username
                 'fullname': response.get('name', ''),
@@ -114,7 +127,7 @@ class ChGooglePlusAuth(GooglePlusAuth):
                 'last_name': response.get('family_name', ''),
                 'sex': response.get('gender', ''),
                 'location': response.get('locale', 'es'),  # todo how to show location
-                'language': language,
+                'language': response.get('locale', 'en-gb'),
                 'url_picture': response.get('picture')}
 
 
@@ -141,12 +154,6 @@ class ChTwitterOAuth(TwitterOAuth):
         # user must enter a valid email in the last step of user creation
         email = response['screen_name'] + '@twitter.com'
 
-        lang_provided = response.get('lang')
-        if lang_provided == 'es':             # todo how to get/show language
-            language = 'es-es'
-        else:
-            language = 'en-gb'
-
         return {'username': response['screen_name'],
                 'email': email,  # not supplied?
                 'fullname': response['name'],
@@ -154,7 +161,7 @@ class ChTwitterOAuth(TwitterOAuth):
                 'last_name': last_name,
                 'sex': '',
                 'location': response.get('location', 'es'),
-                'language': language,
+                'language': response.get('lang', 'en-gb'),
                 'url_picture': response.get('profile_background_image_url', '')}
 
 
@@ -172,20 +179,14 @@ class ChFacebookOAuth2(FacebookOAuth2):
     def get_user_details(self, response):
         """Return user details from Facebook account"""
 
-        lang_provided = response.get('lang')
-        if lang_provided == 'es':             # todo how to get/show language
-            language = 'es-es'
-        else:
-            language = 'en-gb'
-
         picture = 'http://graph.facebook.com/' + response.get('id') + '/picture'
 
-        return {'username': response.get('username', response.get('name')),
+        return {'username': response.get('username', response.get('email')).split('@', 1)[0],
                 'email': response.get('email', ''),
                 'fullname': response.get('name', ''),
                 'first_name': response.get('first_name', ''),
                 'last_name': response.get('last_name', ''),
                 'sex': response.get('gender', ''),
                 'location': response.get('locale', ''),
-                'language': language,
+                'language': response.get('locale', 'en-gb'),
                 'url_picture': picture}
