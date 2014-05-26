@@ -30,8 +30,12 @@ def login_view(request):
                 if user.is_active:
                     login(request, user)
                     if EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
-                        EmailAddress.objects.check_confirmation(username)
-                    # print(EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))))
+                        EmailAddress.objects.warn(username)
+                    if EmailAddress.warned:
+                        if EmailConfirmation.warning_expired(
+                                EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
+                            EmailAddress.objects.check_confirmation(username)
+                        # print(EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))))
                     # print("checked")
                     return HttpResponseRedirect("/home/")
                 else:

@@ -34,6 +34,7 @@ urlpatterns = patterns('',
                                                                         'core.views.get_messages', name='get_messages'),
     url(r'^confirm_email/(\w+)/$', 'email_confirmation.views.confirm_email', name='email_confirmation'),
     url(r'^email_confirmed/$', 'email_confirmation.views.email_confirmed', name='email_confirmed'),
+    url(r'^email_warning/$', 'email_confirmation.views.email_warning', name='email_confirmed'),
 
     url(r'^profile/(?P<private>[a-z]+)/', 'core.views.profile', name='profile'),
     url(r'^android_test/', 'core.views.android_test', name='android_test'),
