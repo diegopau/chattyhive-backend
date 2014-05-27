@@ -257,10 +257,10 @@ def chat(request, hive_url):
         return HttpResponse("Server Ok")
     else:
 
-        raise Http404
-        """
-        hive_url = 'public_test'
-
+        # raise Http404
+        # hive_url = 'public_test'
+        # if channel != 'public_test':
+        #     channel = hive2 + '_public'
         form = MsgForm()
         return render(request, "core/chat_hive.html", {
             'user': user.username,
@@ -271,7 +271,7 @@ def chat(request, hive_url):
             'event': event,
             'form': form,
         })
-        """
+
 
 
 @login_required
