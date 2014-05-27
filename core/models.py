@@ -236,12 +236,17 @@ class ChHive(models.Model):
     name = models.CharField(max_length=60, unique=True)
     name_url = models.CharField(max_length=60, unique=True)
     description = models.TextField()
-    # category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
     category = models.ForeignKey(ChCategory)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
 
-    # chat = models.OneToOneField(ChChat, related_name='chat', null=False, blank=False)
+    def set_creator(self, profile):
+        """
+        :param profile: Creator of this hive
+        :return: None
+        """
+        self.creator = profile
+
 
     def __str__(self):
         return u"%s" % self.name
@@ -374,11 +379,16 @@ class ChSubscription(models.Model):
 ###                          FORMS
 ### ==========================================================
 
+class CategoryChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+         return obj.name + ', ' + obj.group
+
 
 class CreateHiveForm(forms.ModelForm):
+    category = CategoryChoiceField(queryset=ChCategory.objects.all())
     class Meta:
         model = ChHive
-        fields = ('name', 'category', 'description')
+        fields = ('name', 'description')
 
 
 class MsgForm(forms.Form):
