@@ -180,9 +180,14 @@ class EmailConfirmationManager(models.Manager):
 
     def send_warning(self, email_address):
         # email_address.warn(self)
-        confirmation = EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=email_address))
-        confirmation.warned_day = timezone.now(),
-        email_address.warned = True
+        email = EmailAddress.objects.get(email=email_address)
+        confirmation = EmailConfirmation.objects.get(email_address=email)
+        email_to_warn = confirmation.email_address
+        confirmation.warned_day = timezone.now()
+        confirmation.save()
+        email_to_warn.warned = True
+        email_to_warn.save()
+        print("WARNING SENT")
         return HttpResponseRedirect("/email_warning/")
     
     def delete_expired_confirmations(self):

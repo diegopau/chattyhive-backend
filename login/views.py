@@ -29,18 +29,25 @@ def login_view(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
-                    if EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
+                    email_address = EmailAddress.objects.get(email=username)
+                    if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
+                            email_address=EmailAddress.objects.get(email=username))) and not email_address.warned:
                         EmailAddress.objects.warn(username)
-                    if EmailAddress.warned:
+                        return HttpResponseRedirect("/email_warning/")
+                    if email_address.warned:
                         if EmailConfirmation.warning_expired(
                                 EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
                             EmailAddress.objects.check_confirmation(username)
-                        # print(EmailConfirmation.key_expired(EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))))
+                        else:
+                            print("ELSE")
+                            return HttpResponseRedirect("/email_warning/")
                     # print("checked")
                     return HttpResponseRedirect("/home/")
                 else:
+                    user.delete()
                     # TODO set an html to resend confirmation
-                    return HttpResponse("ERROR, inactive user")
+                    return HttpResponse("This account has been deleted due its email has not been confirmed."
+                                        " Please register again")
             else:
                 return HttpResponse("ERROR, incorrect password or login")
         else:
