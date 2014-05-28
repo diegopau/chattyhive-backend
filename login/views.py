@@ -33,17 +33,18 @@ def login_view(request):
                 if user.is_active:
                     login(request, user)
                     email_address = EmailAddress.objects.get(email=username)
-                    if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
-                            email_address=EmailAddress.objects.get(email=username))) and not email_address.warned:
-                        EmailAddress.objects.warn(username)
-                        return HttpResponseRedirect("/email_warning/")
-                    if email_address.warned:
-                        if EmailConfirmation.warning_expired(
-                                EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
-                            EmailAddress.objects.check_confirmation(username)
-                        else:
-                            print("ELSE")
+                    if not email_address.verified:
+                        if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
+                                email_address=EmailAddress.objects.get(email=username))) and not email_address.warned:
+                            EmailAddress.objects.warn(username)
                             return HttpResponseRedirect("/email_warning/")
+                        if email_address.warned:
+                            if EmailConfirmation.warning_expired(
+                                    EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
+                                EmailAddress.objects.check_confirmation(username)
+                            else:
+                                print("ELSE")
+                                return HttpResponseRedirect("/email_warning/")
                     # print("checked")
                     return HttpResponseRedirect("/home/")
                 else:
@@ -182,6 +183,10 @@ def register_three(request):
                     user.username = username
                     user.set_password(password)
                     user.save()
+
+                    profile = ChProfile.objects.get(user=user)
+                    print(profile)  # PRINT
+                    EmailAddress.objects.add_email(user=profile, email=email)
 
                     profile = ChProfile.objects.get(user=user)
                     profile.set_private_status('¡Soy nuevo en chattyhive!')

@@ -120,7 +120,7 @@ class EmailConfirmationManager(models.Manager):
             confirmation = self.get(confirmation_key=confirmation_key)
         except self.model.DoesNotExist:
             return None
-        if not confirmation.key_expired():
+        if not confirmation.warning_expired():
             email_address = confirmation.email_address
             email_address.verified = True
             email_address.set_as_primary(conditional=True)
