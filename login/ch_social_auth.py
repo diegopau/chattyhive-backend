@@ -1,5 +1,3 @@
-import re
-
 __author__ = 'lorenzo'
 
 from uuid import uuid4
@@ -9,6 +7,7 @@ from social.backends.twitter import TwitterOAuth
 from social.exceptions import AuthException
 from social.pipeline.user import USER_FIELDS
 from core.models import ChProfile
+import re
 
 
     ### ======================================================== ###

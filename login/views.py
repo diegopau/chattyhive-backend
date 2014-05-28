@@ -1,7 +1,4 @@
 # -*- encoding: utf-8 -*-
-from django.db import IntegrityError
-from django.forms.models import inlineformset_factory
-
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -11,13 +8,14 @@ from login.models import *
 from CH import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
 from social.backends.google import GooglePlusAuth
 from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 import pusher
+from django.db import IntegrityError
+from django.forms.models import inlineformset_factory
 from django.core.mail import send_mail
 from email_confirmation import *
 

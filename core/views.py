@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from django.db.models import Field
-
 __author__ = 'xurxo'
 
 from django.shortcuts import render
@@ -11,6 +9,7 @@ import pusher
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
+from django.db.models import Field
 
 
 @login_required

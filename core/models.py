@@ -1,13 +1,12 @@
 # -*- encoding: utf-8 -*-
-from django.conf.global_settings import LANGUAGES
-from django.core.validators import RegexValidator
-
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django import forms
 from django.utils.http import urlquote
+from django.conf.global_settings import LANGUAGES
+from django.core.validators import RegexValidator
 from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
 import hashlib
 
@@ -206,7 +205,6 @@ class ChCategory (models.Model):
         ('Ciencias sociales', 'Ciencias sociales'),
         ('Cine y TV', 'Cine y TV'),
         ('Compras y mercadillo', 'Compras y mercadillo'),
-        ('Comunidades', 'Comunidades'),
         ('Conocer gente', 'Conocer gente'),
         ('Deporte', 'Deporte'),
         ('Educación', 'Educación'),
@@ -218,7 +216,7 @@ class ChCategory (models.Model):
         ('Música', 'Música'),
         ('Noticias y actualidad', 'Noticias y actualidad'),
         ('Política y activismo', 'Política y activismo'),
-        ('Salud', 'Salud'),
+        ('Salud y fitness', 'Salud y fitness'),
         ('Sitios, empresas y marcas', 'Sitios, empresas y marcas'),
         ('Tecnología e informática', 'Tecnología e informática'),
         ('Trabajo y negocios', 'Trabajo y negocios'),
@@ -226,9 +224,12 @@ class ChCategory (models.Model):
         ('Videojuegos', 'Videojuegos'),
     )
 
-    name = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=140)
     group = models.CharField(max_length=32, choices=GROUPS)
+
+    def __str__(self):
+        return self.group + ': ' + self.name
 
 
 class ChHive(models.Model):
