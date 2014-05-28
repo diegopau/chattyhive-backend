@@ -104,6 +104,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'CH.django-crossdomainxhr-middleware.XsSharing',
     # Uncomment the next line for simple click jacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
