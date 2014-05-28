@@ -186,6 +186,13 @@ class ChProfile(models.Model):
         """
         self.public_show_location = boolean_show
 
+    def toJSON(self):
+        return u'{"public_name": "%s", "first_name": "%s", "last_name": "%s", "sex": "%s",' \
+               u' "timezone": "%s","location": "%s", "private_show_age": "%s", "public_show_age": "%s",' \
+               u' "show_location": "%s"}'\
+               % (self.public_name, self.first_name, self.last_name, self.sex, self.timezone,
+                  self.location, self.private_show_age, self.public_show_age, self.show_location)
+
     def __str__(self):
         return u"%s - Personal Profile" % self.user
 
@@ -240,6 +247,10 @@ class ChHive(models.Model):
     category = models.ForeignKey(ChCategory)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
+
+    def toJSON(self):
+        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
+               % (self.name, self.name_url, self.description, self.category, self.creation_date)
 
     def set_creator(self, profile):
         """
@@ -410,11 +421,4 @@ class PrivateProfileForm(forms.Form):
 def replace_unicode(string):
     string = urlquote(string)
     string = hashlib.sha1(string.encode('utf-8')).hexdigest()
-    # string = string.replace(u'ñ', "__nh__")
-    # string = string.replace(u'Ñ', "__Nh__")
-    # string = string.replace(u'á', "__atilde__")
-    # string = string.replace(u'é', "__etilde__")
-    # string = string.replace(u'í', "__itilde__")
-    # string = string.replace(u'ó', "__otilde__")
-    # string = string.replace(u'ú', "__utilde__")
     return string

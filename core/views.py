@@ -430,7 +430,7 @@ def hive_description(request, hive_url):
             'hive': hive,
             'subscribed': subscribed,
         })
-
+ 
     else:
         raise Http404
 
