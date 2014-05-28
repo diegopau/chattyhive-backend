@@ -69,14 +69,14 @@ class ChProfile(models.Model):
     public_name = models.CharField(max_length=30,
                                    unique=True,
                                    validators=[RegexValidator(r'^[0-9a-zA-Z_]*$',
-                                                             'Only alphanumeric characters an "_" are allowed.')])
+                                                              'Only alphanumeric characters an "_" are allowed.')])
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
     birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # language is a multi value field now, related_name='languages'
     timezone = models.DateField(auto_now=True, auto_now_add=True)
-    location = models.TextField(null=True, blank=True)   # todo location
+    location = models.TextField(null=True, blank=True)  # todo location
     private_status = models.CharField(max_length=140, blank=True, null=True)
     public_status = models.CharField(max_length=140, blank=True, null=True)
 
@@ -195,7 +195,7 @@ class LanguageModel(models.Model):
     language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
 
 
-class ChCategory (models.Model):
+class ChCategory(models.Model):
     # Groups definitions
     GROUPS = (
         ('Aficiones y ocio', 'Aficiones y ocio'),
@@ -382,11 +382,12 @@ class ChSubscription(models.Model):
 
 class CategoryChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-         return obj.name + ', ' + obj.group
+        return obj.name + ', ' + obj.group
 
 
 class CreateHiveForm(forms.ModelForm):
     category = CategoryChoiceField(queryset=ChCategory.objects.all())
+
     class Meta:
         model = ChHive
         fields = ('name', 'description')
