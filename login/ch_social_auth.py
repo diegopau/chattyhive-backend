@@ -92,7 +92,7 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
             profile.set_first_name(details.get('first_name'))
             profile.set_last_name(details.get('last_name'))
             profile.set_sex(details.get('sex'))
-            profile.set_language(details.get('language'))
+            profile.add_language(details.get('language'))
             profile.set_location(details.get('location'))
             profile.set_public_show_age(False)
             profile.set_private_show_age(True)

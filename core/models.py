@@ -391,17 +391,10 @@ class ChSubscription(models.Model):
 ###                          FORMS
 ### ==========================================================
 
-class CategoryChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        return obj.name + ', ' + obj.group
-
-
 class CreateHiveForm(forms.ModelForm):
-    category = CategoryChoiceField(queryset=ChCategory.objects.all())
-
     class Meta:
         model = ChHive
-        fields = ('name', 'description')
+        fields = ('name', 'category', 'description')
 
 
 class MsgForm(forms.Form):
