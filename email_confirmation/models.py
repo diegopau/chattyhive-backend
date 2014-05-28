@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import datetime
+from django.http import HttpResponseRedirect
 from django.utils import timezone
 from random import random
 
@@ -16,7 +17,7 @@ from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 
 from email_confirmation.signals import email_confirmed, email_confirmation_sent
-from email_confirmation.email_info import DEFAULT_FROM_EMAIL, SITE, EMAIL_CONFIRMATION_DAYS
+from email_confirmation.email_info import DEFAULT_FROM_EMAIL, SITE, EMAIL_CONFIRMATION_DAYS, EMAIL_AFTER_WARNING_DAYS
 # from core.models import ChUser
 
 # this code based in-part on django-registration
@@ -42,7 +43,32 @@ class EmailAddressManager(models.Manager):
             return self.get(user=user, primary=True)
         except EmailAddress.DoesNotExist:
             return None
-    
+
+    def check_confirmation(self, email):
+        try:
+            email = self.get(email=email)
+            if not email.verified:
+                email.user.user.is_active = False
+                email.user.user.save()
+                print("Setting user.active to false")
+                return None
+            return None
+        except EmailAddress.DoesNotExist:
+            print("Exception")
+            return None
+
+    def warn(self, email):
+        try:
+            email1 = self.get(email=email)
+            if not email1.verified:
+                EmailConfirmation.objects.send_warning(email)
+                print("User warned")
+                return None
+            return None
+        except EmailAddress.DoesNotExist:
+            print("Exception2")
+            return None
+
     def get_users_for(self, email):
         """
         returns a list of users with the given email.
@@ -57,6 +83,7 @@ class EmailAddress(models.Model):
     
     user = models.ForeignKey('core.ChProfile')
     email = models.EmailField()
+    warned = models.BooleanField(default=False)
     verified = models.BooleanField(default=False)
     primary = models.BooleanField(default=False)
     
@@ -142,6 +169,7 @@ class EmailConfirmationManager(models.Manager):
             email_address=email_address,
             # sent=datetime.datetime.now(),  # PRINT
             sent=timezone.now(),
+            warned_day=timezone.now(),
             confirmation_key=confirmation_key
         )
         email_confirmation_sent.send(
@@ -149,6 +177,18 @@ class EmailConfirmationManager(models.Manager):
             confirmation=confirmation,
         )
         return confirmation
+
+    def send_warning(self, email_address):
+        # email_address.warn(self)
+        email = EmailAddress.objects.get(email=email_address)
+        confirmation = EmailConfirmation.objects.get(email_address=email)
+        email_to_warn = confirmation.email_address
+        confirmation.warned_day = timezone.now()
+        confirmation.save()
+        email_to_warn.warned = True
+        email_to_warn.save()
+        print("WARNING SENT")
+        return HttpResponseRedirect("/email_warning/")
     
     def delete_expired_confirmations(self):
         for confirmation in self.all():
@@ -160,6 +200,7 @@ class EmailConfirmation(models.Model):
     
     email_address = models.ForeignKey(EmailAddress)
     sent = models.DateTimeField()
+    warned_day = models.DateTimeField()
     confirmation_key = models.CharField(max_length=40)
     
     objects = EmailConfirmationManager()
@@ -170,6 +211,13 @@ class EmailConfirmation(models.Model):
         # return expiration_date <= datetime.datetime.now()  # PRINT
         return expiration_date <= timezone.now()
     key_expired.boolean = True
+
+    def warning_expired(self):
+        expiration_date = self.warned_day + datetime.timedelta(
+            days=EMAIL_AFTER_WARNING_DAYS)
+        # return expiration_date <= datetime.datetime.now()  # PRINT
+        return expiration_date <= timezone.now()
+    warning_expired.boolean = True
     
     def __str__(self):
         return u"confirmation for %s" % self.email_address

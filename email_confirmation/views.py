@@ -19,3 +19,7 @@ def confirm_email(request, confirmation_key):
 
 def email_confirmed(request):
     return render(request, "email_confirmation/email_confirmed.html")
+
+
+def email_warning(request):
+    return render(request, "email_confirmation/email_warning.html")
