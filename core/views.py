@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from django.db.models import Field
-
 __author__ = 'xurxo'
 
 from django.shortcuts import render
@@ -11,6 +9,7 @@ import pusher
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
+from django.db.models import Field
 
 
 @login_required
@@ -27,10 +26,9 @@ def create_hive(request):
 
             hive_name = form.cleaned_data['name']
             hive = form.save(commit=False)
+            hive.set_creator(profile)
             hive.name_url = hive_name.replace(" ", "_")
             hive.name_url = replace_unicode(hive.name_url)
-            print(hive.name_url)
-            # hive.name_url = hashlib.sha256(hive_name).hexdigest()
             try:
                 ChHive.objects.get(name_url=hive.name_url)
                 return HttpResponse("This hive already exists")

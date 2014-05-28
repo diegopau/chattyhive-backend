@@ -1,5 +1,3 @@
-from django.forms.models import inlineformset_factory
-
 __author__ = 'lorenzo'
 
 from django import forms

@@ -1,13 +1,12 @@
 # -*- encoding: utf-8 -*-
-from django.conf.global_settings import LANGUAGES
-from django.core.validators import RegexValidator
-
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django import forms
 from django.utils.http import urlquote
+from django.conf.global_settings import LANGUAGES
+from django.core.validators import RegexValidator
 from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
 import hashlib
 
@@ -196,22 +195,59 @@ class LanguageModel(models.Model):
     language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
 
 
-class ChHive(models.Model):
-    # Category definitions
-    CATEGORY = (
-        ('sports', 'Sports'),
-        ('science', 'Science'),
-        ('free-time', 'Free Time')
+class ChCategory (models.Model):
+    # Groups definitions
+    GROUPS = (
+        ('Aficiones y ocio', 'Aficiones y ocio'),
+        ('Amor y amistad', 'Amor y amistad'),
+        ('Arte y eventos culturales', 'Arte y eventos culturales'),
+        ('Ciencias naturales', 'Ciencias naturales'),
+        ('Ciencias sociales', 'Ciencias sociales'),
+        ('Cine y TV', 'Cine y TV'),
+        ('Compras y mercadillo', 'Compras y mercadillo'),
+        ('Conocer gente', 'Conocer gente'),
+        ('Deporte', 'Deporte'),
+        ('Educación', 'Educación'),
+        ('Estilo de vida', 'Estilo de vida'),
+        ('Familia y hogar', 'Familia y hogar'),
+        ('Internet', 'Internet'),
+        ('Libros y cómics', 'Libros y cómics'),
+        ('Motor', 'Motor'),
+        ('Música', 'Música'),
+        ('Noticias y actualidad', 'Noticias y actualidad'),
+        ('Política y activismo', 'Política y activismo'),
+        ('Salud y fitness', 'Salud y fitness'),
+        ('Sitios, empresas y marcas', 'Sitios, empresas y marcas'),
+        ('Tecnología e informática', 'Tecnología e informática'),
+        ('Trabajo y negocios', 'Trabajo y negocios'),
+        ('Viajes y turismo', 'Viajes y turismo'),
+        ('Videojuegos', 'Videojuegos'),
     )
 
+    name = models.CharField(max_length=64, unique=True)
+    description = models.CharField(max_length=140)
+    group = models.CharField(max_length=32, choices=GROUPS)
+
+    def __str__(self):
+        return self.group + ': ' + self.name
+
+
+class ChHive(models.Model):
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
     name_url = models.CharField(max_length=60, unique=True)
     description = models.TextField()
-    category = models.CharField(max_length=120, choices=CATEGORY, default='free-time')
+    category = models.ForeignKey(ChCategory)
+    creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
 
-    # chat = models.OneToOneField(ChChat, related_name='chat', null=False, blank=False)
+    def set_creator(self, profile):
+        """
+        :param profile: Creator of this hive
+        :return: None
+        """
+        self.creator = profile
+
 
     def __str__(self):
         return u"%s" % self.name
@@ -344,11 +380,16 @@ class ChSubscription(models.Model):
 ###                          FORMS
 ### ==========================================================
 
+class CategoryChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+         return obj.name + ', ' + obj.group
+
 
 class CreateHiveForm(forms.ModelForm):
+    category = CategoryChoiceField(queryset=ChCategory.objects.all())
     class Meta:
         model = ChHive
-        fields = ('name', 'category', 'description')
+        fields = ('name', 'description')
 
 
 class MsgForm(forms.Form):
