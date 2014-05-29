@@ -80,7 +80,7 @@ def create_user_view(request):
                 profile = ChProfile(user=user, public_name=username)  # temporal profile name
                 profile.save()
 
-                user2 = authenticate(username=username, password=password)
+                user2 = authenticate(username=user.username, password=password)
                 if user is not None:
                     if user.is_active:
                         login(request, user2)
@@ -174,13 +174,14 @@ def register_three(request):
         form = RegistrationFormThree(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            username = email  # TODO temporal solution, should be changed
+            # username = email  # TODO temporal solution, should be changed
             password = form.cleaned_data['password']
             password2 = form.cleaned_data['password2']
 
             if password == password2:  # Checking correct password written twice
                 try:
-                    user.username = username
+                    # user.username = username
+                    user.email = email
                     user.set_password(password)
                     user.save()
 
@@ -218,11 +219,11 @@ def register_three(request):
                 form = RegistrationFormThree()
             else:
                 form = RegistrationFormThree(initial={
-                    'email': request.user.username,
+                    'email': request.user.email,
                 })
         except UserSocialAuth.DoesNotExist:
             form = RegistrationFormThree(initial={
-                'email': request.user.username,
+                'email': request.user.email,
             })
         return render(request, "login/create_user.html", {
             'form': form,

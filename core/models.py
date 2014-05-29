@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from uuid import uuid4
+
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -22,8 +24,9 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        user = ChUser(username=username)
-        # user.email = email  # TODO check if email needed
+        hex_username = uuid4().hex[:30]
+        user = ChUser(username=hex_username)
+        user.email = email
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -36,7 +39,8 @@ class ChUserManager(UserManager):
         :param password: Password
         :return: User with privileges
         """
-        user = self.create_user(username, email, password)
+        user = ChUser(username=username)
+        user.set_password(password)
         user.is_admin = True
         user.is_staff = True
         user.is_superuser = True
@@ -56,7 +60,7 @@ class ChUser(AbstractUser):
 
     def __str__(self):
         try:
-            return '@' + ChProfile.objects.get(user=self).public_name
+            return '@' + ChProfile.objects.get(user=self).public_name + '[' + self.username + ']'
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
 
