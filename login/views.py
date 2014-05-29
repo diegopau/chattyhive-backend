@@ -48,7 +48,7 @@ def login_view(request):
                     # print("checked")
                     return HttpResponseRedirect("/home/")
                 else:
-                    user.delete()
+                    # user.delete()
                     # TODO set an html to resend confirmation
                     return HttpResponse("This account has been deleted due its email has not been confirmed."
                                         " Please register again")
