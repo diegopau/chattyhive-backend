@@ -159,8 +159,8 @@ def leave(request, hive_url):
     if request.method == 'GET':
         # Getting needed information
         username = request.user
-        user = ChUser.objects.get(username=username)
-        profile = ChProfile.objects.get(user=user)
+        # user = ChUser.objects.get(username=username)
+        profile = ChProfile.objects.get(user=username)
         hive_leaving = ChHive.objects.get(name_url=hive_url)
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
