@@ -397,11 +397,11 @@ class CategoryChoiceField(forms.ModelChoiceField):
 
 
 class CreateHiveForm(forms.ModelForm):
-    category = CategoryChoiceField(queryset=ChCategory.objects.all())
+    # category = CategoryChoiceField(queryset=ChCategory.objects.all())
 
     class Meta:
         model = ChHive
-        fields = ('name', 'description')
+        fields = ('name', 'description', 'category')
 
 
 class MsgForm(forms.Form):
