@@ -54,6 +54,12 @@ class ChUser(AbstractUser):
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
 
+    def __str__(self):
+        try:
+            return '@' + ChProfile.objects.get(user=self).public_name
+        except ChProfile.DoesNotExist:
+            return self.username + '--NO PROFILE!'
+
 
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
@@ -194,12 +200,15 @@ class ChProfile(models.Model):
                   self.location, self.private_show_age, self.public_show_age, self.show_location)
 
     def __str__(self):
-        return u"%s - Personal Profile" % self.user
+        return '@' + self.public_name + ', Personal profile'
 
 
 class LanguageModel(models.Model):
     profile = models.ForeignKey(ChProfile, related_name='languages')
     language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
+
+    def __str__(self):
+        return self.language + ' from ' + self.profile.public_name
 
 
 class ChCategory(models.Model):
@@ -259,9 +268,8 @@ class ChHive(models.Model):
         """
         self.creator = profile
 
-
     def __str__(self):
-        return u"%s" % self.name
+        return self.name
 
 
 class ChChat(models.Model):
@@ -314,8 +322,8 @@ class ChChat(models.Model):
         subscription.save()
         return
 
-        # def __unicode__(self):
-        #     return self.user1.username + " - Chats with - " + self.user2.username
+    def __str__(self):
+        return self.hive.name + '(' + self.type + ')'
 
 
 class ChMessage(models.Model):
@@ -341,7 +349,7 @@ class ChMessage(models.Model):
     content = models.TextField(max_length=2048)
 
     def __str__(self):
-        return self.profile.first_name + " said: " + self.content
+        return self.profile.public_name + " said: " + self.content
 
 
 class ChAnswer(ChMessage):
