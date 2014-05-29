@@ -140,7 +140,9 @@ def login_v2(request):
             return HttpResponse(json.dumps({'status': status, "logs": logs},
                                            cls=DjangoJSONEncoder), mimetype="application/json")
     else:
-        raise Http404
+        status = "INVALID_METHOD"
+        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        # raise Http404
 
 
 def explore(request):
@@ -157,6 +159,9 @@ def explore(request):
 
         answer = json.dumps({'status': status, 'hives': hive_array}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
+    else:
+        status = "INVALID_METHOD"
+        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
 
 
 def email_check(request):
@@ -324,7 +329,9 @@ def join(request):
             status = 'ALREADY_SUBSCRIBED'
             return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
     else:
-        raise Http404
+        status = "INVALID_METHOD"
+        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        # raise Http404
 
 
 def chat_v2(request):
@@ -375,4 +382,6 @@ def chat_v2(request):
         status = 'MESSAGE_SENT'
         return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
     else:
-        raise Http404
+        status = "INVALID_METHOD"
+        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        # raise Http404
