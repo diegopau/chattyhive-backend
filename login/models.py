@@ -5,7 +5,7 @@ from core.models import ChProfile, LanguageModel
 
 
 class LoginForm(forms.Form):
-    email = forms.CharField(max_length=40)
+    login = forms.CharField(max_length=40)
     password = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
 
 
