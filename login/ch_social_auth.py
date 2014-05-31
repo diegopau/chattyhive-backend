@@ -72,7 +72,7 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
     """Fill user details using data from provider."""
     if user:
         if kwargs.get('is_new'):
-            profile = ChProfile.objects.get(user__username=user)
+            profile = ChProfile.objects.get(user__username=user.username)
             # we only allow alphanumeric characters and '_'
             original_name = re.sub('[.-]', '_', details.get('username'))    # '.' and '-' replaced by '_'
             original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)     # other not allowed characters eliminated

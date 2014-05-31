@@ -29,11 +29,11 @@ def login_view(request):
             login_string = form.cleaned_data['login']
             password = form.cleaned_data['password']
             if '@' in login_string:
-                # todo it's necessary to query the user from the email?
-                user = authenticate(username=login_string, password=password)
+                user = ChUser.objects.get(email=login_string)
+                user = authenticate(username=user.username, password=password)
             else:
-                # todo login_string query te profile from the name and get the user.username
-                user = authenticate(username=login_string, password=password)
+                profile = ChProfile.objects.select_related().get(public_name=login_string)
+                user = authenticate(username=profile.user.username, password=password)
             if user is not None:
                 if user.is_active:
                     login(request, user)
@@ -41,12 +41,12 @@ def login_view(request):
                     if not email_address.verified:
                         if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
                                 email_address=EmailAddress.objects.get(email=user.email))) and not email_address.warned:
-                            EmailAddress.objects.warn(username)
+                            EmailAddress.objects.warn(login_string)
                             return HttpResponseRedirect("/email_warning/")
                         if email_address.warned:
                             if EmailConfirmation.warning_expired(
                                     EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
-                                EmailAddress.objects.check_confirmation(username)
+                                EmailAddress.objects.check_confirmation(login_string)
                             else:
                                 print("ELSE")
                                 return HttpResponseRedirect("/email_warning/")

@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from uuid import uuid4
+from django.utils.translation import ugettext_lazy as _
 
 __author__ = 'lorenzo'
 
@@ -50,7 +51,7 @@ class ChUserManager(UserManager):
 
 class ChUser(AbstractUser):
     is_authenticated = models.BooleanField(default=False)
-
+    # email = models.EmailField(_('email address'), unique=True, blank=True)
     objects = ChUserManager()
 
     USERNAME_FIELD = 'username'
