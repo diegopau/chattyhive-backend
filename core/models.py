@@ -1,10 +1,13 @@
 # -*- encoding: utf-8 -*-
 from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
+import re
+from django.core import validators
+from django.utils import timezone
 
 __author__ = 'lorenzo'
 
-from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django import forms
 from django.utils.http import urlquote
@@ -49,12 +52,38 @@ class ChUserManager(UserManager):
         return user
 
 
-class ChUser(AbstractUser):
+class ChUser(AbstractBaseUser, PermissionsMixin):
+
+    username = models.CharField(_('username'), max_length=30, unique=True,
+        help_text=_('Required. 30 characters or fewer. Letters, numbers and '
+                    '@/./+/-/_ characters'),
+        validators=[
+            validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'), 'invalid')
+        ])
+    email = models.EmailField(_('email address'), unique=True, blank=True)
+    is_staff = models.BooleanField(_('staff status'), default=False,
+        help_text=_('Designates whether the user can log into this admin '
+                    'site.'))
+    is_active = models.BooleanField(_('active'), default=True,
+        help_text=_('Designates whether this user should be treated as '
+                    'active. Unselect this instead of deleting accounts.'))
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
     is_authenticated = models.BooleanField(default=False)
-    # email = models.EmailField(_('email address'), unique=True, blank=True)
     objects = ChUserManager()
 
     USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
+
+    class Meta:
+        verbose_name = _('user')
+        verbose_name_plural = _('users')
+
+    def get_full_name(self):
+        return self.username
+
+    def get_short_name(self):
+        return self.username
 
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
