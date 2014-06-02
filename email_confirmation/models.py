@@ -225,3 +225,97 @@ class EmailConfirmation(models.Model):
     class Meta:
         verbose_name = _("email confirmation")
         verbose_name_plural = _("email confirmations")
+
+
+class EmailChangePasswordManager(models.Manager):
+
+    def confirm_email(self, confirmation_key):
+        try:
+            confirmation = self.get(confirmation_key=confirmation_key)
+        except self.model.DoesNotExist:
+            return None
+        if not confirmation.warning_expired():
+            email_address = confirmation.email_address
+            email_address.verified = True
+            email_address.set_as_primary(conditional=True)
+            email_address.save()
+            email_confirmed.send(sender=self.model, email_address=email_address)
+            return email_address
+
+    def send_change_password(self, email_address):
+        # salt = sha_constructor(str(random())).hexdigest()[:5]
+        salt = hashlib.sha1(str(random()).encode('utf-8')).hexdigest()[:5]
+        # confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
+        confirmation_key = hashlib.sha1((salt + email_address.email).encode('utf-8')).hexdigest()
+        obj = Site.objects.get_current()
+        obj.name = SITE
+        obj.domain = SITE
+        obj.save()
+        current_site = Site.objects.get_current()
+        # check for the url with the dotted view path
+        try:
+            path = reverse("email_confirmation.views.confirm_email",
+                           args=[confirmation_key])
+        except NoReverseMatch:
+            # or get path with named urlconf instead
+            path = reverse(
+                "email_confirmation_confirm_email", args=[confirmation_key])
+        protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
+        activate_url = u"%s://%s%s" % (
+            protocol,
+            str(current_site.domain),
+            path
+        )
+        context = {
+            "user": email_address.user,
+            "activate_url": activate_url,
+            "current_site": current_site,
+            "confirmation_key": confirmation_key,
+        }
+        subject = render_to_string(
+            "email_confirmation/email_confirmation_subject.txt", context)
+        # remove superfluous line breaks
+        subject = "".join(subject.splitlines())
+        message = render_to_string(
+            "email_confirmation/email_confirmation_message.txt", context)
+        send_mail(subject, message, DEFAULT_FROM_EMAIL, [email_address.email])
+        confirmation = self.create(
+            email_address=email_address,
+            # sent=datetime.datetime.now(),  # PRINT
+            sent=timezone.now(),
+            warned_day=timezone.now(),
+            confirmation_key=confirmation_key
+        )
+        email_confirmation_sent.send(
+            sender=self.model,
+            confirmation=confirmation,
+        )
+        return confirmation
+
+    def delete_expired_confirmations(self):
+        for confirmation in self.all():
+            if confirmation.key_expired():
+                confirmation.delete()
+
+
+class EmailChangePassword(models.Model):
+
+    email_address = models.ForeignKey(EmailAddress)
+    sent = models.DateTimeField()
+    confirmation_key = models.CharField(max_length=40)
+
+    objects = EmailConfirmationManager()
+
+    def key_expired(self):
+        expiration_date = self.sent + datetime.timedelta(
+            days=EMAIL_CONFIRMATION_DAYS)
+        # return expiration_date <= datetime.datetime.now()  # PRINT
+        return expiration_date <= timezone.now()
+    key_expired.boolean = True
+
+    def __str__(self):
+        return u"confirmation for %s" % self.email_address
+
+    class Meta:
+        verbose_name = _("email confirmation")
+        verbose_name_plural = _("email confirmations")
