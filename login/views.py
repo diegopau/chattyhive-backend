@@ -26,22 +26,27 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-            user = authenticate(username=username, password=password)
-            if user is not None:
+            try:
+                login_string = form.cleaned_data['login']
+                password = form.cleaned_data['password']
+                if '@' in login_string:
+                    user = ChUser.objects.get(email=login_string)
+                    user = authenticate(username=user.username, password=password)
+                else:
+                    profile = ChProfile.objects.select_related().get(public_name=login_string)
+                    user = authenticate(username=profile.user.username, password=password)
                 if user.is_active:
                     login(request, user)
-                    email_address = EmailAddress.objects.get(email=username)
+                    email_address = EmailAddress.objects.get(email=user.email)
                     if not email_address.verified:
                         if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
-                                email_address=EmailAddress.objects.get(email=username))) and not email_address.warned:
-                            EmailAddress.objects.warn(username)
+                                email_address=EmailAddress.objects.get(email=user.email))) and not email_address.warned:
+                            EmailAddress.objects.warn(login_string)
                             return HttpResponseRedirect("/email_warning/")
                         if email_address.warned:
                             if EmailConfirmation.warning_expired(
-                                    EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=username))):
-                                EmailAddress.objects.check_confirmation(username)
+                                    EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
+                                EmailAddress.objects.check_confirmation(login_string)
                             else:
                                 print("ELSE")
                                 return HttpResponseRedirect("/email_warning/")
@@ -52,7 +57,7 @@ def login_view(request):
                     # TODO set an html to resend confirmation
                     return HttpResponse("This account has been deleted due its email has not been confirmed."
                                         " Please register again")
-            else:
+            except ChUser.DoesNotExist or ChProfile.DoesNotExist:
                 return HttpResponse("ERROR, incorrect password or login")
         else:
             return HttpResponse("ERROR, invalid form")
@@ -71,16 +76,15 @@ def create_user_view(request):
         if form.is_valid():
             try:
                 email = form.cleaned_data['email']
-                username = email        # TODO temporal solution, should be changed
                 password = uuid4().hex  # this password will be used until the user enter a new one
                 manager = ChUserManager()
-                user = manager.create_user(username, email, password)
+                user = manager.create_user('unused', email, password)
 
                 # Profile creation
-                profile = ChProfile(user=user, public_name=username)  # temporal profile name
+                profile = ChProfile(user=user, public_name=user.username)  # temporal profile name
                 profile.save()
 
-                user2 = authenticate(username=username, password=password)
+                user2 = authenticate(username=user.username, password=password)
                 if user is not None:
                     if user.is_active:
                         login(request, user2)
@@ -174,13 +178,13 @@ def register_three(request):
         form = RegistrationFormThree(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            username = email  # TODO temporal solution, should be changed
             password = form.cleaned_data['password']
             password2 = form.cleaned_data['password2']
 
             if password == password2:  # Checking correct password written twice
                 try:
-                    user.username = username
+                    # user.username = username
+                    user.email = email
                     user.set_password(password)
                     user.save()
 
@@ -218,11 +222,11 @@ def register_three(request):
                 form = RegistrationFormThree()
             else:
                 form = RegistrationFormThree(initial={
-                    'email': request.user.username,
+                    'email': request.user.email,
                 })
         except UserSocialAuth.DoesNotExist:
             form = RegistrationFormThree(initial={
-                'email': request.user.username,
+                'email': request.user.email,
             })
         return render(request, "login/create_user.html", {
             'form': form,

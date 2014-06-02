@@ -1,8 +1,14 @@
 # -*- encoding: utf-8 -*-
+from uuid import uuid4
+from django.utils.translation import ugettext_lazy as _
+import re
+from django.core import validators
+from django.utils import timezone
+
 __author__ = 'lorenzo'
 
-from django.contrib.auth.models import AbstractUser, UserManager
-from django.db import models
+from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
+from django.db import models, IntegrityError
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
@@ -22,11 +28,18 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        user = ChUser(username=username)
-        # user.email = email  # TODO check if email needed
+        hex_username = '0084dcf6ba8e49278d7b00e7349146' #uuid4().hex[:30]     # 16^30 values low collision probabilities
+        user = ChUser(username=hex_username)
+        user.email = email
         user.set_password(password)
-        user.save(using=self._db)
-        return user
+
+        while True:
+            try:
+                user.save(using=self._db)
+                return user
+            # if the email is already used
+            except IntegrityError:
+                user.username = uuid4().hex[:30]     # 16^30 values low collision probabilities
 
     # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):
@@ -36,7 +49,8 @@ class ChUserManager(UserManager):
         :param password: Password
         :return: User with privileges
         """
-        user = self.create_user(username, email, password)
+        user = ChUser(username=username)
+        user.set_password(password)
         user.is_admin = True
         user.is_staff = True
         user.is_superuser = True
@@ -44,19 +58,45 @@ class ChUserManager(UserManager):
         return user
 
 
-class ChUser(AbstractUser):
-    is_authenticated = models.BooleanField(default=False)
+class ChUser(AbstractBaseUser, PermissionsMixin):
 
+    username = models.CharField(_('username'), max_length=30, unique=True,
+        help_text=_('Required. 30 characters or fewer. Letters, numbers and '
+                    '@/./+/-/_ characters'),
+        validators=[
+            validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'), 'invalid')
+        ])
+    email = models.EmailField(_('email address'), unique=True, blank=True)
+    is_staff = models.BooleanField(_('staff status'), default=False,
+        help_text=_('Designates whether the user can log into this admin '
+                    'site.'))
+    is_active = models.BooleanField(_('active'), default=True,
+        help_text=_('Designates whether this user should be treated as '
+                    'active. Unselect this instead of deleting accounts.'))
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    is_authenticated = models.BooleanField(default=False)
     objects = ChUserManager()
 
     USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
+
+    class Meta:
+        verbose_name = _('user')
+        verbose_name_plural = _('users')
+
+    def get_full_name(self):
+        return self.username
+
+    def get_short_name(self):
+        return self.username
 
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
 
     def __str__(self):
         try:
-            return '@' + ChProfile.objects.get(user=self).public_name
+            return '@' + ChProfile.objects.get(user=self).public_name + '[' + self.username + ']'
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
 

@@ -1,252 +1,257 @@
-
 -- Command:
 -- python manage.py sqlcustom core | python manage.py dbshell
 DELETE FROM core_chcategory;
 
--- Aficiones y ocio
+-- Free time // Aficiones y ocio
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Aficiones y ocio - general', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Free time - General', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Aprender idiomas', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Learn languages', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Cocina y recetas', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Cooking & Recipes', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Coleccionismo', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Collecting', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Fotografía', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Photography', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Juegos de rol y de mesa', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Board and role-playing games', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Humor', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Humor', 'Free time', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Producción musical e instrumentos', 'Aficiones y ocio', 'Dummy description');
+  VALUES ('Music production & Instruments', 'Free time', 'Dummy description');
 
--- Amor y amistad
+-- Love & friendship // Amor y amistad
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Amistad', 'Amor y amistad', 'Dummy description');
+  VALUES ('Friendship', 'Love & Friendship', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Amor', 'Amor y amistad', 'Dummy description');
+  VALUES ('Love', 'Love & Friendship', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Sexualidad', 'Amor y amistad', 'Dummy description');
+  VALUES ('Sexuality', 'Love & Friendship', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Problemas de pareja', 'Amor y amistad', 'Dummy description');
+  VALUES ('Relationship problems', 'Love & Friendship', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Bodas y despedidas de solter@', 'Amor y amistad', 'Dummy description');
+  VALUES ('Weddings & Bachelor(ette) parties', 'Love & Friendship', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('LGBT', 'Amor y amistad', 'Dummy description');
+  VALUES ('LGBT', 'Love & Friendship', 'Dummy description');
 
--- Arte y eventos culturales
+-- Art & cultural events // Arte y eventos culturales
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Arte y eventos culturales', 'Arte y eventos culturales', 'Dummy description');
+  VALUES ('Art & Cultural events', 'Art & Cultural events', 'Dummy description');
 
--- Ciencias naturales
+-- Natural sciences // Ciencias naturales
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Ciencia', 'Ciencias naturales', 'Dummy description');
+  VALUES ('Natural sciences - General', 'Natural sciences', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Astronomía', 'Ciencias naturales', 'Dummy description');
+  VALUES ('Astronomy', 'Natural sciences', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Biología', 'Ciencias naturales', 'Dummy description');
+  VALUES ('Biology', 'Natural sciences', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Física', 'Ciencias naturales', 'Dummy description');
+  VALUES ('Physics', 'Natural sciences', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Química', 'Ciencias naturales', 'Dummy description');
+  VALUES ('Chemistry', 'Natural sciences', 'Dummy description');
 
--- Ciencias sociales
+-- Social sciences // Ciencias sociales
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Ciencias sociales', 'Ciencias sociales', 'Dummy description');
+  VALUES ('Social sciences', 'Social sciences', 'Dummy description');
 
--- Cine y TV
+-- Movies & TV // Cine y TV
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Cine y TV - varios', 'Cine y TV', 'Dummy description');
+  VALUES ('Movies & TV - General', 'Movies & TV', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Anime', 'Cine y TV', 'Dummy description');
+  VALUES ('Anime', 'Movies & TV', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Cine y TV - Famosos', 'Cine y TV', 'Dummy description');
+  VALUES ('Movies & TV - Celebrities', 'Movies & TV', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Películas', 'Cine y TV', 'Dummy description');
+  VALUES ('Movies', 'Movies & TV', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Series', 'Cine y TV', 'Dummy description');
+  VALUES ('Series', 'Movies & TV', 'Dummy description');
 
--- Compras y mercadillo
+-- Shopping & Market // Compras y mercadillo
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Compras y mercadillo', 'Compras y mercadillo', 'Dummy description');
+  VALUES ('Shopping & Market', 'Shopping & Market', 'Dummy description');
 
--- Conocer gente
+-- Meet new people // Conocer gente
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Conocer gente - general', 'Conocer gente', 'Dummy description');
+  VALUES ('Meet new people - General', 'Meet new people', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Actividades', 'Conocer gente', 'Dummy description');
+  VALUES ('Activities', 'Meet new people', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Buscar pareja', 'Conocer gente', 'Dummy description');
+  VALUES ('Dating', 'Meet new people', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Eventos', 'Conocer gente', 'Dummy description');
+  VALUES ('Events', 'Meet new people', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Músicos y bandas', 'Conocer gente', 'Dummy description');
+  VALUES ('Musicians & Bands', 'Meet new people', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Quedadas', 'Conocer gente', 'Dummy description');
+  VALUES ('Meetups', 'Meet new people', 'Dummy description');
 
--- Deporte
+-- Sports // Deporte
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Deportes - otros', 'Deporte', 'Dummy description');
+  VALUES ('Sports - General', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Baloncesto', 'Deporte', 'Dummy description');
+  VALUES ('Basketball', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Béisbol', 'Deporte', 'Dummy description');
+  VALUES ('Baseball', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Cricket', 'Deporte', 'Dummy description');
+  VALUES ('Cricket', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Deporte amateur y quedadas', 'Deporte', 'Dummy description');
+  VALUES ('Amateur sports and meetups', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Deportes de motor', 'Deporte', 'Dummy description');
+  VALUES ('Motorsports', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Fútbol', 'Deporte', 'Dummy description');
+  VALUES ('Football', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Golf', 'Deporte', 'Dummy description');
+  VALUES ('Golf', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Hockey', 'Deporte', 'Dummy description');
+  VALUES ('Hockey', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Rugby y fútbol americano', 'Deporte', 'Dummy description');
+  VALUES ('Rugby & American football', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Tenis', 'Deporte', 'Dummy description');
+  VALUES ('Tennis', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Tenis de mesa', 'Deporte', 'Dummy description');
+  VALUES ('Table tennis', 'Sports', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Voleibol', 'Deporte', 'Dummy description');
+  VALUES ('Volleyball', 'Sports', 'Dummy description');
 
--- Educación
+-- Education // Educación
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Educación - Otros', 'Educación', 'Dummy description');
+  VALUES ('Education - General', 'Education', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Educación obligatoria', 'Educación', 'Dummy description');
+  VALUES ('Compulsory education', 'Education', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Estudios de postgrado', 'Educación', 'Dummy description');
+  VALUES ('Postgraduate studies', 'Education', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Formación profesional', 'Educación', 'Dummy description');
+  VALUES ('Vocational training', 'Education', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Preescolar', 'Educación', 'Dummy description');
+  VALUES ('Preschool', 'Education', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Universidad', 'Educación', 'Dummy description');
+  VALUES ('University', 'Education', 'Dummy description');
 
--- Estilo de vida
+-- Lifestyle // Estilo de vida
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Estilo de vida - general', 'Estilo de vida', 'Dummy description');
+  VALUES ('Lifestyle - General', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Belleza', 'Estilo de vida', 'Dummy description');
+  VALUES ('Beauty', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Estados de ánimo', 'Estilo de vida', 'Dummy description');
+  VALUES ('Moods', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Filosofía y espiritualidad', 'Estilo de vida', 'Dummy description');
+  VALUES ('Phylosophy & Spirituality', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Moda', 'Estilo de vida', 'Dummy description');
+  VALUES ('Fashion', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Vida nocturna', 'Estilo de vida', 'Dummy description');
+  VALUES ('Nightlife', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Subculturas', 'Estilo de vida', 'Dummy description');
+  VALUES ('Subcultures', 'Lifestyle', 'Dummy description');
 
--- Familia y hogar
+-- Family, Home & Pets // Familia, hogar y mascotas
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Decoración / cuidados del hogar', 'Familia y hogar', 'Dummy description');
+  VALUES ('Decoration & Home care', 'Family, Home & Pets', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Familia', 'Familia y hogar', 'Dummy description');
+  VALUES ('Family', 'Family, Home & Pets', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Jardinería', 'Familia y hogar', 'Dummy description');
+  VALUES ('Gardening', 'Family, Home & Pets', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Maternidad / paternidad', 'Familia y hogar', 'Dummy description');
+  VALUES ('Maternity & Paternity', 'Family, Home & Pets', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Mascotas', 'Familia y hogar', 'Dummy description');
+  VALUES ('Pets', 'Family, Home & Pets', 'Dummy description');
 
--- Internet
+-- Internet // Internet
 INSERT INTO core_chcategory ("name", "group", "description")
   VALUES ('Internet', 'Internet', 'Dummy description');
 
--- Libros y cómics
+-- Books & Comics // Libros y cómics
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Libros y cómics', 'Libros y cómics', 'Dummy description');
+  VALUES ('Books & Comics', 'Libros y cómics', 'Dummy description');
 
--- Motor
+-- Cars, Motorbikes & Others // Motor
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Motor - varios', 'Motor', 'Dummy description');
+  VALUES ('Cars, Motorbikes & Others - General', 'Cars, Motorbikes & Others', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Coches', 'Motor', 'Dummy description');
+  VALUES ('Cars', 'Cars, Motorbikes & Others', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Motos', 'Motor', 'Dummy description');
+  VALUES ('Motorbikes', 'Cars, Motorbikes & Others', 'Dummy description');
+INSERT INTO core_chcategory ("name", "group", "description")
+  VALUES ('Yachts', 'Cars, Motorbikes & Others', 'Dummy description');
 
--- Música
+-- Music // Música
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Música', 'Música', 'Dummy description');
+  VALUES ('Music', 'Music', 'Dummy description');
 
--- Noticias y actualidad
+-- News & Current affairs // Noticias y actualidad
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Noticias y actualidad', 'Noticias y actualidad', 'Dummy description');
+  VALUES ('News & Current affairs', 'News & Current affairs', 'Dummy description');
 
--- Política y activismo
+-- Politics & Activism // Política y activismo
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Política y activismo', 'Política y activismo', 'Dummy description');
+  VALUES ('Politics & Activism', 'Politics & Activism', 'Dummy description');
 
--- Salud y fitness
+-- Health & Fitness // Salud y fitness
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Salud - general', 'Salud y fitness', 'Dummy description');
+  VALUES ('Health - General', 'Health & Fitness', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Dietas y nutrición', 'Salud y fitness', 'Dummy description');
+  VALUES ('Diets', 'Health & Fitness', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Discapacidades', 'Salud y fitness', 'Dummy description');
+  VALUES ('Disabilities', 'Health & Fitness', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Fitness', 'Salud y fitness', 'Dummy description');
+  VALUES ('Fitness', 'Health & Fitness', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Medicina alternativa', 'Salud y fitness', 'Dummy description');
+  VALUES ('Alternative medicine', 'Health & Fitness', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Psicología y psiquiatría', 'Salud y fitness', 'Dummy description');
+  VALUES ('Psychology & Psychiatry', 'Health & Fitness', 'Dummy description');
 
--- Sitios, empresas y marcas
+-- Places, Companies & Brands // Sitios, empresas y marcas
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Sitios, empresas y marcas', 'Sitios, empresas y marcas', 'Dummy description');
+  VALUES ('Places, Companies & Brands', 'Places, Companies & Brands', 'Dummy description');
 
--- Tecnología e informática
+-- Technology & Computers // Tecnología e informática
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Tecnología e informática - general', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Technology & Computers - General', 'Technology & Computers', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Software y sistemas operativos', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Software & Operating systems', 'Technology & Computers', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Hardware', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Hardware', 'Technology & Computers', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Smartphones y apps', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Smartphones & Apps', 'Technology & Computers', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Desarrollo de software', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Software development', 'Technology & Computers', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Hacking', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Hacking', 'Technology & Computers', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Wearables', 'Tecnología e informática', 'Dummy description');
+  VALUES ('Wearables', 'Technology & Computers', 'Dummy description');
 
--- Trabajo y negocios
+-- Work & Business // Trabajo y negocios
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Crowdfunding', 'Trabajo y negocios', 'Dummy description');
+  VALUES ('Work & Business - General', 'Work & Business', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Emprendedores y startups', 'Trabajo y negocios', 'Dummy description');
+  VALUES ('Crowdfunding', 'Work & Business', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Finanzas', 'Trabajo y negocios', 'Dummy description');
+  VALUES ('Entrepreneurs & Startups', 'Work & Business', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Oferta y demanda de trabajo', 'Trabajo y negocios', 'Dummy description');
+  VALUES ('Finances', 'Work & Business', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Profesiones', 'Trabajo y negocios', 'Dummy description');
+  VALUES ('Job vacancies', 'Work & Business', 'Dummy description');
+INSERT INTO core_chcategory ("name", "group", "description")
+  VALUES ('Profession', 'Work & Business', 'Dummy description');
 
--- Viajes y turismo
+-- Trips & Places // Viajes y lugares
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Viajes - destinos', 'Viajes y turismo', 'Dummy description');
+  VALUES ('Trips & Places - General', 'Trips & Places', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Puntos de interés', 'Viajes y turismo', 'Dummy description');
+  VALUES ('Trips - destination', 'Trips & Places', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Organizar viajes', 'Viajes y turismo', 'Dummy description');
+  VALUES ('Landmarks', 'Trips & Places', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Culturas y etnias', 'Viajes y turismo', 'Dummy description');
+  VALUES ('Travel planning', 'Trips & Places', 'Dummy description');
+INSERT INTO core_chcategory ("name", "group", "description")
+  VALUES ('Cultures & Ethnic groups', 'Trips & Places', 'Dummy description');
 
--- Videojuegos
+-- Video games // Videojuegos
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Videojuegos - otros', 'Videojuegos', 'Dummy description');
+  VALUES ('Video games - General', 'Video games', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Consola y portátiles', 'Videojuegos', 'Dummy description');
+  VALUES ('Game consoles & Handheld', 'Video games', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Indie', 'Videojuegos', 'Dummy description');
+  VALUES ('Indie games', 'Video games', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('PC', 'Videojuegos', 'Dummy description');
+  VALUES ('PC games', 'Video games', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Smartphones', 'Videojuegos', 'Dummy description');
+  VALUES ('Smartphone games', 'Video games', 'Dummy description');
