@@ -8,7 +8,7 @@ from django.utils import timezone
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models
+from django.db import models, IntegrityError
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
@@ -28,12 +28,18 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        hex_username = uuid4().hex[:30]
+        hex_username = '0084dcf6ba8e49278d7b00e7349146' #uuid4().hex[:30]     # 16^30 values low collision probabilities
         user = ChUser(username=hex_username)
         user.email = email
         user.set_password(password)
-        user.save(using=self._db)
-        return user
+
+        while True:
+            try:
+                user.save(using=self._db)
+                return user
+            # if the email is already used
+            except IntegrityError:
+                user.username = uuid4().hex[:30]     # 16^30 values low collision probabilities
 
     # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):

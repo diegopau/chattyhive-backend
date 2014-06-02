@@ -26,15 +26,15 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            login_string = form.cleaned_data['login']
-            password = form.cleaned_data['password']
-            if '@' in login_string:
-                user = ChUser.objects.get(email=login_string)
-                user = authenticate(username=user.username, password=password)
-            else:
-                profile = ChProfile.objects.select_related().get(public_name=login_string)
-                user = authenticate(username=profile.user.username, password=password)
-            if user is not None:
+            try:
+                login_string = form.cleaned_data['login']
+                password = form.cleaned_data['password']
+                if '@' in login_string:
+                    user = ChUser.objects.get(email=login_string)
+                    user = authenticate(username=user.username, password=password)
+                else:
+                    profile = ChProfile.objects.select_related().get(public_name=login_string)
+                    user = authenticate(username=profile.user.username, password=password)
                 if user.is_active:
                     login(request, user)
                     email_address = EmailAddress.objects.get(email=user.email)
@@ -57,7 +57,7 @@ def login_view(request):
                     # TODO set an html to resend confirmation
                     return HttpResponse("This account has been deleted due its email has not been confirmed."
                                         " Please register again")
-            else:
+            except ChUser.DoesNotExist or ChProfile.DoesNotExist:
                 return HttpResponse("ERROR, incorrect password or login")
         else:
             return HttpResponse("ERROR, invalid form")
@@ -76,13 +76,12 @@ def create_user_view(request):
         if form.is_valid():
             try:
                 email = form.cleaned_data['email']
-                username = email        # TODO temporal solution, should be changed
                 password = uuid4().hex  # this password will be used until the user enter a new one
                 manager = ChUserManager()
-                user = manager.create_user(username, email, password)
+                user = manager.create_user('unused', email, password)
 
                 # Profile creation
-                profile = ChProfile(user=user, public_name=username)  # temporal profile name
+                profile = ChProfile(user=user, public_name=user.username)  # temporal profile name
                 profile.save()
 
                 user2 = authenticate(username=user.username, password=password)
@@ -179,7 +178,6 @@ def register_three(request):
         form = RegistrationFormThree(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
-            # username = email  # TODO temporal solution, should be changed
             password = form.cleaned_data['password']
             password2 = form.cleaned_data['password2']
 
