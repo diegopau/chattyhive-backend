@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 import re
 from django.core import validators
 from django.utils import timezone
+from colorful.fields import RGBColorField
 
 __author__ = 'lorenzo'
 
@@ -125,8 +126,10 @@ class ChProfile(models.Model):
     location = models.TextField(null=True, blank=True)  # todo location
     private_status = models.CharField(max_length=140, blank=True, null=True)
     public_status = models.CharField(max_length=140, blank=True, null=True)
-
-    # color = models.
+    personal_color = RGBColorField()
+    # todo image fields
+    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
+    # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
@@ -134,9 +137,6 @@ class ChProfile(models.Model):
     public_show_sex = models.BooleanField(default=False)
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
-    # todo image fields
-    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
-    # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
 
     # Setters for all variables
     def set_public_name(self, char_name):

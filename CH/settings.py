@@ -128,6 +128,7 @@ INSTALLED_APPS = (
     'core',
     'email_confirmation',
     'login',
+    'colorful',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:

@@ -284,6 +284,7 @@ def profile(request, public_name, private):
             if private == "private":
                 data = {"public_name": profile_view.public_name,
                         "first_name": profile_view.first_name,
+                        "birth_date": profile_view.birth_date,
                         "surname": profile_view.last_name,
                         "sex": profile_view.sex,
                         "allowed": allowed
