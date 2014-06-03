@@ -138,6 +138,8 @@ INSERT INTO core_chcategory ("name", "group", "description")
 INSERT INTO core_chcategory ("name", "group", "description")
   VALUES ('Fashion', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
+  VALUES ('Geek life', 'Lifestyle', 'Dummy description');
+INSERT INTO core_chcategory ("name", "group", "description")
   VALUES ('Nightlife', 'Lifestyle', 'Dummy description');
 INSERT INTO core_chcategory ("name", "group", "description")
   VALUES ('Subcultures', 'Lifestyle', 'Dummy description');
