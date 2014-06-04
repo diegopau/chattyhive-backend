@@ -278,3 +278,27 @@ def chat_auth(request):
 
     else:
         raise Http404
+
+
+def change_pass(request):
+    if request.method == 'GET':
+        form = ChangePassForm()
+        return render(request, "login/change_password.html", {
+            'form': form
+        })
+    else:
+        form = ChangePassForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            # if email exists
+            try:
+                email_address = EmailAddress.objects.get(email=email)
+                EmailAddress.objects.change_pass(email)
+                email_address.change_pass(email)
+                # Send email to change pass
+                return HttpResponse("Follow the link sent to your email in order to change your password.")
+            except EmailAddress.DoesNotExist:
+                return HttpResponse("There's no user registered with this email.")
+        else:
+            return HttpResponse("Please, introduce a valid email.")
+

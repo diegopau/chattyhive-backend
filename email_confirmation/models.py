@@ -37,7 +37,14 @@ class EmailAddressManager(models.Manager):
         except IntegrityError:
             print("NONE")
             return None
-    
+
+    def change_pass(self, email):
+        try:
+            email_address = self.get(email=email)
+            EmailChangePassword.objects.send_change_password(email_address)
+        except EmailAddress.DoesNotExist:
+            return None
+
     def get_primary(self, user):
         try:
             return self.get(user=user, primary=True)
@@ -273,11 +280,11 @@ class EmailChangePasswordManager(models.Manager):
             "confirmation_key": confirmation_key,
         }
         subject = render_to_string(
-            "email_confirmation/email_confirmation_subject.txt", context)
+            "email_confirmation/email_change_pass_subject.txt", context)
         # remove superfluous line breaks
         subject = "".join(subject.splitlines())
         message = render_to_string(
-            "email_confirmation/email_confirmation_message.txt", context)
+            "email_confirmation/email_change_pass_message.txt", context)
         send_mail(subject, message, DEFAULT_FROM_EMAIL, [email_address.email])
         confirmation = self.create(
             email_address=email_address,
@@ -314,7 +321,7 @@ class EmailChangePassword(models.Model):
     key_expired.boolean = True
 
     def __str__(self):
-        return u"confirmation for %s" % self.email_address
+        return u"Change of password request for %s" % self.email_address
 
     class Meta:
         verbose_name = _("email confirmation")
