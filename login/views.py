@@ -205,11 +205,16 @@ def register_three(request):
                     profile = ChProfile.objects.get(user=user)
                     profile.set_private_status('I\'m new in chattyhive!')
                     profile.set_public_status('I\'m new in chattyhive!')
-                    while True:
-                        rgb = uuid4().hex[:6]
-                        if rgb < 'EEEEEE':
-                            break
-                    profile.set_personal_color('#' + rgb)
+
+                    color = ''
+                    for ii in range(3):
+                        while True:
+                            rgb = uuid4().hex[:2]
+                            if 'EE' > rgb > '20':
+                                break
+                        color = color + rgb
+                    profile.set_personal_color('#' + color)
+
                     profile.save()
 
                 # if the email is already used
