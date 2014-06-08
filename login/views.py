@@ -48,9 +48,7 @@ def login_view(request):
                                     EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
                                 EmailAddress.objects.check_confirmation(login_string)
                             else:
-                                print("ELSE")
                                 return HttpResponseRedirect("/email_warning/")
-                    # print("checked")
                     return HttpResponseRedirect("/home/")
                 else:
                     # user.delete()
@@ -81,7 +79,20 @@ def create_user_view(request):
                 user = manager.create_user('unused', email, password)
 
                 # Profile creation
-                profile = ChProfile(user=user, public_name=user.username)  # temporal profile name
+                original_name = re.sub('[.-]', '_', email.split('@')[0])  # '.' and '-' replaced by '_'
+                original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)    # other not allowed characters eliminated
+                public_name = original_name
+                # if the name already exists we offer the name plus '_<number>'
+                ii = 0
+                while True:
+                    try:
+                        ChProfile.objects.get(public_name=public_name)
+                    except ChProfile.DoesNotExist:
+                        break
+                    ii += 1
+                    public_name = original_name + '_' + str(ii)
+
+                profile = ChProfile(user=user, public_name=public_name)  # temporal profile name
                 profile.save()
 
                 user2 = authenticate(username=user.username, password=password)
@@ -120,7 +131,7 @@ def create_user_view(request):
 def register_one(request):
     user = request.user
     profile = ChProfile.objects.get(user=user)
-    language_formset = inlineformset_factory(ChProfile, LanguageModel, extra=2)
+    language_formset = inlineformset_factory(ChProfile, LanguageModel, max_num=2)
     if request.method == 'POST':
 
         form1 = RegistrationFormOne(request.POST, prefix="form1", instance=profile)
@@ -189,12 +200,17 @@ def register_three(request):
                     user.save()
 
                     profile = ChProfile.objects.get(user=user)
-                    print(profile)  # PRINT
                     EmailAddress.objects.add_email(user=profile, email=email)
 
                     profile = ChProfile.objects.get(user=user)
-                    profile.set_private_status('¡Soy nuevo en chattyhive!')
-                    profile.set_public_status('¡Soy nuevo en chattyhive!')
+                    profile.set_private_status('I\'m new in chattyhive!')
+                    profile.set_public_status('I\'m new in chattyhive!')
+                    while True:
+                        rgb = uuid4().hex[:6]
+                        if rgb < 'EEEEEE':
+                            break
+                    profile.set_personal_color('#' + rgb)
+                    profile.save()
 
                 # if the email is already used
                 except IntegrityError:

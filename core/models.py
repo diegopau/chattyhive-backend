@@ -29,18 +29,22 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        hex_username = '0084dcf6ba8e49278d7b00e7349146' #uuid4().hex[:30]     # 16^30 values low collision probabilities
-        user = ChUser(username=hex_username)
-        user.email = email
-        user.set_password(password)
+        hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
 
         while True:
             try:
-                user.save(using=self._db)
-                return user
-            # if the email is already used
-            except IntegrityError:
-                user.username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+                # if the email is already used
+                ChUser.objects.get(username=hex_username)
+                hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+            except ChUser.DoesNotExist:
+                break
+
+        user = ChUser(username=hex_username)
+        user.email = email
+        user.set_password(password)
+        user.save(using=self._db)
+
+        return user
 
     # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):
@@ -211,6 +215,14 @@ class ChProfile(models.Model):
         """
         self.public_status = text_public_status
 
+
+    def set_personal_color(self, hex_rgb):
+        """
+        :param text_location: Location of the Profile
+        :return: None
+        """
+        self.personal_color = hex_rgb
+
     def set_private_show_age(self, boolean_show):
         """
         :param boolean_show: Permission of showing privately the age of the Profile
@@ -246,6 +258,7 @@ class ChProfile(models.Model):
 class LanguageModel(models.Model):
     profile = models.ForeignKey(ChProfile, related_name='languages')
     language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
+    unique_together = ("profile", "language")
 
     def __str__(self):
         return self.language + ' from ' + self.profile.public_name

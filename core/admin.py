@@ -2,22 +2,22 @@ __author__ = 'lorenzo'
 
 from django.contrib import admin
 from django import forms
-from core.models import ChUser, ChProfile, ChHive, ChMessage, ChChat, ChSubscription, ChCategory
+from core.models import ChUser, ChProfile, ChHive, ChMessage, ChChat, ChSubscription, ChCategory, LanguageModel
 
 
-# class AdminHiveForm(forms.ModelForm):
-    # category = CategoryChoiceField(queryset=ChCategory.objects.all())
-    # class Meta:
-    #     model = ChHive
+class LanguagesInline(admin.TabularInline):
+    model = LanguageModel
+    extra = 0
 
 
-# class HiveAdmin(admin.ModelAdmin):
-    # form = AdminHiveForm
-
+class ProfileAdmin(admin.ModelAdmin):
+    inlines = [
+        LanguagesInline,
+    ]
 
 # Include all models in Admin site
 admin.site.register(ChUser)
-admin.site.register(ChProfile)
+admin.site.register(ChProfile, ProfileAdmin)
 admin.site.register(ChCategory)
 admin.site.register(ChHive)
 admin.site.register(ChMessage)
