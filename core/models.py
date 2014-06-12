@@ -105,6 +105,13 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
 
+class LanguageModel(models.Model):
+    # profile = models.ForeignKey(ChProfile, related_name='languages')
+    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
+    # unique_together = ("profile", "language")
+
+    def __str__(self):
+        return self.language
 
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
@@ -126,6 +133,7 @@ class ChProfile(models.Model):
     sex = models.CharField(max_length=10, choices=SEX, default='male')
     birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # language is a multi value field now, related_name='languages'
+    language = models.ManyToManyField(LanguageModel)
     timezone = models.DateField(auto_now=True, auto_now_add=True)
     location = models.TextField(null=True, blank=True)  # todo location
     private_status = models.CharField(max_length=140, blank=True, null=True)
@@ -183,16 +191,30 @@ class ChProfile(models.Model):
         :param char_language: Language of the Profile
         :return: None
         """
-        language = LanguageModel(profile=self, language=char_language)
-        language.save()
+        # language = LanguageModel(profile=self, language=char_language)
+        # language.save()
+        try:
+            lang = LanguageModel.objects.get(language=char_language)
+            self.language.add(lang)
+        except LanguageModel.DoesNotExist:
+            lang = LanguageModel(language=char_language)
+            lang.save()
+            self.language.add(lang)
+
+        self.save()
 
     def remove_language(self, char_language):
         """
         :param char_language: Language of the Profile
         :return: None
         """
-        language = LanguageModel.objects.get(profile=self, language=char_language)
-        language.delete()
+        # language = LanguageModel.objects.get(profile=self, language=char_language)
+        # language.delete()
+        try:
+            lang = LanguageModel.objects.get(language=char_language)
+            self.language.remove(lang)
+        except LanguageModel.DoesNotExist:
+            return
 
     def set_location(self, text_location):
         """
@@ -253,15 +275,6 @@ class ChProfile(models.Model):
 
     def __str__(self):
         return '@' + self.public_name + ', Personal profile'
-
-
-class LanguageModel(models.Model):
-    profile = models.ForeignKey(ChProfile, related_name='languages')
-    language = models.CharField(max_length=5, choices=LANGUAGES, default='es-es')
-    unique_together = ("profile", "language")
-
-    def __str__(self):
-        return self.language + ' from ' + self.profile.public_name
 
 
 class ChCategory(models.Model):
