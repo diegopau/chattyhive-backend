@@ -236,18 +236,17 @@ class EmailConfirmation(models.Model):
 
 class EmailChangePasswordManager(models.Manager):
 
-    def confirm_email(self, confirmation_key):
+    def change_pass(self, confirmation_key):
         try:
             confirmation = self.get(confirmation_key=confirmation_key)
         except self.model.DoesNotExist:
             return None
-        if not confirmation.warning_expired():
-            email_address = confirmation.email_address
-            email_address.verified = True
-            email_address.set_as_primary(conditional=True)
-            email_address.save()
-            email_confirmed.send(sender=self.model, email_address=email_address)
-            return email_address
+        email_address = confirmation.email_address
+        email_address.verified = True
+        email_address.set_as_primary(conditional=True)
+        email_address.save()
+        email_confirmed.send(sender=self.model, email_address=email_address)
+        return email_address
 
     def send_change_password(self, email_address):
         # salt = sha_constructor(str(random())).hexdigest()[:5]
@@ -261,12 +260,12 @@ class EmailChangePasswordManager(models.Manager):
         current_site = Site.objects.get_current()
         # check for the url with the dotted view path
         try:
-            path = reverse("email_confirmation.views.confirm_email",
+            path = reverse("email_confirmation.views.change_password",
                            args=[confirmation_key])
         except NoReverseMatch:
             # or get path with named urlconf instead
             path = reverse(
-                "email_confirmation_confirm_email", args=[confirmation_key])
+                "email_confirmation_change_password", args=[confirmation_key])
         protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
         activate_url = u"%s://%s%s" % (
             protocol,
@@ -290,7 +289,6 @@ class EmailChangePasswordManager(models.Manager):
             email_address=email_address,
             # sent=datetime.datetime.now(),  # PRINT
             sent=timezone.now(),
-            warned_day=timezone.now(),
             confirmation_key=confirmation_key
         )
         email_confirmation_sent.send(
@@ -311,7 +309,7 @@ class EmailChangePassword(models.Model):
     sent = models.DateTimeField()
     confirmation_key = models.CharField(max_length=40)
 
-    objects = EmailConfirmationManager()
+    objects = EmailChangePasswordManager()
 
     def key_expired(self):
         expiration_date = self.sent + datetime.timedelta(

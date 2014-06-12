@@ -33,3 +33,9 @@ class RegistrationFormThree(forms.Form):
 
 class ChangePassForm(forms.Form):
     email = forms.EmailField()
+
+
+class DoublePassForm(forms.Form):
+    password = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
+    password2 = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
+    user = forms.EmailField(show_hidden_initial=True)

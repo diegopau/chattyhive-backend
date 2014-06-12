@@ -294,7 +294,8 @@ def change_pass(request):
             try:
                 email_address = EmailAddress.objects.get(email=email)
                 EmailAddress.objects.change_pass(email)
-                email_address.change_pass(email)
+                # EmailAddressManager.objects.change_pass(email)
+                # email_address.change_pass(email)
                 # Send email to change pass
                 return HttpResponse("Follow the link sent to your email in order to change your password.")
             except EmailAddress.DoesNotExist:
