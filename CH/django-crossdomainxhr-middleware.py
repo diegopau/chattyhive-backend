@@ -39,7 +39,7 @@ class XsSharing(object):
                 response['Access-Control-Allow-Origin'] = request.META['HTTP_ORIGIN']
                 response['Access-Control-Allow-Credentials'] = 'true'
                 response['Access-Control-Allow-Methods'] = ['POST', 'GET', 'OPTIONS']
-                response['Access-Control-Allow-Headers'] = '*'
+                response['Access-Control-Allow-Headers'] = request.META['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']
                 response['Content-type'] = ['text/html', 'charset=utf-8']
 
             return response
