@@ -36,7 +36,7 @@ class XsSharing(object):
                 # request['Origin']
 
                 print("OPTION METHOD - AngularJS - Browser")
-                response['Access-Control-Allow-Origin'] = request.META['Origin']
+                response['Access-Control-Allow-Origin'] = request['Origin']
                 response['Access-Control-Allow-Credentials'] = 'true'
                 response['Access-Control-Allow-Methods'] = ['POST', 'GET', 'OPTIONS']
                 response['Access-Control-Allow-Headers'] = '*'
