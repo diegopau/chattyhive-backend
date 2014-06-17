@@ -38,4 +38,12 @@ class ChangePassForm(forms.Form):
 class DoublePassForm(forms.Form):
     password = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
     password2 = forms.CharField(max_length=16, min_length=1, widget=forms.PasswordInput)
-    user = forms.EmailField(show_hidden_initial=True)
+    # user = forms.EmailField(show_hidden_initial=True)
+
+    def __init__(self, *args, **kwargs):
+        is_hidden = kwargs.pop('is_hidden', None)
+        super(DoublePassForm, self).__init__(*args, **kwargs)
+        if is_hidden:
+            self.fields['first_name'].widget = forms.HiddenInput()
+            self.fields['middle_name'].widget = forms.HiddenInput()
+            self.fields['last_name'].widget = forms.HiddenInput()
