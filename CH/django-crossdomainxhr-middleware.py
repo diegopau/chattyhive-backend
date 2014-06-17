@@ -31,10 +31,8 @@ class XsSharing(object):
             response = http.HttpResponse()
             response['Access-Control-Allow-Origin']  = XS_SHARING_ALLOWED_ORIGINS
             response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
-            if request.method == 'OPTIONS':
-                # response = http.HttpResponse()
-                # request['Origin']
 
+            if request.method == 'OPTIONS':
                 print("OPTION METHOD - AngularJS - Browser")
                 response['Access-Control-Allow-Origin'] = request.META['HTTP_ORIGIN']
                 response['Access-Control-Allow-Credentials'] = 'true'
@@ -42,18 +40,12 @@ class XsSharing(object):
                 response['Access-Control-Allow-Headers'] = request.META['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']
                 response['Content-type'] = ['text/html', 'charset=utf-8']
 
-            return response
-
-        if request.method == 'OPTIONS':
-            response = http.HttpResponse()
-            # request['Origin']
-
-            print("OPTION METHOD - AngularJS - Browser")
-            response['Access-Control-Allow-Origin'] = request.META['Origin']
-            response['Access-Control-Allow-Credentials'] = 'true'
-            response['Access-Control-Allow-Methods'] = ['POST', 'GET', 'OPTIONS']
-            response['Access-Control-Allow-Headers'] = '*'
-            response['Content-type'] = ['text/html', 'charset=utf-8']
+            if request.method == 'POST':
+                response['Access-Control-Allow-Origin'] = request.META['HTTP_ORIGIN']
+                response['Access-Control-Allow-Credentials'] = 'true'
+                response['Access-Control-Allow-Methods'] = ['POST', 'GET', 'OPTIONS']
+                response['Access-Control-Allow-Headers'] = request.META['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']
+                response['Content-type'] = ['text/html', 'charset=utf-8']
 
             return response
 
@@ -68,11 +60,3 @@ class XsSharing(object):
         response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
 
         return response
-
-    def options_response(self, request):
-        print("EN EL METODO ENTRA...")
-
-#             Access-Control-Allow-Origin: http://api.bob.com
-# Access-Control-Allow-Methods: GET, POST, PUT
-# Access-Control-Allow-Headers: X-Custom-Header
-# Content-Type: text/html; charset=utf-8
