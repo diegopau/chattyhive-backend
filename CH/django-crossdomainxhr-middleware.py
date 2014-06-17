@@ -47,6 +47,7 @@ class XsSharing(object):
         return response
 
     def options_response(self, request):
+        print("EN EL METODO ENTRA...")
         if request.method == 'OPTIONS':
             response = http.HttpResponse()
             # request['Origin']
