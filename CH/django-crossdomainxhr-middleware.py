@@ -45,3 +45,20 @@ class XsSharing(object):
         response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
 
         return response
+
+    def options_response(self, request):
+        if request.method == 'OPTIONS':
+            response = http.HttpResponse()
+
+            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Credentials'] = 'true'
+            response['Access-Control-Allow-Methods'] = ['POST', 'GET', 'OPTIONS']
+            response['Access-Control-Allow-Headers'] = '*'
+            response['Content-type'] = ['text/html', 'charset=utf-8']
+
+            return response
+
+#             Access-Control-Allow-Origin: http://api.bob.com
+# Access-Control-Allow-Methods: GET, POST, PUT
+# Access-Control-Allow-Headers: X-Custom-Header
+# Content-Type: text/html; charset=utf-8
