@@ -237,7 +237,7 @@ class ChProfile(models.Model):
                u' "timezone": "%s","location": "%s", "private_show_age": "%s", "public_show_age": "%s",' \
                u' "show_location": "%s"}'\
                % (self.public_name, self.first_name, self.last_name, self.sex, self.timezone,
-                  self.location, self.private_show_age, self.public_show_age, self.show_location)
+                  self.location, self.private_show_age, self.public_show_age, self.public_show_location)
 
     def __str__(self):
         return '@' + self.public_name + ', Personal profile'
