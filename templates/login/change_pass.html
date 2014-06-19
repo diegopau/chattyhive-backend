@@ -9,7 +9,7 @@
     <div align="center">
         <br /><h2>Welcome to ChattyHive!</h2><br />
         <br />Introduce your new password in order to change it, {{ user }}<br />
-        <form action="/pass_changed/{{ user }}" method="post">{% csrf_token %}
+        <form action="/pass_changed/" method="post">{% csrf_token %}
             {{ form.as_p }}
             {{ user }}
         <input type="submit" value="Change" />

@@ -33,6 +33,7 @@ def change_password(request, confirmation_key):
         EmailChangePassword.objects.change_pass(confirmation_key)
         user = EmailChangePassword.objects.get(confirmation_key=confirmation_key).email_address.user.user
         form = DoublePassForm()
+        request.session['user'] = user.username
         return render(request, "login/change_pass.html", {
             'form': form,
             'user': user.username
@@ -51,7 +52,7 @@ def password_changed(request):
     if request.method == "POST":
         form = DoublePassForm(request.POST)
         if form.is_valid():
-            user = ChUser.objects.get(username=form.cleaned_data['user'])
+            user = ChUser.objects.get(username=request.session['user'])
             password = form.cleaned_data['password']
             user.set_password(password)
             user.save()
