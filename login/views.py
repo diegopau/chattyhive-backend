@@ -72,16 +72,18 @@ def create_user_view(request):
     if request.user.is_authenticated():
         return HttpResponseRedirect("/home")
     if request.method == 'POST':
-        print("LLEGA")
+        print("LLEGA1")
         form = CreateUserForm(request.POST)
         if form.is_valid():
             try:
+                print("LLEGA2")
                 email = form.cleaned_data['email']
                 password = uuid4().hex  # this password will be used until the user enter a new one
                 manager = ChUserManager()
                 user = manager.create_user('unused', email, password)
 
                 # Profile creation
+                print("LLEGA3")
                 profile = ChProfile(user=user, public_name=user.username)  # temporal profile name
                 profile.save()
 
@@ -89,11 +91,13 @@ def create_user_view(request):
                 if user is not None:
                     if user.is_active:
                         login(request, user2)
+                        print("LLEGA4")
                     else:
                         return HttpResponse("ERROR, inactive user")
                 else:
                     return HttpResponse("UNKNOWN ERROR")
 
+                print("LLEGA5")
                 return HttpResponseRedirect("/create_user/register1/")
 
             # if the email is already used
