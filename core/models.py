@@ -20,26 +20,30 @@ import hashlib
 class ChUserManager(UserManager):
     # Creates a simple user with only email and password
     def create_user(self, username, email, password, *args, **kwargs):
-        """
-        :param username: Email of the user used as username
-        :param email: Email also saved
-        :param password: Password for the user
-        :param args:
-        :param kwargs:
-        :return: Normal user
-        """
-        hex_username = '0084dcf6ba8e49278d7b00e7349146' #uuid4().hex[:30]     # 16^30 values low collision probabilities
-        user = ChUser(username=hex_username)
-        user.email = email
-        user.set_password(password)
+       """
+       :param username: Email of the user used as username
+       :param email: Email also saved
+       :param password: Password for the user
+       :param args:
+       :param kwargs:
+       :return: Normal user
+       """
+       hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
 
-        while True:
+       while True:
            try:
                # if the email is already used
                ChUser.objects.get(username=hex_username)
                hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
            except ChUser.DoesNotExist:
                break
+
+       user = ChUser(username=hex_username)
+       user.email = email
+       user.set_password(password)
+       user.save(using=self._db)
+
+       return user
 
     # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):
