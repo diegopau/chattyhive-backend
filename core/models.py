@@ -34,12 +34,12 @@ class ChUserManager(UserManager):
         user.set_password(password)
 
         while True:
-            try:
-                user.save(using=self._db)
-                return user
-            # if the email is already used
-            except IntegrityError:
-                user.username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+           try:
+               # if the email is already used
+               ChUser.objects.get(username=hex_username)
+               hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+           except ChUser.DoesNotExist:
+               break
 
     # Creates a user with privileges (admin & staff)
     def create_superuser(self, username, email, password):
