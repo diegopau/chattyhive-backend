@@ -79,29 +79,38 @@ def create_user_view(request):
                 print("LLEGA2")
                 email = form.cleaned_data['email']
                 password = uuid4().hex  # this password will be used until the user enter a new one
-                # password = "1234"
                 manager = ChUserManager()
                 user = manager.create_user('unused', email, password)
 
                 # Profile creation
-                print("LLEGA3")
-                profile = ChProfile(user=user, public_name=user.username)  # temporal profile name
+                original_name = re.sub('[.-]', '_', email.split('@')[0])  # '.' and '-' replaced by '_'
+                original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)    # other not allowed characters eliminated
+                public_name = original_name
+                # if the name already exists we offer the name plus '_<number>'
+                ii = 0
+                while True:
+                   try:
+                       ChProfile.objects.get(public_name=public_name)
+                   except ChProfile.DoesNotExist:
+                       break
+                   ii += 1
+                   public_name = original_name + '_' + str(ii)
+
+                profile = ChProfile(user=user, public_name=public_name)  # temporal profile name
                 profile.save()
 
                 user2 = authenticate(username=user.username, password=password)
                 if user is not None:
-                    if user.is_active:
-                        login(request, user2)
-                        print("LLEGA4")
-                    else:
-                        return HttpResponse("ERROR, inactive user")
+                   if user.is_active:
+                       login(request, user2)
+                   else:
+                       return HttpResponse("ERROR, inactive user")
                 else:
-                    return HttpResponse("UNKNOWN ERROR")
+                   return HttpResponse("UNKNOWN ERROR")
 
-                print("LLEGA5")
                 return HttpResponseRedirect("/create_user/register1/")
 
-            # if the email is already used
+                # if the email is already used
             except IntegrityError:
                 form = CreateUserForm()
                 return render(request, "login/registration.html", {
