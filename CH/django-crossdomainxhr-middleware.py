@@ -40,14 +40,6 @@ class XsSharing(object):
                 response['Access-Control-Allow-Headers'] = request.META['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']
                 response['Content-type'] = ['text/html', 'charset=utf-8']
 
-            # if request.method == 'POST':
-                # print("POST METHOD - AngularJS - Browser")
-                # response['Access-Control-Allow-Origin'] = request.META['HTTP_ORIGIN']
-                # response['Access-Control-Allow-Credentials'] = 'true'
-                # response['Access-Control-Allow-Methods'] = ['POST', 'GET', 'OPTIONS']
-                # response['Access-Control-Allow-Headers'] = request.META['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']
-                # response['Content-type'] = ['text/html', 'charset=utf-8']
-
             return response
 
         return None
@@ -55,8 +47,10 @@ class XsSharing(object):
     def process_response(self, request, response):
         # Avoid unnecessary work
         if response.has_header('Access-Control-Allow-Origin'):
+            print("RESPONSE-HAS-ACCESS-CONTROL-ALLOW-ORIGIN")
             return response
 
+        print("RESPONSE-1")
         response['Access-Control-Allow-Origin']  = XS_SHARING_ALLOWED_ORIGINS
         response['Access-Control-Allow-Methods'] = ",".join( XS_SHARING_ALLOWED_METHODS )
 

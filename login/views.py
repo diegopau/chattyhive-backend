@@ -72,6 +72,7 @@ def create_user_view(request):
     if request.user.is_authenticated():
         return HttpResponseRedirect("/home")
     if request.method == 'POST':
+        print("LLEGA")
         form = CreateUserForm(request.POST)
         if form.is_valid():
             try:
