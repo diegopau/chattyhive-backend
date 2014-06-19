@@ -78,8 +78,8 @@ def create_user_view(request):
             try:
                 print("LLEGA2")
                 email = form.cleaned_data['email']
-                # password = uuid4().hex  # this password will be used until the user enter a new one
-                password = "1234"
+                password = uuid4().hex  # this password will be used until the user enter a new one
+                # password = "1234"
                 manager = ChUserManager()
                 user = manager.create_user('unused', email, password)
 
