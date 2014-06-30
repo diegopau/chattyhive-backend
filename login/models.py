@@ -20,7 +20,8 @@ class CreateUserForm(forms.Form):
 class RegistrationFormOne(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('first_name', 'last_name', 'birth_date', 'sex', 'language', 'private_show_age', 'location')
+        fields = ('first_name', 'last_name', 'birth_date', 'sex', 'language',
+                  'private_show_age', 'country', 'region', 'city')
 
 
 class RegistrationFormTwo(forms.ModelForm):

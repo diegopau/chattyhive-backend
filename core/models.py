@@ -14,8 +14,8 @@ from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
 from django.core.validators import RegexValidator
-from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
 import hashlib
+from cities_light.models import Country, Region, City
 
 
 class ChUserManager(UserManager):
@@ -105,13 +105,20 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
 
+
 class LanguageModel(models.Model):
-    # profile = models.ForeignKey(ChProfile, related_name='languages')
     language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
-    # unique_together = ("profile", "language")
 
     def __str__(self):
         return self.language
+
+
+class TagModel(models.Model):
+    tag = models.CharField(max_length=32, unique=True)
+
+    def __str__(self):
+        return self.tag
+
 
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
@@ -124,18 +131,23 @@ class ChProfile(models.Model):
     )
 
     # All the fields for the model Profile
-    public_name = models.CharField(max_length=30,
+    public_name = models.CharField(max_length=20,
                                    unique=True,
                                    validators=[RegexValidator(r'^[0-9a-zA-Z_]*$',
                                                               'Only alphanumeric characters an "_" are allowed.')])
-    first_name = models.CharField(max_length=20)
+    first_name = models.CharField(max_length=40)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
     birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # language is a multi value field now, related_name='languages'
-    language = models.ManyToManyField(LanguageModel)
+    language = models.ManyToManyField(LanguageModel, null=True, blank=True)
     timezone = models.DateField(auto_now=True, auto_now_add=True)
-    location = models.TextField(null=True, blank=True)  # todo location
+
+    # location = models.TextField(null=True, blank=True)  # todo location
+    country = models.ForeignKey(Country, null=True, blank=True)
+    region = models.ForeignKey(Region, null=True, blank=True)
+    city = models.ForeignKey(City, null=True, blank=True)
+
     private_status = models.CharField(max_length=140, blank=True, null=True)
     public_status = models.CharField(max_length=140, blank=True, null=True)
     personal_color = RGBColorField()
@@ -221,7 +233,33 @@ class ChProfile(models.Model):
         :param text_location: Location of the Profile
         :return: None
         """
-        self.location = text_location
+        possible_cities = City.objects.filter(search_names__contains=text_location)
+        if possible_cities.count() > 1:
+            possible_cities2 = possible_cities.filter(display_name=text_location)
+            if possible_cities2.count() > 1:
+                possible_cities3 = possible_cities2.filter(name=text_location)
+                if possible_cities3.count() >= 1:
+                    self.city = possible_cities3[0]
+                    self.region = self.city.region
+                    self.country = self.city.country
+                else:
+                    self.city = possible_cities2[0]
+                    self.region = self.city.region
+                    self.country = self.city.country
+            elif possible_cities2.count() == 1:
+                self.city = possible_cities2[0]
+                self.region = self.city.region
+                self.country = self.city.country
+            else:
+                self.city = possible_cities[0]
+        elif possible_cities.count() == 1:
+            self.city = possible_cities[0]
+            self.region = self.city.region
+            self.country = self.city.country
+        else:
+            possible_countries = Country.objects.filter(code3__contains=text_location)
+            if possible_countries.count() >= 1:
+                self.country = possible_countries[0]
 
     def set_private_status(self, text_private_status):
         """
@@ -236,7 +274,6 @@ class ChProfile(models.Model):
         :return: None
         """
         self.public_status = text_public_status
-
 
     def set_personal_color(self, hex_rgb):
         """
@@ -317,11 +354,12 @@ class ChCategory(models.Model):
 class ChHive(models.Model):
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
-    name_url = models.CharField(max_length=60, unique=True)
-    description = models.TextField()
+    name_url = models.CharField(max_length=540, unique=True)
+    description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
+    tags = models.ManyToManyField(TagModel, null=True)
 
     def toJSON(self):
         return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
@@ -333,6 +371,13 @@ class ChHive(models.Model):
         :return: None
         """
         self.creator = profile
+
+    def set_tags(self, tags_array):
+        for stag in tags_array:
+            if stag[0] != '#':
+                stag = '#' + stag
+            tag = get_or_new_tag(stag)
+            self.tags.add(tag)
 
     def __str__(self):
         return self.name
@@ -465,6 +510,10 @@ class ChSubscription(models.Model):
 ###                          FORMS
 ### ==========================================================
 
+class TagForm(forms.Form):
+    tags = forms.CharField(max_length=128)
+
+
 class CreateHiveForm(forms.ModelForm):
     class Meta:
         model = ChHive
@@ -489,3 +538,12 @@ def replace_unicode(string):
     string = urlquote(string)
     string = hashlib.sha1(string.encode('utf-8')).hexdigest()
     return string
+
+
+def get_or_new_tag(stag):
+    try:
+        tag = TagModel.objects.get(tag=stag)
+    except TagModel.DoesNotExist:
+        tag = TagModel(tag=stag)
+        tag.save()
+    return tag

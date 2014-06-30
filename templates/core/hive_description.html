@@ -20,5 +20,11 @@
     {% endif %}
     <div>Description: {{ hive.description }}</div>
     <div>Category: {{ hive.category.name }}</div>
+    <div>Tags:
+        {% for tag in hive.tags.all %}
+             {{ tag }},
+        {% endfor %}
+    </div>
+
 </body>
 </html>

@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from email_confirmation.models import EmailAddress, EmailConfirmation
+
 __author__ = 'lorenzo'
 
 from django.shortcuts import render
@@ -129,33 +131,34 @@ def create_user_view(request):
 
 @login_required
 def register_one(request):
+    """
+
+    :param request:
+    :return:
+    """
     user = request.user
     profile = ChProfile.objects.get(user=user)
     # language_formset = inlineformset_factory(ChProfile, LanguageModel, max_num=2)
     if request.method == 'POST':
 
-        form1 = RegistrationFormOne(request.POST, prefix="form1", instance=profile)
-        # form2 = language_formset(request.POST, prefix="form2", instance=profile)
-        if form1.is_valid():    # and form2.is_valid():
-            form1.save()
-            # form2.save()
+        form = RegistrationFormOne(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
             return HttpResponseRedirect("/create_user/register2/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form1 = RegistrationFormOne(initial={
+        form = RegistrationFormOne(initial={
             'first_name': profile.first_name,
             'last_name': profile.last_name,
             'sex': profile.sex,
             'private_show_age': profile.private_show_age,
-            'location': profile.location,
-            },
-            # prefix="form1"
-        )
-        # form2 = language_formset(instance=profile, prefix="form2")
+            'country': profile.country,
+            'region': profile.region,
+            'city': profile.city,
+            })
         return render(request, "login/registration_1.html", {
-            'form1': form1,
-            # 'form2': form2
+            'form': form,
         })
 
 

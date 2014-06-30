@@ -5,7 +5,7 @@ __author__ = 'lorenzo'
 
 from django.contrib import admin
 from django import forms
-from core.models import ChUser, ChProfile, ChHive, ChMessage, ChChat, ChSubscription, ChCategory, LanguageModel
+from core.models import *
 
 
 class LanguagesAdmin(admin.ModelAdmin):
@@ -23,8 +23,9 @@ class LanguagesAdmin(admin.ModelAdmin):
 
 # Include all models in Admin site
 admin.site.register(ChUser)
-admin.site.register(ChProfile) #, ProfileAdmin)
+admin.site.register(ChProfile)
 admin.site.register(ChCategory)
+admin.site.register(TagModel)
 admin.site.register(ChHive)
 admin.site.register(ChMessage)
 admin.site.register(ChChat)

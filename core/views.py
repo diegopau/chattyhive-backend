@@ -19,22 +19,30 @@ def create_hive(request):
     :return: Web page with the form for creating a hive
     """
     if request.method == 'POST':
-        form = CreateHiveForm(request.POST)
-        if form.is_valid():
+        formHive = CreateHiveForm(request.POST, prefix='formHive')
+        formTags = TagForm(request.POST, prefix='formTags')
+        if formHive.is_valid() and formTags.is_valid():
             user = request.user
             profile = ChProfile.objects.get(user=user)
 
-            hive_name = form.cleaned_data['name']
-            hive = form.save(commit=False)
+            hive_name = formHive.cleaned_data['name']
+            hive = formHive.save(commit=False)
             hive.set_creator(profile)
             hive.name_url = hive_name.replace(" ", "_")
             hive.name_url = replace_unicode(hive.name_url)
+
             try:
                 ChHive.objects.get(name_url=hive.name_url)
                 return HttpResponse("This hive already exists")
             except ChHive.DoesNotExist:
                 # hive.name_url = replace_unicode(hive_name)
                 hive.save()
+
+            # Adding tags
+            tagsText = formTags.cleaned_data['tags']
+            tagsArray = tagsText.split(" ")
+            hive.set_tags(tagsArray)
+            hive.save()
 
             # Creating public chat of hive
             chat = ChChat()
@@ -51,9 +59,11 @@ def create_hive(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = CreateHiveForm()
+        formHive = CreateHiveForm(prefix="formHive")
+        formTags = TagForm(prefix="formTags")
         return render(request, "core/create_hive.html", {
-            'form': form
+            'formHive': formHive,
+            'formTags': formTags
         })
 
 
