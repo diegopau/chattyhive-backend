@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from uuid import uuid4
+from cities_light.models import Country, Region, City
 from django.utils.translation import ugettext_lazy as _
 import re
 from django.core import validators
