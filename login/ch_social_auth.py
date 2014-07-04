@@ -88,14 +88,14 @@ def user_details(strategy, details, response, user=None, *args, **kwargs):
                 ii += 1
                 public_name = original_name + '_' + str(ii)
 
-            profile.set_public_name(public_name)
-            profile.set_first_name(details.get('first_name'))
-            profile.set_last_name(details.get('last_name'))
-            profile.set_sex(details.get('sex'))
+            profile.public_name = public_name
+            profile.first_name = details.get('first_name')
+            profile.last_name = details.get('last_name')
+            profile.sex = details.get('sex')
             profile.add_language(details.get('language'))
-            profile.set_location(details.get('location'))
-            profile.set_public_show_age(False)
-            profile.set_private_show_age(True)
+            profile.set_approximate_location(details.get('location'))
+            profile.public_show_age = False
+            profile.private_show_age = True
             profile.save()
 
 

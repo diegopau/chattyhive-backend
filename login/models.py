@@ -1,7 +1,3 @@
-from django.db import models
-from django.forms import SelectMultiple
-
-
 __author__ = 'lorenzo'
 
 from django import forms
@@ -20,7 +16,7 @@ class CreateUserForm(forms.Form):
 class RegistrationFormOne(forms.ModelForm):
     class Meta:
         model = ChProfile
-        fields = ('first_name', 'last_name', 'birth_date', 'sex', 'language',
+        fields = ('first_name', 'last_name', 'birth_date', 'sex', '_languages',
                   'private_show_age', 'country', 'region', 'city')
 
 
