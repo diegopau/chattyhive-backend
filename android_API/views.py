@@ -241,15 +241,15 @@ def register(request):
             profile.save()
 
             # Inserting info to the profile
-            profile.set_public_name(public_name)
-            profile.set_first_name(first_name)
-            profile.set_last_name(last_name)
-            profile.set_sex(sex)
-            profile.set_language(language)
-            profile.set_private_show_age(private_show_age)
-            profile.set_public_show_age(public_show_age)
-            profile.set_show_location(show_location)
-            profile.set_location(location)
+            profile.public_name = public_name
+            profile.first_name = first_name
+            profile.last_name = last_name
+            profile.sex = sex
+            profile.language = language
+            profile.private_show_age = private_show_age
+            profile.public_show_age = public_show_age
+            profile.show_location = show_location
+            profile.set_approximate_location(location)
             profile.save()
 
             # Formatting info for sending in json
@@ -317,9 +317,9 @@ def join(request):
 
             # Creating subscription
             subscription = ChSubscription()
-            subscription.set_hive(hive=hive_joining)
-            subscription.set_profile(profile=profile)
-            subscription.set_chat(chat=chat2)
+            subscription.hive = hive_joining
+            subscription.profile = profile
+            subscription.chat = chat2
             subscription.save()
 
             status = 'SUBSCRIBED'

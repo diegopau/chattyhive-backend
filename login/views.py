@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-from email_confirmation.models import EmailAddress, EmailConfirmation
 
 __author__ = 'lorenzo'
 
@@ -17,9 +16,7 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 import pusher
 from django.db import IntegrityError
-from django.forms.models import inlineformset_factory
-from django.core.mail import send_mail
-from email_confirmation import *
+from email_confirmation.models import EmailAddress, EmailConfirmation
 
 
 def login_view(request):
@@ -36,7 +33,7 @@ def login_view(request):
                     user = authenticate(username=user.username, password=password)
                 else:
                     profile = ChProfile.objects.select_related().get(public_name=login_string)
-                    user = authenticate(username=profile.user.username, password=password)
+                    user = authenticate(username=profile.username, password=password)
                 if user.is_active:
                     login(request, user)
                     email_address = EmailAddress.objects.get(email=user.email)
@@ -206,8 +203,8 @@ def register_three(request):
                     EmailAddress.objects.add_email(user=profile, email=email)
 
                     profile = ChProfile.objects.get(user=user)
-                    profile.set_private_status('I\'m new in chattyhive!')
-                    profile.set_public_status('I\'m new in chattyhive!')
+                    profile.private_status = 'I\'m new in chattyhive!'
+                    profile.public_status = 'I\'m new in chattyhive!'
 
                     color = ''
                     for ii in range(3):
@@ -216,7 +213,7 @@ def register_three(request):
                             if 'EE' > rgb > '20':
                                 break
                         color = color + rgb
-                    profile.set_personal_color('#' + color)
+                    profile.personal_color = '#' + color
 
                     profile.save()
 
@@ -280,7 +277,7 @@ def chat_auth(request):
 
             channel_data = {'user_id': socket_id,
                             'user_info': {'public_name': profile.public_name,
-                                          'username': user.username
+                                          'username': profile.username
                             }
             }
 

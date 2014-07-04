@@ -1,21 +1,21 @@
 # -*- encoding: utf-8 -*-
-from uuid import uuid4
-from django.utils.translation import ugettext_lazy as _
-import re
-from django.core import validators
-from django.utils import timezone
-from colorful.fields import RGBColorField
 
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models, IntegrityError
+from django.db import models
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
 from django.core.validators import RegexValidator
-import hashlib
+from uuid import uuid4
+from django.utils.translation import ugettext_lazy as _
+from django.core import validators
+from django.utils import timezone
+from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
+import hashlib
+import re
 
 
 class ChUserManager(UserManager):
@@ -64,20 +64,20 @@ class ChUserManager(UserManager):
 
 
 class ChUser(AbstractBaseUser, PermissionsMixin):
-
     username = models.CharField(_('username'), max_length=30, unique=True,
-        help_text=_('Required. 30 characters or fewer. Letters, numbers and '
-                    '@/./+/-/_ characters'),
-        validators=[
-            validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'), 'invalid')
-        ])
+                                help_text=_('Required. 30 characters or fewer. Letters, numbers and '
+                                            '@/./+/-/_ characters'),
+                                validators=[
+                                    validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'),
+                                                              'invalid')
+                                ])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
-        help_text=_('Designates whether the user can log into this admin '
-                    'site.'))
+                                   help_text=_('Designates whether the user can log into this admin '
+                                               'site.'))
     is_active = models.BooleanField(_('active'), default=True,
-        help_text=_('Designates whether this user should be treated as '
-                    'active. Unselect this instead of deleting accounts.'))
+                                    help_text=_('Designates whether this user should be treated as '
+                                                'active. Unselect this instead of deleting accounts.'))
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
 
     is_authenticated = models.BooleanField(default=False)
@@ -98,6 +98,10 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
 
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
+
+    @property
+    def profile(self):
+        return ChProfile.objects.get(user=self)
 
     def __str__(self):
         try:
@@ -140,7 +144,7 @@ class ChProfile(models.Model):
     sex = models.CharField(max_length=10, choices=SEX, default='male')
     birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # language is a multi value field now, related_name='languages'
-    language = models.ManyToManyField(LanguageModel, null=True, blank=True)
+    _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     timezone = models.DateField(auto_now=True, auto_now_add=True)
 
     # location = models.TextField(null=True, blank=True)  # todo location
@@ -162,46 +166,10 @@ class ChProfile(models.Model):
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
 
-    # Setters for all variables
-    def set_public_name(self, char_name):
-        """
-        :param char_name: Public name of the Profile
-        :return: None
-        """
-        self.public_name = char_name
-
-    def set_first_name(self, char_name):
-        """
-        :param char_name: First name of the Profile
-        :return: None
-        """
-        self.first_name = char_name
-
-    def set_last_name(self, char_name):
-        """
-        :param char_name: Last name of the Profile
-        :return: None
-        """
-        self.last_name = char_name
-
-    def set_sex(self, char_sex):
-        """
-        :param char_sex: Sex of the Profile
-        :return: None
-        """
-        self.sex = char_sex
-
-    def set_birth_date(self, char_birth_date):
-        """
-        :param char_sex: Sex of the Profile
-        :return: None
-        """
-        self.birth_date = char_birth_date
-
+    # methods
     def add_language(self, char_language):
         """
-        :param char_language: Language of the Profile
-        :return: None
+        :param char_language: code of the language to add
         """
         # language = LanguageModel(profile=self, language=char_language)
         # language.save()
@@ -217,20 +185,17 @@ class ChProfile(models.Model):
 
     def remove_language(self, char_language):
         """
-        :param char_language: Language of the Profile
-        :return: None
+        :param char_language: Code of the language to remove
         """
-        # language = LanguageModel.objects.get(profile=self, language=char_language)
-        # language.delete()
         try:
             lang = LanguageModel.objects.get(language=char_language)
             self.language.remove(lang)
         except LanguageModel.DoesNotExist:
             return
 
-    def set_location(self, text_location):
+    def set_approximate_location(self, text_location):
         """
-        :param text_location: Location of the Profile
+        :param text_location: name of approximate place
         :return: None
         """
         possible_cities = City.objects.filter(search_names__contains=text_location)
@@ -261,52 +226,58 @@ class ChProfile(models.Model):
             if possible_countries.count() >= 1:
                 self.country = possible_countries[0]
 
-    def set_private_status(self, text_private_status):
+    # properties (fake fields)
+    @property
+    def username(self):
         """
-        :param text_location: Location of the Profile
-        :return: None
+        :return: user model hex username
         """
-        self.private_status = text_private_status
+        return self.user.username
 
-    def set_public_status(self, text_public_status):
+    @property
+    def location(self):
         """
-        :param text_location: Location of the Profile
-        :return: None
+        :return: [self.country, self.region, self.city]
         """
-        self.public_status = text_public_status
+        return [self.country, self.region, self.city]
 
-    def set_personal_color(self, hex_rgb):
+    @property
+    def languages(self):
         """
-        :param text_location: Location of the Profile
-        :return: None
+        :return: profile's languages QuerySet
         """
-        self.personal_color = hex_rgb
+        return self._languages.all
 
-    def set_private_show_age(self, boolean_show):
-        """
-        :param boolean_show: Permission of showing privately the age of the Profile
-        :return: None
-        """
-        self.private_show_age = boolean_show
+    @property
+    def hives(self):
+        # Trying to get all the subscriptions of this profile
+        try:
+            subscriptions = ChSubscription.objects.filter(profile=self, hive__isnull=False)
+            hives = []
+            for subscription in subscriptions:
+                if subscription.hive:
+                    hives.append(subscription.hive)
+            return hives
+        except ChSubscription.DoesNotExist:
+            return []
 
-    def set_public_show_age(self, boolean_show):
-        """
-        :param boolean_show: Permission of showing publicly the age of the Profile
-        :return: None
-        """
-        self.public_show_age = boolean_show
-
-    def set_show_location(self, boolean_show):
-        """
-        :param boolean_show: Permission of showing the location of the Profile
-        :return: None
-        """
-        self.public_show_location = boolean_show
+    @property
+    def chats(self):
+        # Trying to get all the subscriptions of this profile
+        try:
+            subscriptions = ChSubscription.objects.select_related().filter(profile=self)
+            chats = []
+            for subscription in subscriptions:
+                if subscription.chat:
+                    chats.append(subscription.chat)
+            return chats
+        except ChSubscription.DoesNotExist:
+            return []
 
     def toJSON(self):
         return u'{"public_name": "%s", "first_name": "%s", "last_name": "%s", "sex": "%s",' \
                u' "timezone": "%s","location": "%s", "private_show_age": "%s", "public_show_age": "%s",' \
-               u' "show_location": "%s"}'\
+               u' "show_location": "%s"}' \
                % (self.public_name, self.first_name, self.last_name, self.sex, self.timezone,
                   self.location, self.private_show_age, self.public_show_age, self.show_location)
 
@@ -361,23 +332,34 @@ class ChHive(models.Model):
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
 
-    def toJSON(self):
-        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date)
-
-    def set_creator(self, profile):
-        """
-        :param profile: Creator of this hive
-        :return: None
-        """
-        self.creator = profile
-
     def set_tags(self, tags_array):
         for stag in tags_array:
             if stag[0] != '#':
                 stag = '#' + stag
             tag = get_or_new_tag(stag)
             self.tags.add(tag)
+
+    def get_tags(self):
+        """
+        :return: hive's tags as QuerySet
+        """
+        return self.tags.all
+
+    def toJSON(self):
+        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
+               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+
+    @property
+    def users(self):
+        """
+        :return: profiles of users joining the hive
+        """
+        Subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self)
+        users_list = []
+        for Subscription in Subscriptions:
+            users_list.append(Subscription.profile)
+        return users_list
+
 
     def __str__(self):
         return self.name
@@ -398,40 +380,19 @@ class ChChat(models.Model):
     # Attributes of the Chat
     date = models.DateTimeField(auto_now=True)
 
-    def set_hive(self, hive):
+    @property
+    def channel(self):
         """
-        :param hive: Owner hive of this chat
-        :return: None
+        :return: Pusher id for this chat
         """
-        self.hive = hive
-        return
+        return self.channel_unicode
 
-    def set_channel(self, channel_unicode):
+    @channel.setter
+    def channel(self, channel_unicode):
         """
         :param channel_unicode: Pusher id for this chat
-        :return: None
         """
         self.channel_unicode = 'presence-' + channel_unicode
-        return
-
-    def set_type(self, type):
-        """
-        :param channel_unicode: Pusher id for this chat
-        :return: None
-        """
-        self.type = type
-        return
-
-    def join(self, profile):
-        """
-        :param profile: Object profile who wants to join to this chat
-        :return: None, but will create a subscription for this relation
-        """
-        subscription = ChSubscription()
-        subscription.set_profile(profile)
-        subscription.set_chat(self)
-        subscription.save()
-        return
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
@@ -473,34 +434,6 @@ class ChSubscription(models.Model):
     profile = models.ForeignKey(ChProfile, unique=False)
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscription')
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscription')
-
-    def set_chat(self, chat):
-        """
-        :param chat: Object chat that is relating
-        :return: None
-        """
-        self.chat = chat
-        return
-
-    def set_profile(self, profile):
-        """
-        :param profile: Object profile that is relating
-        :return: None
-        """
-        self.profile = profile
-        return
-
-    def set_hive(self, hive):
-        """
-        :param hive: Object hive that is relating
-        :return: None
-        """
-        self.hive = hive
-        return
-
-        # @register.simple_tag
-        # def get_verbose_name(self):
-        # return object._meta.verbose_name
 
     def __str__(self):
         return self.profile.first_name + " links with"

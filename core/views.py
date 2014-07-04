@@ -9,7 +9,6 @@ import pusher
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
-from django.db.models import Field
 
 
 @login_required
@@ -27,7 +26,7 @@ def create_hive(request):
 
             hive_name = formHive.cleaned_data['name']
             hive = formHive.save(commit=False)
-            hive.set_creator(profile)
+            hive.creator = profile
             hive.name_url = hive_name.replace(" ", "_")
             hive.name_url = replace_unicode(hive.name_url)
 
@@ -46,9 +45,9 @@ def create_hive(request):
 
             # Creating public chat of hive
             chat = ChChat()
-            chat.set_hive(hive=hive)
-            chat.set_type('public')
-            chat.set_channel(hive.name_url)
+            chat.hive = hive
+            chat.type = 'public'
+            chat.channel = hive.name_url
             chat.save()
 
             # Creating subscription
@@ -94,9 +93,9 @@ def create_chat(request, hive_url, public_name):
         if not invited_subscription:
             # Creating private chat
             chat = ChChat()
-            chat.set_hive(hive=hive)
-            chat.set_type('private')
-            chat.set_channel(replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url))
+            chat.hive = hive
+            chat.type = 'private'
+            chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url)
             chat.save()
 
             subscription1 = ChSubscription(chat=chat, profile=profile)
@@ -297,9 +296,10 @@ def profile(request, public_name, private):
                         "birth_date": profile_view.birth_date,
                         "surname": profile_view.last_name,
                         "sex": profile_view.sex,
+                        "username": profile.username,
                         "allowed": allowed
                 }
-                languages = LanguageModel.objects.filter(profile=profile)
+                languages = profile.languages
                 return render(request, "core/private_profile.html", {
                     "profile": data,
                     "languages": languages
@@ -310,7 +310,7 @@ def profile(request, public_name, private):
                         "show_age": profile_view.public_show_age,
                         "allowed": allowed
                 }
-                languages = LanguageModel.objects.filter(profile=profile)
+                languages = profile.languages
                 return render(request, "core/public_profile.html", {
                     "profile": data,
                     "languages": languages
@@ -456,20 +456,11 @@ def get_hive_users(request, hive_url, init, interval):
     :return: *interval* users from *init*
     """
     if request.method == 'GET':
-        user = request.user
-        profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name_url=hive_url)
         try:
-            ChSubscription.objects.get(hive=hive, profile=profile)
-            if init == 'first':
-                subscriptions = ChSubscription.objects.filter(hive=hive)[0:int(interval)]
-            elif init.isnumeric():
-                subscriptions = ChSubscription.objects.filter(hive=hive)[int(init):int(init) + int(interval)]
-            else:
-                raise Http404
             profiles = []
-            for subscription in subscriptions:
-                profiles.append({"public_name": subscription.profile.public_name})
+            for hive_user in hive.users:
+                profiles.append({"public_name": hive_user.public_name})
             return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
 
         except ChSubscription.DoesNotExist:
@@ -509,7 +500,7 @@ def get_messages(request, chat_name, init, interval):
                 raise Http404
             messages_row = []
             for message in messages:
-                messages_row.append({"username": message.profile.user.username,
+                messages_row.append({"username": message.profile.username,
                                      "public_name": message.profile.public_name,
                                      "message": message.content,
                                      "timestamp": message.date.astimezone(),
