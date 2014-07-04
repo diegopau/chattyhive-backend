@@ -72,11 +72,9 @@ def create_user_view(request):
     if request.user.is_authenticated():
         return HttpResponseRedirect("/home")
     if request.method == 'POST':
-        print("LLEGA1")
         form = CreateUserForm(request.POST)
         if form.is_valid():
             try:
-                print("LLEGA2")
                 email = form.cleaned_data['email']
                 password = uuid4().hex  # this password will be used until the user enter a new one
                 manager = ChUserManager()
@@ -89,12 +87,12 @@ def create_user_view(request):
                 # if the name already exists we offer the name plus '_<number>'
                 ii = 0
                 while True:
-                   try:
-                       ChProfile.objects.get(public_name=public_name)
-                   except ChProfile.DoesNotExist:
-                       break
-                   ii += 1
-                   public_name = original_name + '_' + str(ii)
+                    try:
+                        ChProfile.objects.get(public_name=public_name)
+                    except ChProfile.DoesNotExist:
+                        break
+                    ii += 1
+                    public_name = original_name + '_' + str(ii)
 
                 profile = ChProfile(user=user, public_name=public_name)  # temporal profile name
                 profile.save()
@@ -110,7 +108,7 @@ def create_user_view(request):
 
                 return HttpResponseRedirect("/create_user/register1/")
 
-                # if the email is already used
+            # if the email is already used
             except IntegrityError:
                 form = CreateUserForm()
                 return render(request, "login/registration.html", {
@@ -133,33 +131,34 @@ def create_user_view(request):
 
 @login_required
 def register_one(request):
+    """
+
+    :param request:
+    :return:
+    """
     user = request.user
     profile = ChProfile.objects.get(user=user)
-    language_formset = inlineformset_factory(ChProfile, LanguageModel, extra=2)
+    # language_formset = inlineformset_factory(ChProfile, LanguageModel, max_num=2)
     if request.method == 'POST':
 
-        form1 = RegistrationFormOne(request.POST, prefix="form1", instance=profile)
-        form2 = language_formset(request.POST, prefix="form2", instance=profile)
-        if form1.is_valid() and form2.is_valid():
-            form1.save()
-            form2.save()
+        form = RegistrationFormOne(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
             return HttpResponseRedirect("/create_user/register2/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form1 = RegistrationFormOne(initial={
+        form = RegistrationFormOne(initial={
             'first_name': profile.first_name,
             'last_name': profile.last_name,
             'sex': profile.sex,
             'private_show_age': profile.private_show_age,
-            'location': profile.location,
-            },
-            prefix="form1"
-        )
-        form2 = language_formset(instance=profile, prefix="form2")
+            'country': profile.country,
+            'region': profile.region,
+            'city': profile.city,
+            })
         return render(request, "login/registration_1.html", {
-            'form1': form1,
-            'form2': form2
+            'form': form,
         })
 
 
@@ -204,12 +203,22 @@ def register_three(request):
                     user.save()
 
                     profile = ChProfile.objects.get(user=user)
-                    print(profile)  # PRINT
                     EmailAddress.objects.add_email(user=profile, email=email)
 
                     profile = ChProfile.objects.get(user=user)
-                    profile.set_private_status('¡Soy nuevo en chattyhive!')
-                    profile.set_public_status('¡Soy nuevo en chattyhive!')
+                    profile.set_private_status('I\'m new in chattyhive!')
+                    profile.set_public_status('I\'m new in chattyhive!')
+
+                    color = ''
+                    for ii in range(3):
+                        while True:
+                            rgb = uuid4().hex[:2]
+                            if 'EE' > rgb > '20':
+                                break
+                        color = color + rgb
+                    profile.set_personal_color('#' + color)
+
+                    profile.save()
 
                 # if the email is already used
                 except IntegrityError:
