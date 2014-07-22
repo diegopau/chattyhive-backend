@@ -30,13 +30,13 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+        hex_username = uuid4().hex[:30]  # 16^30 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+                hex_username = uuid4().hex[:30]  # 16^30 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
@@ -275,12 +275,31 @@ class ChProfile(models.Model):
         except ChSubscription.DoesNotExist:
             return []
 
-    def toJSON(self):
+    def toJSONcomplete(self):
         return u'{"public_name": "%s", "first_name": "%s", "last_name": "%s", "sex": "%s",' \
                u' "timezone": "%s","location": "%s", "private_show_age": "%s", "public_show_age": "%s",' \
                u' "show_location": "%s"}' \
                % (self.public_name, self.first_name, self.last_name, self.sex, self.timezone,
                   self.location, self.private_show_age, self.public_show_age, self.public_show_location)
+
+    def toJSON(self, public):
+        if public:
+            location = "%s, %s, %s" % (self.city.name, self.region.name, self.country.name)
+            birthdate = None
+            return u'{"PUBLIC_NAME": "%s", "LOCATION": "%s", "SEX": "%s", "BIRTHDATE": "%s", "LANGUAGE": "%s",' \
+                   u' "PUBLIC_SHOW_SEX": "%s", "PUBLIC_SHOW_AGE": "%s", "PUBLIC_SHOW_LOCATION": "%s",' \
+                   u' "USER_COLOR": "%s", "IMAGE_URL": "%s"}' \
+                   % (self.public_name, location, self.sex, birthdate, self.languages, self.public_show_sex,
+                      self.private_show_age, self.public_show_location, self.personal_color, None)
+
+        else:
+            location = "%s, %s, %s" % (self.city.name, self.region.name, self.country.name)
+            return u'{"USER_ID": "%s", "FIRST_NAME": "%s", "LAST_NAME": "%s", "LOCATION": "%s", "SEX": "%s",' \
+                   u' "BIRTHDATE": "%s","LANGUAGE": "%s", "PRIVATE_SHOW_AGE": "%s", "USER_COLOR": "%s",' \
+                   u' "IMAGE_URL": "%s"}' \
+                   % (None, self.first_name, self.last_name, location, self.sex, None,
+                      self.languages, self.private_show_age, self.personal_color, None)
+
 
     def __str__(self):
         return '@' + self.public_name + ', Personal profile'
@@ -440,9 +459,9 @@ class ChSubscription(models.Model):
         return self.profile.first_name + " links with"
 
 
-### ==========================================================
-###                          FORMS
-### ==========================================================
+# ## ==========================================================
+# ##                          FORMS
+# ## ==========================================================
 
 class TagForm(forms.Form):
     tags = forms.CharField(max_length=128)
@@ -464,9 +483,9 @@ class PrivateProfileForm(forms.Form):
         fields = ('first_name', 'surname', 'birth_date', 'language', 'sex')
 
 
-### ==========================================================
-###                          METHODS
-### ==========================================================
+# ## ==========================================================
+# ##                          METHODS
+# ## ==========================================================
 
 def replace_unicode(string):
     string = urlquote(string)

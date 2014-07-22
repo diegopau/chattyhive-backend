@@ -63,6 +63,12 @@ urlpatterns = patterns('',
     url(r'^android.email_check/', 'android_API.views.email_check', name='email_check'),
     url(r'^android.messages/(?P<chat_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<last_message>[0-9]+)-(?P<interval>[0-9]+)/',
                                                                         'core.views.get_messages', name='get_messages'),
+    url(r'^android.recover_local_user_profile/', 'android_API.views.recover_local_user_profile',
+        name='recover_local_user_profile'),
+    url(r'^android.get_chat_context/(?P<chat_id>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/', 'android_API.views.get_chat_context',
+        name='get_chat_context'),
+    url(r'^android.get_chat_list/', 'android_API.views.get_chat_list',
+        name='get_chat_list'),
     # url(r'^android.logout/', 'android_API.views.logout', name='logout')
 
     ### ======================================================== ###

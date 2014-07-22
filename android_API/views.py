@@ -92,8 +92,8 @@ def login_v2(request):
         # passw = request.POST.get("pass")
         aux = request.body
         data = json.loads(aux.decode('utf-8'))
-        user = data['user']
-        passw = data['pass']
+        user = data['USER']
+        passw = data['PASS']
         logs = {"user": user, "pass": passw}
         print(logs)  # PRINT
 
@@ -385,3 +385,105 @@ def chat_v2(request):
         status = "INVALID_METHOD"
         return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
         # raise Http404
+
+
+def recover_local_user_profile(request):
+    if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        email = user.email
+        status = "OK"
+        error = None
+
+        public_profile = profile.toJSON(True)
+
+        private_profile = profile.toJSON(False)
+
+        try:
+            subscriptions = ChSubscription.objects.filter(profile=profile)
+            hives = []
+            for subscription in subscriptions:
+                # Excluding duplicated hives
+                hive_appeared = False
+                for hive in hives:
+                    if subscription.hive == hive:
+                        hive_appeared = True
+                if not hive_appeared:
+                    # Adding the hive to the home view
+                    hives.append(subscription.hive.name_url)
+        except ChSubscription.DoesNotExist:
+            status = "ERROR"
+            error = "Subscription not found"
+            hives = None
+
+        common = json.dumps({'STATUS': status, 'ERROR': error})
+        local_user_profile = json.dumps({'EMAIL': email, 'HIVES_SUBSCRIBED': hives, 'USER_PUBLIC_PROFILE': public_profile,
+                                         'USER_PRIVATE_PROFILE': private_profile})
+        answer = json.dumps({'COMMON': common, 'LOCAL_USER_PROFILE': local_user_profile}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
+
+
+def get_chat_context(request, channel_unicode):
+    if request.method == 'GET':
+        user = request.user
+        #profile = ChProfile.objects.get(user=user)
+        chat = ChChat.objects.get(channel_unicode=channel_unicode)
+        status = "OK"
+        error = None
+        pusher_channel = chat.channel(channel_unicode)
+        creation_date = None
+        parent_hive = None
+        try:
+            members = []
+            subscriptions = ChSubscription.objects.filter(chat=chat)
+            for subscription in subscriptions:
+                user_id = None
+                public_name = subscription.profile.public_name
+                profile_id = json.dumps({'USER_ID': user_id, 'PUBLIC_NAME': public_name})
+                members.append(profile_id)
+        except ChSubscription.DoesNotExist:
+            members = None
+
+        common = json.dumps({'STATUS': status, 'ERROR': error})
+        chat_answer = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
+                                  'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive})
+        answer = json.dumps({'COMMON': common, 'CHAT': chat_answer}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
+
+
+def get_chat_list(request):
+    if request.method == 'GET':
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        status = "OK"
+        error = None
+        try:
+            subscriptions = ChSubscription.objects.filter(profile=profile)
+            chats_sync = []
+            for subscription in subscriptions:
+                message = ChMessage.objects.filter(chat=subscription.chat).order_by('-id')[0]
+                id = message.id
+                profile1 = message.profile.public_name
+                server_timestamp = None
+                channel_unicode = subscription.chat.channel_unicode
+                confirmed = False
+                content_type = message.content_type
+                content = message.content
+                content = json.dumps({'CONTENT_TYPE': content_type, 'CONTENT': content})
+                timestamp = None
+                message_answer = json.dumps({'ID': id, 'PROFILE': profile1, 'SERVER_TIMESTAMP': server_timestamp,
+                                             'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed, 'CONTENT': content,
+                                             'TIMESTAMP': timestamp})
+                chat_sync = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer})
+                chats_sync.append(chat_sync)
+        except ChSubscription.DoesNotExist:
+            status = "ERROR"
+            error = "Does not exist"
+
+        common = json.dumps({'STATUS': status, 'ERROR': error})
+        answer = json.dumps({'COMMON': common, 'CHAT_SYNC': chats_sync}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
+
+
+
+
