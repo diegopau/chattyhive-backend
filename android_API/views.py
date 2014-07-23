@@ -80,7 +80,7 @@ def chat(request):
 def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
-        return HttpResponse(json.dumps({'csrf': csrf}),
+        return HttpResponse(json.dumps({'CSRF': csrf}),
                             mimetype="application/json")
     else:
         raise Http404
@@ -94,6 +94,8 @@ def login_v2(request):
         data = json.loads(aux.decode('utf-8'))
         user = data['USER']
         passw = data['PASS']
+        status = "OK"
+        error = None
         logs = {"user": user, "pass": passw}
         print(logs)  # PRINT
 
@@ -126,8 +128,8 @@ def login_v2(request):
                     print(profile.toJSON())  # PRINT
                     for hive in hives:
                         print(hive)  # PRINT
-                    answer = json.dumps({'status': status, 'profile': profile.toJSON(),
-                                         'hives_subscribed': hives}, cls=DjangoJSONEncoder)
+                    common = json.dumps({'STATUS': status, 'ERROR': error})
+                    answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
 
                     return HttpResponse(answer, mimetype="application/json")
                     # return HttpResponseRedirect("/home/")
