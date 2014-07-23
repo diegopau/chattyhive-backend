@@ -312,6 +312,7 @@ def join(request):
 
         # Joining to this hive
         if not hive_appeared:
+
             # Getting public chat of hive
             chat2 = ChChat.objects.get(hive=hive_joining)
 
