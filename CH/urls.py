@@ -69,6 +69,7 @@ urlpatterns = patterns('',
         name='get_chat_context'),
     url(r'^android.get_chat_list/', 'android_API.views.get_chat_list',
         name='get_chat_list'),
+
     # url(r'^android.logout/', 'android_API.views.logout', name='logout')
 
     ### ======================================================== ###
