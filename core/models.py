@@ -374,6 +374,7 @@ class ChChat(models.Model):
     )
 
     # Relation between chat and hive
+    count = models.PositiveIntegerField(blank=False, null=False, default=0)
     type = models.CharField(max_length=32, choices=TYPE, default='private')
     hive = models.ForeignKey(ChHive, related_name="hive", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
@@ -410,6 +411,9 @@ class ChMessage(models.Model):
         ('file', 'File')
     )
 
+    _id = models.AutoField(primary_key=True)
+    _count = models.PositiveIntegerField(null=False, blank=False)
+
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
     chat = models.ForeignKey(ChChat, null=True, blank=True)
@@ -420,6 +424,18 @@ class ChMessage(models.Model):
 
     # Content of the message
     content = models.TextField(max_length=2048)
+
+    @property
+    def id(self):
+        return self._count
+
+    @id.setter
+    def id(self, id):
+        self.id = id
+
+    def save(self, *args, **kwargs):
+        self._count = self.chat.count
+        super(ChMessage, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.profile.public_name + " said: " + self.content
