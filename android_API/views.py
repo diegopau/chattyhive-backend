@@ -101,6 +101,7 @@ def login_v2(request):
         if '@' in login_string:
             user = ChUser.objects.get(email=login_string)
             user = authenticate(username=user.username, password=passw)
+            profile = ChProfile.objects.get(user=user)
         else:
             profile = ChProfile.objects.select_related().get(public_name=login_string)
             user = authenticate(username=profile.username, password=passw)
