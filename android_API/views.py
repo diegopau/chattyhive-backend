@@ -116,24 +116,24 @@ def login_v2(request):
                 # profile = ChProfile.objects.get(user=chuser)
 
                 # Trying to get all the subscriptions of this profile
-                try:
-                    subscriptions = ChSubscription.objects.filter(profile=profile)
-                    hives = []
-                    for subscription in subscriptions:
-                        # Excluding duplicated hives
-                        hive_appeared = False
-                        for hive in hives:
-                            if subscription.hive == hive:
-                                hive_appeared = True
-                        if not hive_appeared:
-                            # Adding the hive to the home view
-                            hives.append(subscription.hive.toJSON())
-                except ChSubscription.DoesNotExist:
-                    return HttpResponse("Subscription not found")
-
-                print(profile.toJSON())  # PRINT
-                for hive in hives:
-                    print(hive)  # PRINT
+                # try:
+                #     subscriptions = ChSubscription.objects.filter(profile=profile)
+                #     hives = []
+                #     for subscription in subscriptions:
+                #         # Excluding duplicated hives
+                #         hive_appeared = False
+                #         for hive in hives:
+                #             if subscription.hive == hive:
+                #                 hive_appeared = True
+                #         if not hive_appeared:
+                #             # Adding the hive to the home view
+                #             hives.append(subscription.hive.toJSON())
+                # except ChSubscription.DoesNotExist:
+                #     return HttpResponse("Subscription not found")
+                #
+                # # print(profile.toJSON())  # PRINT
+                # for hive in hives:
+                #     print(hive)  # PRINT
                 common = {"STATUS": status, "ERROR": error}
                 answer = json.dumps({"COMMON": common}, cls=DjangoJSONEncoder)
                 return HttpResponse(answer, mimetype="application/json")
