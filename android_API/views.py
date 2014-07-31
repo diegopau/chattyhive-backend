@@ -91,16 +91,22 @@ def login_v2(request):
         aux = request.body
         data = json.loads(aux.decode('utf-8'))
         data_login = data["LOGIN"]
-        user = data_login['USER']
+        login_string = data_login['USER']
         passw = data_login['PASS']
         status = "OK"
         error = None
-        logs = {"user": user, "pass": passw}
+        logs = {"user": login_string, "pass": passw}
         print(logs)  # PRINT
 
-        user_auth = authenticate(username=user, password=passw)
-        if user_auth is not None:
-            if user_auth.is_active:
+        if '@' in login_string:
+            user = ChUser.objects.get(email=login_string)
+            user = authenticate(username=user.username, password=passw)
+        else:
+            profile = ChProfile.objects.select_related().get(public_name=login_string)
+            user = authenticate(username=profile.username, password=passw)
+
+        if user is not None:
+            if user.is_active:
                 login(request, user)
                 status = "OK"
 
