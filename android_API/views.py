@@ -101,49 +101,56 @@ def login_v2(request):
 
         user_auth = authenticate(username=user, password=passw)
         if user_auth is not None:
-                if user_auth.is_active:
-                    login(request, user)
-                    status = "OK"
+            if user_auth.is_active:
+                login(request, user)
+                status = "OK"
 
-                    chuser = ChUser.objects.get(username=user)
+                chuser = ChUser.objects.get(username=user)
 
-                    profile = ChProfile.objects.get(user=chuser)
+                profile = ChProfile.objects.get(user=chuser)
 
-                    # Trying to get all the subscriptions of this profile
-                    try:
-                        subscriptions = ChSubscription.objects.filter(profile=profile)
-                        hives = []
-                        for subscription in subscriptions:
-                            # Excluding duplicated hives
-                            hive_appeared = False
-                            for hive in hives:
-                                if subscription.hive == hive:
-                                    hive_appeared = True
-                            if not hive_appeared:
-                                # Adding the hive to the home view
-                                hives.append(subscription.hive.toJSON())
-                    except ChSubscription.DoesNotExist:
-                        return HttpResponse("Subscription not found")
+                # Trying to get all the subscriptions of this profile
+                try:
+                    subscriptions = ChSubscription.objects.filter(profile=profile)
+                    hives = []
+                    for subscription in subscriptions:
+                        # Excluding duplicated hives
+                        hive_appeared = False
+                        for hive in hives:
+                            if subscription.hive == hive:
+                                hive_appeared = True
+                        if not hive_appeared:
+                            # Adding the hive to the home view
+                            hives.append(subscription.hive.toJSON())
+                except ChSubscription.DoesNotExist:
+                    return HttpResponse("Subscription not found")
 
-                    print(profile.toJSON())  # PRINT
-                    for hive in hives:
-                        print(hive)  # PRINT
-                    common = json.dumps({'STATUS': status, 'ERROR': error})
-                    answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+                print(profile.toJSON())  # PRINT
+                for hive in hives:
+                    print(hive)  # PRINT
+                common = json.dumps({'STATUS': status, 'ERROR': error})
+                answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
 
-                    return HttpResponse(answer, mimetype="application/json")
-                    # return HttpResponseRedirect("/home/")
-                else:
-                    status = 'ERROR'
-                    return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                        cls=DjangoJSONEncoder), mimetype="application/json")
+                return HttpResponse(answer, mimetype="application/json")
+                # return HttpResponseRedirect("/home/")
+            else:
+                status = 'ERROR'
+                error = 'User is not active'
+                common = json.dumps({'STATUS': status, 'ERROR': error})
+                answer = json.dumps({'COMMON': common, "LOGS": logs}, cls=DjangoJSONEncoder)
+                return HttpResponse(answer, mimetype="application/json")
         else:
             status = 'ERROR'
-            return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                           cls=DjangoJSONEncoder), mimetype="application/json")
+            error = 'User auth is None'
+            common = json.dumps({'STATUS': status, 'ERROR': error})
+            answer = json.dumps({'COMMON': common, "LOGS": logs}, cls=DjangoJSONEncoder)
+            return HttpResponse(answer, mimetype="application/json")
     else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        status = "ERROR"
+        error = 'Invalid method'
+        common = json.dumps({'STATUS': status, 'ERROR': error})
+        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
         # raise Http404
 
 
