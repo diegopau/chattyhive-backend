@@ -88,8 +88,6 @@ def start_session(request):
 
 def login_v2(request):
     if request.method == 'POST':
-        # user = request.POST.get("user")
-        # passw = request.POST.get("pass")
         aux = request.body
         data = json.loads(aux.decode('utf-8'))
         data_login = data["LOGIN"]
@@ -129,27 +127,27 @@ def login_v2(request):
                 print(profile.toJSON())  # PRINT
                 for hive in hives:
                     print(hive)  # PRINT
-                common = {'STATUS': status, 'ERROR': error}
-                answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+                common = {"STATUS": status, "ERROR": error}
+                answer = json.dumps({"COMMON": common}, cls=DjangoJSONEncoder)
                 return HttpResponse(answer, mimetype="application/json")
                 # return HttpResponseRedirect("/home/")
             else:
                 status = 'ERROR'
                 error = 'User is not active'
-                common = {'STATUS': status, 'ERROR': error}
-                answer = json.dumps({'COMMON': common, "LOGS": logs}, cls=DjangoJSONEncoder)
+                common = {"STATUS": status, "ERROR": error}
+                answer = json.dumps({"COMMON": common, "LOGS": logs}, cls=DjangoJSONEncoder)
                 return HttpResponse(answer, mimetype="application/json")
         else:
             status = 'ERROR'
             error = 'User auth is None'
-            common = {'STATUS': status, 'ERROR': error}
-            answer = json.dumps({'COMMON': common, "LOGS": logs}, cls=DjangoJSONEncoder)
+            common = {"STATUS": status, "ERROR": error}
+            answer = json.dumps({"COMMON": common, "LOGS": logs}, cls=DjangoJSONEncoder)
             return HttpResponse(answer, mimetype="application/json")
     else:
         status = "ERROR"
         error = 'Invalid method'
-        common = {'STATUS': status, 'ERROR': error}
-        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        common = {"STATUS": status, "ERROR": error}
+        answer = json.dumps({"COMMON": common}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
         # raise Http404
 
