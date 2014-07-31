@@ -92,8 +92,9 @@ def login_v2(request):
         # passw = request.POST.get("pass")
         aux = request.body
         data = json.loads(aux.decode('utf-8'))
-        user = data['USER']
-        passw = data['PASS']
+        data_login = data["LOGIN"]
+        user = data_login['USER']
+        passw = data_login['PASS']
         status = "OK"
         error = None
         logs = {"user": user, "pass": passw}
