@@ -110,9 +110,9 @@ def login_v2(request):
                 login(request, user)
                 status = "OK"
 
-                chuser = ChUser.objects.get(username=user)
-
-                profile = ChProfile.objects.get(user=chuser)
+                # chuser = ChUser.objects.get(username=user)
+                #
+                # profile = ChProfile.objects.get(user=chuser)
 
                 # Trying to get all the subscriptions of this profile
                 try:
