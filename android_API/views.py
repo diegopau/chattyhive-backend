@@ -129,27 +129,26 @@ def login_v2(request):
                 print(profile.toJSON())  # PRINT
                 for hive in hives:
                     print(hive)  # PRINT
-                common = json.dumps({'STATUS': status, 'ERROR': error})
+                common = {'STATUS': status, 'ERROR': error}
                 answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
-
                 return HttpResponse(answer, mimetype="application/json")
                 # return HttpResponseRedirect("/home/")
             else:
                 status = 'ERROR'
                 error = 'User is not active'
-                common = json.dumps({'STATUS': status, 'ERROR': error})
+                common = {'STATUS': status, 'ERROR': error}
                 answer = json.dumps({'COMMON': common, "LOGS": logs}, cls=DjangoJSONEncoder)
                 return HttpResponse(answer, mimetype="application/json")
         else:
             status = 'ERROR'
             error = 'User auth is None'
-            common = json.dumps({'STATUS': status, 'ERROR': error})
+            common = {'STATUS': status, 'ERROR': error}
             answer = json.dumps({'COMMON': common, "LOGS": logs}, cls=DjangoJSONEncoder)
             return HttpResponse(answer, mimetype="application/json")
     else:
         status = "ERROR"
         error = 'Invalid method'
-        common = json.dumps({'STATUS': status, 'ERROR': error})
+        common = {'STATUS': status, 'ERROR': error}
         answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
         # raise Http404
