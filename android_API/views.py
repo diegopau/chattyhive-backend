@@ -472,8 +472,8 @@ def get_chat_context(request, channel_unicode):
 
 def get_chat_list(request):
     if request.method == 'GET':
-        user = request.user
-        print(user)
+        usern = request.session['user']
+        user = ChUser.objects.get(username=usern)
         profile = ChProfile.objects.get(user=user)
         status = "OK"
         error = None
