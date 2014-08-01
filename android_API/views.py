@@ -137,7 +137,8 @@ def login_v2(request):
                 #     print(hive)  # PRINT
                 common = {"STATUS": status, "ERROR": error}
                 answer = json.dumps({"COMMON": common, "LOGS": logs}, cls=DjangoJSONEncoder)
-                return HttpResponse(answer, mimetype="application/json")
+                # return HttpResponse(answer, mimetype="application/json")
+                return HttpResponse(answer)
                 # return HttpResponseRedirect("/home/")
             else:
                 status = 'ERROR'
