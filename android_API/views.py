@@ -437,7 +437,7 @@ def recover_local_user_profile(request):
             error = "Subscription not found"
             hives = None
 
-        common = json.dumps({'STATUS': status, 'ERROR': error})
+        common = {'STATUS': status, 'ERROR': error}
         local_user_profile = json.dumps({'EMAIL': email, 'HIVES_SUBSCRIBED': hives, 'USER_PUBLIC_PROFILE': public_profile,
                                          'USER_PRIVATE_PROFILE': private_profile})
         answer = json.dumps({'COMMON': common, 'LOCAL_USER_PROFILE': local_user_profile}, cls=DjangoJSONEncoder)
@@ -466,7 +466,7 @@ def get_chat_context(request, channel_unicode):
         except ChSubscription.DoesNotExist:
             members = None
 
-        common = json.dumps({'STATUS': status, 'ERROR': error})
+        common = {'STATUS': status, 'ERROR': error}
         chat_answer = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
                                   'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive})
         answer = json.dumps({'COMMON': common, 'CHAT': chat_answer}, cls=DjangoJSONEncoder)
