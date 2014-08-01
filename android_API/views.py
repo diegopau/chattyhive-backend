@@ -89,14 +89,13 @@ def start_session(request):
 def login_v2(request):
     if request.method == 'POST':
         aux = request.body
-        session = request.session.session_key
         data = json.loads(aux.decode('utf-8'))
         data_login = data["LOGIN"]
         login_string = data_login['USER']
         passw = data_login['PASS']
         status = "OK"
         error = None
-        logs = {"user": login_string, "pass": passw, "session": session}
+        logs = {"user": login_string, "pass": passw}
         print(logs)  # PRINT
 
         if '@' in login_string:
@@ -110,6 +109,10 @@ def login_v2(request):
         if user is not None:
             if user.is_active:
                 login(request, user)
+                request.session['user'] = user
+                request.session['active'] = True
+                session_id = request.session.session_key
+                logs = {"user": login_string, "pass": passw, "session": session_id}
                 status = "OK"
 
                 # chuser = ChUser.objects.get(username=user)
