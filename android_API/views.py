@@ -109,7 +109,7 @@ def login_v2(request):
         if user is not None:
             if user.is_active:
                 login(request, user)
-                request.session['user'] = user
+                request.session['user'] = profile.username
                 request.session['active'] = True
                 session_id = request.session.session_key
                 logs = {"user": login_string, "pass": passw, "session": session_id}
