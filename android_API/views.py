@@ -89,7 +89,7 @@ def start_session(request):
 def login_v2(request):
     if request.method == 'POST':
         aux = request.body
-        session = request.session
+        session = request.session.session_key
         data = json.loads(aux.decode('utf-8'))
         data_login = data["LOGIN"]
         login_string = data_login['USER']
