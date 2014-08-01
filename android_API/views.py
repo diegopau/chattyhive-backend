@@ -438,8 +438,8 @@ def recover_local_user_profile(request):
             hives = None
 
         common = {'STATUS': status, 'ERROR': error}
-        local_user_profile = json.dumps({'EMAIL': email, 'HIVES_SUBSCRIBED': hives, 'USER_PUBLIC_PROFILE': public_profile,
-                                         'USER_PRIVATE_PROFILE': private_profile})
+        local_user_profile = {'EMAIL': email, 'HIVES_SUBSCRIBED': hives, 'USER_PUBLIC_PROFILE': public_profile,
+                                         'USER_PRIVATE_PROFILE': private_profile}
         answer = json.dumps({'COMMON': common, 'LOCAL_USER_PROFILE': local_user_profile}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
