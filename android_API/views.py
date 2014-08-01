@@ -75,7 +75,7 @@ def chat(request):
 
 
 # ================================== #
-#             0.2 Version            #
+# 0.2 Version            #
 # ================================== #
 def start_session(request):
     if request.method == 'GET':
@@ -286,7 +286,7 @@ def register(request):
             # Sending info to Android device
             status = "PROFILE_CREATED"
             return HttpResponse(json.dumps({
-                'status': status,   # Returning OK status
+                'status': status,  # Returning OK status
                 'profile': profile_json  # Returning complete Profile
             }))
 
@@ -395,7 +395,7 @@ def chat_v2(request):
                                                  "message": msg,
                                                  "timestamp": timestamp,
                                                  "server_time": message.date.astimezone(),
-                                                 })
+        })
 
         message.save()
 
@@ -439,7 +439,7 @@ def recover_local_user_profile(request):
 
         common = {'STATUS': status, 'ERROR': error}
         local_user_profile = {'EMAIL': email, 'HIVES_SUBSCRIBED': hives, 'USER_PUBLIC_PROFILE': public_profile,
-                                         'USER_PRIVATE_PROFILE': private_profile}
+                              'USER_PRIVATE_PROFILE': private_profile}
         answer = json.dumps({'COMMON': common, 'LOCAL_USER_PROFILE': local_user_profile}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
@@ -467,8 +467,9 @@ def get_chat_context(request, channel_unicode):
             members = None
 
         common = {'STATUS': status, 'ERROR': error}
-        chat_answer = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
-                                  'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive})
+        chat_answer = json.dumps(
+            {'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
+             'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive})
         answer = json.dumps({'COMMON': common, 'CHAT': chat_answer}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
@@ -498,7 +499,8 @@ def get_chat_list(request):
                     content = json.dumps({'CONTENT_TYPE': content_type, 'CONTENT': content})
                     timestamp = None
                     message_answer = json.dumps({'ID': id, 'PROFILE': profile1, 'SERVER_TIMESTAMP': server_timestamp,
-                                                 'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed, 'CONTENT': content,
+                                                 'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed,
+                                                 'CONTENT': content,
                                                  'TIMESTAMP': timestamp})
                     chat_sync = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer})
                     chat_sync = json.dumps({'CHAT_SYNC': chat_sync})
