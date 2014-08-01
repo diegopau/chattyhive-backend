@@ -475,6 +475,7 @@ def get_chat_list(request):
         usern = request.session['user']
         user = ChUser.objects.get(username=usern)
         profile = ChProfile.objects.get(user=user)
+        print(user)
         status = "OK"
         error = None
         try:
