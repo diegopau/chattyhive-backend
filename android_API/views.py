@@ -408,7 +408,8 @@ def chat_v2(request):
 
 def recover_local_user_profile(request):
     if request.method == 'GET':
-        user = request.user
+        usern = request.session['user']
+        user = ChUser.objects.get(username=usern)
         profile = ChProfile.objects.get(user=user)
         email = user.email
         status = "OK"
@@ -444,7 +445,8 @@ def recover_local_user_profile(request):
 
 def get_chat_context(request, channel_unicode):
     if request.method == 'GET':
-        user = request.user
+        usern = request.session['user']
+        user = ChUser.objects.get(username=usern)
         #profile = ChProfile.objects.get(user=user)
         chat = ChChat.objects.get(channel_unicode=channel_unicode)
         status = "OK"
