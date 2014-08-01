@@ -111,6 +111,7 @@ def login_v2(request):
                 login(request, user)
                 request.session['user'] = profile.username
                 request.session['active'] = True
+                request.user = user
                 session_id = request.session.session_key
                 logs = {"user": login_string, "pass": passw, "session": session_id}
                 status = "OK"
@@ -474,8 +475,9 @@ def get_chat_context(request, channel_unicode):
 
 def get_chat_list(request):
     if request.method == 'GET':
-        usern = request.session['user']
-        user = ChUser.objects.get(username=usern)
+        # usern = request.session['user']
+        # user = ChUser.objects.get(username=usern)
+        user = request.user
         profile = ChProfile.objects.get(user=user)
         print(user)
         status = "OK"
