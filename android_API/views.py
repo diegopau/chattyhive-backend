@@ -500,13 +500,14 @@ def get_chat_list(request):
                                              'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed, 'CONTENT': content,
                                              'TIMESTAMP': timestamp})
                 chat_sync = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer})
+                chat_sync = json.dumps({'CHAT_SYNC': chat_sync})
                 chats_sync.append(chat_sync)
         except ChSubscription.DoesNotExist:
             status = "ERROR"
             error = "Does not exist"
 
         common = {'STATUS': status, 'ERROR': error}
-        answer = json.dumps({'COMMON': common, 'CHAT_SYNC': chats_sync}, cls=DjangoJSONEncoder)
+        answer = json.dumps({'COMMON': common, 'CHAT_LIST': chats_sync}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
 
