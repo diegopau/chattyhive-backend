@@ -505,7 +505,7 @@ def get_chat_list(request):
             status = "ERROR"
             error = "Does not exist"
 
-        common = json.dumps({'STATUS': status, 'ERROR': error})
+        common = {'STATUS': status, 'ERROR': error}
         answer = json.dumps({'COMMON': common, 'CHAT_SYNC': chats_sync}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
