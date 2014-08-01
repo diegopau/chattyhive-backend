@@ -89,13 +89,14 @@ def start_session(request):
 def login_v2(request):
     if request.method == 'POST':
         aux = request.body
+        session = request.session
         data = json.loads(aux.decode('utf-8'))
         data_login = data["LOGIN"]
         login_string = data_login['USER']
         passw = data_login['PASS']
         status = "OK"
         error = None
-        logs = {"user": login_string, "pass": passw}
+        logs = {"user": login_string, "pass": passw, "session": session}
         print(logs)  # PRINT
 
         if '@' in login_string:
@@ -135,7 +136,7 @@ def login_v2(request):
                 # for hive in hives:
                 #     print(hive)  # PRINT
                 common = {"STATUS": status, "ERROR": error}
-                answer = json.dumps({"COMMON": common}, cls=DjangoJSONEncoder)
+                answer = json.dumps({"COMMON": common, "LOGS": logs}, cls=DjangoJSONEncoder)
                 return HttpResponse(answer, mimetype="application/json")
                 # return HttpResponseRedirect("/home/")
             else:
