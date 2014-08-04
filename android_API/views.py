@@ -124,7 +124,7 @@ def login_v2(request):
                 # try:
                 # subscriptions = ChSubscription.objects.filter(profile=profile)
                 # hives = []
-                #     for subscription in subscriptions:
+                # for subscription in subscriptions:
                 #         # Excluding duplicated hives
                 #         hive_appeared = False
                 #         for hive in hives:
@@ -461,15 +461,14 @@ def get_chat_context(request, channel_unicode):
             for subscription in subscriptions:
                 user_id = None
                 public_name = subscription.profile.public_name
-                profile_id = json.dumps({'USER_ID': user_id, 'PUBLIC_NAME': public_name})
+                profile_id = {'USER_ID': user_id, 'PUBLIC_NAME': public_name}
                 members.append(profile_id)
         except ChSubscription.DoesNotExist:
             members = None
 
         common = {'STATUS': status, 'ERROR': error}
-        chat_answer = json.dumps(
-            {'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
-             'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive})
+        chat_answer = {'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
+                       'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive}
         answer = json.dumps({'COMMON': common, 'CHAT': chat_answer}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
