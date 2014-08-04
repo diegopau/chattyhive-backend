@@ -431,7 +431,10 @@ def recover_local_user_profile(request):
                         hive_appeared = True
                 if not hive_appeared:
                     # Adding the hive to the home view
-                    hives.append(subscription.hive.name_url)
+                    try:
+                        hives.append(subscription.hive.name_url)
+                    except subscription.hive.DoesNotExist:
+                        continue
         except ChSubscription.DoesNotExist:
             status = "ERROR"
             error = "Subscription not found"
