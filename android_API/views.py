@@ -445,15 +445,15 @@ def recover_local_user_profile(request):
         return HttpResponse(answer, mimetype="application/json")
 
 
-def get_chat_context(request, channel_unicode):
+def get_chat_context(request, chat_id):
     if request.method == 'GET':
         usern = request.session['user']
         user = ChUser.objects.get(username=usern)
         # profile = ChProfile.objects.get(user=user)
-        chat = ChChat.objects.get(channel_unicode=channel_unicode)
+        chat = ChChat.objects.get(channel_unicode=chat_id)
         status = "OK"
         error = None
-        pusher_channel = chat.channel(channel_unicode)
+        pusher_channel = chat.channel(chat_id)
         creation_date = None
         parent_hive = None
         try:
@@ -468,7 +468,7 @@ def get_chat_context(request, channel_unicode):
             members = None
 
         common = {'STATUS': status, 'ERROR': error}
-        chat_answer = {'CHANNEL_UNICODE': channel_unicode, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
+        chat_answer = {'CHANNEL_UNICODE': chat_id, 'PUSHER_CHANNEL': pusher_channel, 'MEMBERS': members,
                        'CREATION_DATE': creation_date, 'PARENT_HIVE': parent_hive}
         answer = json.dumps({'COMMON': common, 'CHAT': chat_answer}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
