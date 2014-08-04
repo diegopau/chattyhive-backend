@@ -488,7 +488,7 @@ def get_chat_list(request):
                 subscriptions = ChSubscription.objects.filter(profile=profile)
                 chats_sync = []
                 for subscription in subscriptions:
-                    message = ChMessage.objects.filter(chat=subscription.chat).order_by('-id')[0]
+                    message = ChMessage.objects.filter(chat=subscription.chat).order_by('-id')[1]
                     id = message.id
                     profile1 = message.profile.public_name
                     server_timestamp = None
