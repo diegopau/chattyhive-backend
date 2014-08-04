@@ -416,9 +416,9 @@ def recover_local_user_profile(request):
         status = "OK"
         error = None
 
-        public_profile = profile.toJSON(True)
+        public_profile = json.loads(profile.toJSON(True))
 
-        private_profile = profile.toJSON(False)
+        private_profile = json.loads(profile.toJSON(False))
 
         try:
             subscriptions = ChSubscription.objects.filter(profile=profile)
