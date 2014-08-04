@@ -496,13 +496,12 @@ def get_chat_list(request):
                     confirmed = False
                     content_type = message.content_type
                     content = message.content
-                    content = json.dumps({'CONTENT_TYPE': content_type, 'CONTENT': content})
+                    content = {'CONTENT_TYPE': content_type, 'CONTENT': content}
                     timestamp = None
-                    message_answer = json.dumps({'ID': id, 'PROFILE': profile1, 'SERVER_TIMESTAMP': server_timestamp,
+                    message_answer = {'ID': id, 'PROFILE': profile1, 'SERVER_TIMESTAMP': server_timestamp,
                                                  'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed,
-                                                 'CONTENT': content,
-                                                 'TIMESTAMP': timestamp})
-                    chat_sync = json.dumps({'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer})
+                                                 'CONTENT': content, 'TIMESTAMP': timestamp}
+                    chat_sync = {'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer}
                     chat_sync = json.dumps({'CHAT_SYNC': chat_sync})
                     chats_sync.append(chat_sync)
             except ChSubscription.DoesNotExist:
