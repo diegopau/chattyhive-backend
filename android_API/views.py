@@ -123,7 +123,7 @@ def login_v2(request):
                 # Trying to get all the subscriptions of this profile
                 # try:
                 # subscriptions = ChSubscription.objects.filter(profile=profile)
-                #     hives = []
+                # hives = []
                 #     for subscription in subscriptions:
                 #         # Excluding duplicated hives
                 #         hive_appeared = False
@@ -439,7 +439,7 @@ def recover_local_user_profile(request):
 
         common = {'STATUS': status, 'ERROR': error}
         local_user_profile = {'EMAIL': email, 'HIVES_SUBSCRIBED': hives, 'USER_PUBLIC_PROFILE': public_profile,
-             'USER_PRIVATE_PROFILE': private_profile}
+                              'USER_PRIVATE_PROFILE': private_profile}
         answer = json.dumps({'COMMON': common, 'LOCAL_USER_PROFILE': local_user_profile}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
@@ -499,10 +499,10 @@ def get_chat_list(request):
                     content = {'CONTENT_TYPE': content_type, 'CONTENT': content}
                     timestamp = None
                     message_answer = {'ID': id, 'PROFILE': profile1, 'SERVER_TIMESTAMP': server_timestamp,
-                                                 'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed,
-                                                 'CONTENT': content, 'TIMESTAMP': timestamp}
+                                      'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed,
+                                      'CONTENT': content, 'TIMESTAMP': timestamp}
                     chat_sync = {'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer}
-                    chat_sync = json.dumps({'CHAT_SYNC': chat_sync})
+                    chat_sync = {'CHAT_SYNC': chat_sync}
                     chats_sync.append(chat_sync)
             except ChSubscription.DoesNotExist:
                 status = "ERROR"
