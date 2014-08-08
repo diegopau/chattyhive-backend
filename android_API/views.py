@@ -276,15 +276,15 @@ def register(request):
             profile.save()
 
             # Formatting info for sending in json
-            profile_json = json.dumps({"set_public_name": public_name,
-                                       "set_first_name": first_name,
-                                       "set_last_name": last_name,
-                                       "set_sex": sex,
-                                       "set_language": language,
-                                       "set_private_show_age": private_show_age,
-                                       "set_public_show_age": public_show_age,
-                                       "set_show_location": public_show_location,
-                                       "set_location": location})
+            # profile_json = json.dumps({"set_public_name": public_name,
+            #                            "set_first_name": first_name,
+            #                            "set_last_name": last_name,
+            #                            "set_sex": sex,
+            #                            "set_language": language,
+            #                            "set_private_show_age": private_show_age,
+            #                            "set_public_show_age": public_show_age,
+            #                            "set_show_location": public_show_location,
+            #                            "set_location": location})
 
             # Sending info to Android device
             status = "OK"
@@ -525,6 +525,20 @@ def get_chat_list(request):
         answer = json.dumps({'COMMON': common, 'CHAT_LIST': chats_sync}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
+
+def create_hive(request):
+    if request.method == 'POST':
+        status = "OK"
+        error = None
+        usern = request.session['user']
+
+        try:
+            aux = request.body
+            data = json.loads(aux)
+
+        except(Exception):
+            status = "ERROR"
+            error = None
 
 
 
