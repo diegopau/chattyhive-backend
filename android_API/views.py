@@ -184,36 +184,36 @@ def explore(request):
         return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
 
 
-def email_check(request):
+def email_check(request, user_email):
     """
     :param request:
     :return: JSON with status
     """
 
-    if request.method == 'POST':
+    if request.method == 'GET':
 
         # Getting email from POST param
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        email = data['email']
-
-        username = email
-        # print(email + '_ANDROID')  # PRINT
+        status = "OK"
+        error = None
 
         # Checking already existing user
         try:
-            if ChUser.objects.get(username=username) is not None:
-                status = "USER_ALREADY_EXISTS"
-            else:
-                status = "NONE"
+            if ChUser.objects.get(email=user_email) is not None:
+                status = "ERROR"
+                error = "User already exists"
         except ObjectDoesNotExist:
             status = "OK"
 
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
 
     else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        status = "ERROR"
+        error = "Invalid method"
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
 
 
 def register(request):
