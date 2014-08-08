@@ -115,30 +115,6 @@ def login_v2(request):
                 session_id = request.session.session_key
                 logs = {"user": login_string, "pass": passw, "session": session_id}
                 status = "OK"
-
-                # chuser = ChUser.objects.get(username=user)
-                #
-                # profile = ChProfile.objects.get(user=chuser)
-
-                # Trying to get all the subscriptions of this profile
-                # try:
-                # subscriptions = ChSubscription.objects.filter(profile=profile)
-                # hives = []
-                # for subscription in subscriptions:
-                #         # Excluding duplicated hives
-                #         hive_appeared = False
-                #         for hive in hives:
-                #             if subscription.hive == hive:
-                #                 hive_appeared = True
-                #         if not hive_appeared:
-                #             # Adding the hive to the home view
-                #             hives.append(subscription.hive.toJSON())
-                # except ChSubscription.DoesNotExist:
-                #     return HttpResponse("Subscription not found")
-                #
-                # # print(profile.toJSON())  # PRINT
-                # for hive in hives:
-                #     print(hive)  # PRINT
                 common = {"STATUS": status, "ERROR": error}
                 answer = json.dumps({"COMMON": common, "LOGS": logs}, cls=DjangoJSONEncoder)
                 # return HttpResponse(answer, mimetype="application/json")
@@ -228,27 +204,50 @@ def register(request):
         aux = request.body
         data = json.loads(aux.decode('utf-8'))
 
-        email = data['email']
-        pass1 = data['pass1']
-        public_name = data['public_name']
-        first_name = data['first_name']
-        last_name = data['last_name']
-        sex = data['sex']
-        language = data['language']
-        private_show_age = data['private_show_age']
-        location = data['location']
-        public_show_age = data['public_show_age']
-        show_location = data['show_location']
+        # email = data['email']
+        # pass1 = data['pass1']
+        # public_name = data['public_name']
+        # first_name = data['first_name']
+        # last_name = data['last_name']
+        # sex = data['sex']
+        # language = data['language']
+        # private_show_age = data['private_show_age']
+        # location = data['location']
+        # public_show_age = data['public_show_age']
+        # show_location = data['show_location']
+
+        email = data['']
+        password = data['']
+        public_name = data['']
+        location = data['']
+        sex = data['']
+        birthdate = data['']
+        language = data['']
+        public_show_age = data['']
+        public_show_sex = data['']
+        public_show_location = data['']
+        user_color = data['']
+        image_url = data['']
+        user_id = data['']
+        first_name = data['']
+        last_name = data['']
+        private_show_age = data['']
+
+        status = "OK"
+        error = None
 
         username = email
-        password = pass1
+        # password = pass1
         # print(username + '_ANDROID')  # PRINT
 
         try:
             # Checking already existing user
             if ChUser.objects.get(username=username) is not None:
-                status = "USER_ALREADY_EXISTS"
-                return HttpResponse(json.dumps({"status": status}))
+                status = "ERROR"
+                error = "User already exists"
+                common = {'STATUS': status, 'ERROR': error}
+                answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+                return HttpResponse(answer, mimetype="application/json")
 
         except ObjectDoesNotExist:
 
@@ -265,11 +264,15 @@ def register(request):
             profile.first_name = first_name
             profile.last_name = last_name
             profile.sex = sex
+            profile.birth_date = birthdate
             profile.language = language
+            # profile.location = location
+            profile.set_approximate_location(location)
+            profile.personal_color = user_color
             profile.private_show_age = private_show_age
             profile.public_show_age = public_show_age
-            profile.show_location = show_location
-            profile.set_approximate_location(location)
+            profile.public_show_location = public_show_location
+            profile.public_show_sex = public_show_sex
             profile.save()
 
             # Formatting info for sending in json
@@ -280,19 +283,26 @@ def register(request):
                                        "set_language": language,
                                        "set_private_show_age": private_show_age,
                                        "set_public_show_age": public_show_age,
-                                       "set_show_location": show_location,
+                                       "set_show_location": public_show_location,
                                        "set_location": location})
 
             # Sending info to Android device
-            status = "PROFILE_CREATED"
-            return HttpResponse(json.dumps({
-                'status': status,  # Returning OK status
-                'profile': profile_json  # Returning complete Profile
-            }))
+            status = "OK"
+            error = None
+            common = {'STATUS': status, 'ERROR': error}
+            answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+            return HttpResponse(answer, mimetype="application/json")
+            # return HttpResponse(json.dumps({
+            #     'status': status,  # Returning OK status
+            #     'profile': profile_json  # Returning complete Profile
+            # }))
 
     else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}))
+        status = "ERROR"
+        error = "Invalid method"
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
 
 
 def join(request):
