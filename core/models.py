@@ -366,8 +366,9 @@ class ChHive(models.Model):
         return self.tags.all
 
     def toJSON(self):
-        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+        return u'{"NAME": "%s", "NAME_URL": "%s", "DESCRIPTION": "%s", "CATEGORY": "%s", "CREATION_DATE": "%s",' \
+               u' "PUBLIC_CHAT": "%s"}' \
+               % (self.name, self.name_url, self.description, self.category, self.creation_date, None)
 
     @property
     def users(self):

@@ -80,7 +80,8 @@ def chat(request):
 def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
-        return HttpResponse(json.dumps({'CSRF': csrf}),
+        csrf_answer = {'CSRF': csrf}
+        return HttpResponse(json.dumps({'CSRF_TOKEN': csrf_answer}),
                             mimetype="application/json")
     else:
         raise Http404
@@ -143,6 +144,8 @@ def login_v2(request):
 
 def explore(request):
     if request.method == 'GET':
+        status = "OK"
+        error = None
         # Returns all the hives (subscribed and not subscribed)
         hive_array = []
         try:
@@ -153,7 +156,7 @@ def explore(request):
         except ChHive.DoesNotExist:
             status = "NO HIVES"
 
-        answer = json.dumps({'status': status, 'hives': hive_array}, cls=DjangoJSONEncoder)
+        answer = json.dumps({'status': status, 'HIVE': hive_array}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
     else:
         status = "INVALID_METHOD"
@@ -522,7 +525,8 @@ def get_chat_list(request):
             error = "User/Profile does not exist"
 
         common = {'STATUS': status, 'ERROR': error}
-        answer = json.dumps({'COMMON': common, 'CHAT_LIST': chats_sync}, cls=DjangoJSONEncoder)
+        list_aux = {'LIST': chats_sync}
+        answer = json.dumps({'COMMON': common, 'CHAT_LIST': list_aux}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
 
 
