@@ -144,23 +144,27 @@ def login_v2(request):
 
 def explore(request):
     if request.method == 'GET':
-        status = "OK"
+        status = 'OK'
         error = None
         # Returns all the hives (subscribed and not subscribed)
         hive_array = []
         try:
             hives = ChHive.objects.all()
             for hive in hives:
-                hive_array.append(hive.toJSON())
-            status = "OK"
+                hive_array.append({'HIVE': hive.toJSON()})
+            status = 'OK'
         except ChHive.DoesNotExist:
-            status = "NO HIVES"
-
-        answer = json.dumps({'status': status, 'HIVE': hive_array}, cls=DjangoJSONEncoder)
+            status = 'OK'
+        hive_answer = {'LIST': hive_array}
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common, 'HIVE_LIST': hive_answer}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
     else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        status = 'ERROR'
+        error = 'Invalid method'
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
 
 
 def email_check(request, user_email):
