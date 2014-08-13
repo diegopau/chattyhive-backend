@@ -549,4 +549,22 @@ def create_hive(request):
             error = None
 
 
+def get_hive_info(request, hive_id):
+    if request.method == 'GET':
+        status = "OK"
+        error = None
+
+        hive = ChHive.objects.get(name_url=hive_id)
+
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common, 'HIVE': hive.toJSON()}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
+    else:
+        status = 'ERROR'
+        error = 'Invalid method'
+        common = {'STATUS': status, 'ERROR': error}
+        answer = json.dumps({'COMMON': common}, cls=DjangoJSONEncoder)
+        return HttpResponse(answer, mimetype="application/json")
+
+
 

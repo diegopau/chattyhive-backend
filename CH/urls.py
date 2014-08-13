@@ -70,6 +70,8 @@ urlpatterns = patterns('',
         name='get_chat_context'),
     url(r'^android.get_chat_list/', 'android_API.views.get_chat_list',
         name='get_chat_list'),
+    url(r'^android.get_hive_info/(?P<hive_id>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/', 'android_API.views.get_hive_info',
+        name='get_hive_info'),
     # url(r'^android.logout/', 'android_API.views.logout', name='logout')
 
     ### ======================================================== ###
