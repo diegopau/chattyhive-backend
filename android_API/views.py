@@ -55,6 +55,20 @@ def chat(request):
         # GET vs POST
         if request.method == 'POST':
 
+            aux = request.body
+            data = json.loads(aux.decode('utf-8'))
+            data_message = data["MESSAGE"]
+            id_data = data["ID"]
+            profile_data = data["PROFILE"]
+            server_timestamp_data = data["SERVER_TIMESTAMP"]
+            channel_unicode_data = data["CHANNEL_UNICODE"]
+            confirmed_data = data["CONFIRMED"]
+            content_data = data["CONTENT"]
+            timestamp_data = data["TIMESTAMP"]
+
+            msg = content_data['CONTENT']
+            msg_type = content_data['CONTENT_TYPE']
+
             msg = request.POST.get("message")
             timestamp = request.POST.get("timestamp")
             p = pusher.Pusher(
