@@ -515,6 +515,7 @@ def get_chat_list(request):
                     message = ChMessage.objects.filter(chat=subscription.chat).order_by('-id')[0]
                     id = message.id
                     profile1 = message.profile.public_name
+                    profile2 = {'USER_ID': profile1}
                     server_timestamp = None
                     channel_unicode = subscription.chat.channel_unicode
                     confirmed = False
@@ -522,7 +523,7 @@ def get_chat_list(request):
                     content = message.content
                     content = {'CONTENT_TYPE': content_type, 'CONTENT': content}
                     timestamp = None
-                    message_answer = {'ID': id, 'PROFILE': profile1, 'SERVER_TIMESTAMP': server_timestamp,
+                    message_answer = {'ID': id, 'PROFILE': profile2, 'SERVER_TIMESTAMP': server_timestamp,
                                       'CHANNEL_UNICODE': channel_unicode, 'CONFIRMED': confirmed,
                                       'CONTENT': content, 'TIMESTAMP': timestamp}
                     chat_sync = {'CHANNEL_UNICODE': channel_unicode, 'LAST_MESSAGE': message_answer}
