@@ -322,32 +322,25 @@ def chat(request, chat_url):
 
     # GET vs POST
     if request.method == 'POST':
-
         try:
-            ChSubscription.objects.get(chat=chat, profile=profile)
-            chat.count += 1
-            chat.save()
+            ChSubscription.objects.get(profile=profile, chat=chat)
             msg = request.POST.get("message")
             timestamp = request.POST.get("timestamp")
-            p = pusher.Pusher(
-                app_id=app_key,
-                key=key,
-                secret=secret,
-                encoder=DjangoJSONEncoder,
-            )
-            message = ChMessage(profile=profile, chat=chat)
-            message.date = timezone.now()
-            message.content_type = 'text'
-            message.content = msg
+            message = chat.new_message(profile=profile,
+                                       content_type='text',
+                                       content=msg,
+                                       timestamp=timestamp)
+            chat.save()
 
-            p[chat.channel_unicode].trigger(event, {"username": user.username,
-                                                    "public_name": profile.public_name,
-                                                    "message": msg,
-                                                    "timestamp": timestamp,
-                                                    "server_time": message.date.astimezone(),
-            })
+            json_message = json.dumps({"username": user.username,
+                                       "public_name": profile.public_name,
+                                       "message": msg,
+                                       "timestamp": timestamp,
+                                       "server_time": message.datetime.astimezone()},
+                                      cls=DjangoJSONEncoder)
 
-            message.save()
+            chat.send_message(sender_profile=profile, json_message=json_message)
+
             return HttpResponse("Server Ok")
 
         except ChSubscription.DoesNotExist:

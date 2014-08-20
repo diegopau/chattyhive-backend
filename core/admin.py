@@ -23,6 +23,7 @@ class LanguagesAdmin(admin.ModelAdmin):
 
 # Include all models in Admin site
 admin.site.register(ChUser)
+admin.site.register(AndroidDevice)
 admin.site.register(ChProfile)
 admin.site.register(ChCategory)
 admin.site.register(TagModel)
