@@ -68,10 +68,10 @@ class XsSharing(object):
         # response['Access-Control-Allow-Credentials'] = 'true'
 
         # if request.method == 'POST':
-        allowed = request.META['HTTP_ORIGIN']
-        response['Access-Control-Allow-Credentials'] = 'true'
+        # allowed = request.META['HTTP_ORIGIN']
+        # response['Access-Control-Allow-Credentials'] = 'true'
         # else:
-        # allowed = XS_SHARING_ALLOWED_ORIGINS
+        allowed = XS_SHARING_ALLOWED_ORIGINS
 
         # try:
         #     allowed = request.META['HTTP_ORIGIN']
