@@ -165,7 +165,7 @@ def explore(request):
         try:
             hives = ChHive.objects.all()
             for hive in hives:
-                hive_array.append({'HIVE': hive.toJSON()})
+                hive_array.append({'HIVE': json.loads(hive.toJSON())})
             status = 'OK'
         except ChHive.DoesNotExist:
             status = 'OK'
@@ -388,12 +388,26 @@ def chat_v2(request):
     # GET vs POST
     if request.method == 'POST':
         # Getting params from POST
+        username = request.session['user']
         aux = request.body
         data = json.loads(aux.decode('utf-8'))
-        hive_name = data['hive']
-        username = data['user']
-        msg = data['message']
-        timestamp = data['timestamp']
+
+        msg_data = data['MESSAGE']
+        id_data = msg_data['ID']
+        profile_data = msg_data['PROFILE']
+        ts_data = msg_data['SERVER_TIMESTAMP']
+        chan_data = msg_data['CHANNEL_UNICODE']
+        conf_data = msg_data['CONFIRMED']
+        content_data = msg_data['CONTENT']
+        tstamp_data = msg_data['TIMESTAMP']
+        user_id = profile_data['USER_ID']
+        content_type = content_data['CONTENT_TYPE']
+        content = content_data['CONTENT']
+
+        # hive_name = data['hive']
+        # username = data['user']
+        # msg = data['message']
+        # timestamp = data['timestamp']
 
         # Processing params to get info in server
         user = ChUser.objects.get(username=username)
@@ -565,7 +579,7 @@ def get_hive_info(request, hive_id):
         hive = ChHive.objects.get(name_url=hive_id)
 
         common = {'STATUS': status, 'ERROR': error}
-        answer = json.dumps({'COMMON': common, 'HIVE': hive.toJSON()}, cls=DjangoJSONEncoder)
+        answer = json.dumps({'COMMON': common, 'HIVE': json.loads(hive.toJSON())}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
     else:
         status = 'ERROR'
