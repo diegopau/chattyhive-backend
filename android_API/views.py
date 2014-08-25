@@ -583,7 +583,7 @@ def get_hive_info(request, hive_id):
         hive1['PUBLIC_CHAT'] = json.loads(public_chat.toJSON())
 
         common = {'STATUS': status, 'ERROR': error}
-        answer = json.dumps({'COMMON': common, 'HIVE': json.loads(hive1)}, cls=DjangoJSONEncoder)
+        answer = json.dumps({'COMMON': common, 'HIVE': hive1}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
     else:
         status = 'ERROR'
