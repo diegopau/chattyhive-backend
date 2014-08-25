@@ -370,8 +370,7 @@ class ChHive(models.Model):
         public_chat = ChChat.objects.get(hive=self, type='public')
         return u'{"NAME": "%s", "NAME_URL": "%s", "DESCRIPTION": "%s", "CATEGORY": "%s", "CREATION_DATE": "%s",' \
                u' "PUBLIC_CHAT": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date,
-                  json.loads(public_chat.toJSON()))
+               % (self.name, self.name_url, self.description, self.category, self.creation_date, None)
 
     @property
     def users(self):

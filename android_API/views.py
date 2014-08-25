@@ -577,9 +577,13 @@ def get_hive_info(request, hive_id):
         error = None
 
         hive = ChHive.objects.get(name_url=hive_id)
+        public_chat = ChChat.objects.get(hive=hive, type='public')
+
+        hive1 = json.loads(hive.toJSON())
+        hive1['PUBLIC_CHAT'] = json.loads(public_chat.toJSON())
 
         common = {'STATUS': status, 'ERROR': error}
-        answer = json.dumps({'COMMON': common, 'HIVE': json.loads(hive.toJSON())}, cls=DjangoJSONEncoder)
+        answer = json.dumps({'COMMON': common, 'HIVE': json.loads(hive1)}, cls=DjangoJSONEncoder)
         return HttpResponse(answer, mimetype="application/json")
     else:
         status = 'ERROR'
