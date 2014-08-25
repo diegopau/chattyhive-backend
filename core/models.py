@@ -367,7 +367,7 @@ class ChHive(models.Model):
         return self.tags.all
 
     def toJSON(self):
-        public_chat = ChChat.objects.get(hive=self)
+        public_chat = ChChat.objects.get(hive=self, type='public')
         return u'{"NAME": "%s", "NAME_URL": "%s", "DESCRIPTION": "%s", "CATEGORY": "%s", "CREATION_DATE": "%s",' \
                u' "PUBLIC_CHAT": "%s"}' \
                % (self.name, self.name_url, self.description, self.category, self.creation_date,
