@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+from django.core.serializers import json
 
 __author__ = 'lorenzo'
 
@@ -366,9 +367,11 @@ class ChHive(models.Model):
         return self.tags.all
 
     def toJSON(self):
+        public_chat = ChChat.objects.get(hive=self)
         return u'{"NAME": "%s", "NAME_URL": "%s", "DESCRIPTION": "%s", "CATEGORY": "%s", "CREATION_DATE": "%s",' \
                u' "PUBLIC_CHAT": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date, None)
+               % (self.name, self.name_url, self.description, self.category, self.creation_date,
+                  json.loads(public_chat.toJSON()))
 
     @property
     def users(self):
@@ -414,6 +417,11 @@ class ChChat(models.Model):
         :param channel_unicode: Pusher id for this chat
         """
         self.channel_unicode = 'presence-' + channel_unicode
+
+    def toJSON(self):
+        return u'{"CHANNEL_UNICODE": "%s", "PUSHER_CHANNEL": "%s", "MEMBERS": "%s", "CHAT_TYPE": "%s",' \
+               u' "CREATION_DATE": "%s", "PARENT_HIVE": "%s", "NAME": "%s", "DESCRIPTION": "%s"}' \
+               % (self.channel_unicode, 'presence-' + self.channel, None, None, self.date, None, None, None)
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
