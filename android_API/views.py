@@ -582,7 +582,7 @@ def get_hive_info(request, hive_id):
         hive1 = json.loads(hive.toJSON())
         aux = hive1['PUBLIC_CHAT']
         print(aux)
-        hive1['PUBLIC_CHAT'] = json.loads(public_chat.toJSON())
+        hive1['PUBLIC_CHAT'] = public_chat.toJSON()
 
         common = {'STATUS': status, 'ERROR': error}
         answer = json.dumps({'COMMON': common, 'HIVE': hive1}, cls=DjangoJSONEncoder)
