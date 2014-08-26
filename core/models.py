@@ -418,7 +418,7 @@ class ChChat(models.Model):
         self.channel_unicode = 'presence-' + channel_unicode
 
     def toJSON(self):
-        hive_id = {"NAME_URL": "%s"} % self.hive.name_url
+        hive_id = {"NAME_URL": self.hive.name_url}
         return u'{"CHANNEL_UNICODE": "%s", "PUSHER_CHANNEL": "%s", "MEMBERS": "%s", "CHAT_TYPE": "%s",' \
                u' "CREATION_DATE": "%s", "PARENT_HIVE": "%s", "NAME": "%s", "DESCRIPTION": "%s"}' \
                % (self.channel_unicode, self.channel, None, self.type, self.date, hive_id, None, None)
