@@ -580,10 +580,14 @@ def get_hive_info(request, hive_id):
         public_chat = ChChat.objects.get(hive=hive, type='public')
 
         hive1 = json.loads(hive.toJSON())
-        aux = hive1['NAME']
+        aux1 = hive1['NAME']
+        aux2 = hive1['NAME_URL']
+        aux3 = hive1['DESCRIPTION']
+        aux4 = hive1['CATEGORY']
+        aux5 = hive1['CREATION_DATE']
+        aux = aux1 + aux2 + aux3 + aux4 + aux5
         print(aux)
-        hive2 = {'NAME': hive1['NAME'], 'NAME_URL': hive1['NAME_URL'], 'DESCRIPTION': hive1['DESCRIPTION'],
-                 'CATEGORY': hive1['CATEGORY'], 'CREATION_DATE': hive1['CREATION_DATE'],
+        hive2 = {'NAME': aux1, 'NAME_URL': aux2, 'DESCRIPTION': aux3, 'CATEGORY': aux4, 'CREATION_DATE': aux5,
                  'PUBLIC_CHAT': json.loads(public_chat)}
         # hive1['PUBLIC_CHAT'] = public_chat.toJSON()
 
