@@ -421,7 +421,7 @@ class ChChat(models.Model):
         hive_id = {"NAME_URL": self.hive.name_url}
         return u'{"CHANNEL_UNICODE": "%s", "PUSHER_CHANNEL": "%s", "MEMBERS": "%s", "CHAT_TYPE": "%s",' \
                u' "CREATION_DATE": "%s", "PARENT_HIVE": "%s", "NAME": "%s", "DESCRIPTION": "%s"}' \
-               % (self.channel_unicode, self.channel, None, self.type, self.date, hive_id, None, None)
+               % (self.channel_unicode, self.channel, None, self.type, self.date, json.loads(hive_id), None, None)
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
