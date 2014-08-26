@@ -588,7 +588,7 @@ def get_hive_info(request, hive_id):
         aux = aux1 + aux2 + aux3 + aux4 + aux5
         print(aux)
         hive2 = {'NAME': aux1, 'NAME_URL': aux2, 'DESCRIPTION': aux3, 'CATEGORY': aux4, 'CREATION_DATE': aux5,
-                 'PUBLIC_CHAT': json.loads(public_chat)}
+                 'PUBLIC_CHAT': json.loads(public_chat.toJSON())}
         # hive1['PUBLIC_CHAT'] = public_chat.toJSON()
 
         common = {'STATUS': status, 'ERROR': error}
