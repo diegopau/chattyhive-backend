@@ -580,10 +580,11 @@ def get_hive_info(request, hive_id):
         public_chat = ChChat.objects.get(hive=hive, type='public')
 
         hive1 = json.loads(hive.toJSON())
-        aux = hive1['PUBLIC_CHAT']
+        aux = hive1['NAME']
         print(aux)
         hive2 = {'NAME': hive1['NAME'], 'NAME_URL': hive1['NAME_URL'], 'DESCRIPTION': hive1['DESCRIPTION'],
-                 'CATEGORY': hive1['CATEGORY'], 'CREATION_DATE': hive1['CREATION_DATE'], 'PUBLIC_CHAT': json.loads(public_chat)}
+                 'CATEGORY': hive1['CATEGORY'], 'CREATION_DATE': hive1['CREATION_DATE'],
+                 'PUBLIC_CHAT': json.loads(public_chat)}
         # hive1['PUBLIC_CHAT'] = public_chat.toJSON()
 
         common = {'STATUS': status, 'ERROR': error}
