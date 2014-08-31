@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-
 __author__ = 'xurxo'
 
 from django.shortcuts import render
@@ -12,6 +11,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from core.pusher_extensions import ChPusher
+from core.models import AndroidDevice
 
 
 @login_required
@@ -339,7 +339,14 @@ def chat(request, chat_url):
                                        "server_time": message.datetime.astimezone()},
                                       cls=DjangoJSONEncoder)
 
-            chat.send_message(sender_profile=profile, json_message=json_message)
+            try:
+                chat.send_message(sender_profile=profile, json_message=json_message)
+            except AndroidDevice.DoesNotExist:
+                return HttpResponse("Not delivered")
+
+            # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",
+            #                           "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
+            # ChChat.confirm_messages(json_chats, profile)
 
             return HttpResponse("Server Ok")
 
@@ -481,8 +488,8 @@ def get_messages(request, chat_name, init, interval):
                 messages_row.append({"username": message.profile.username,
                                      "public_name": message.profile.public_name,
                                      "message": message.content,
-                                     "timestamp": message.date.astimezone(),
-                                     "server_time": message.date.astimezone(),
+                                     "timestamp": message.client_datetime,
+                                     "server_time": message.datetime.astimezone(),
                                      "id": message.id
                 })
             return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))

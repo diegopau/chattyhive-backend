@@ -145,20 +145,35 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
-SOUTH_MIGRATION_MODULES = {
-    'cities_light': 'cities_light.south_migrations',
-}
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
+
+    ### ======================================================== ###
+    ###                          GCM                             ###
+    ### ======================================================== ###
 
 GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
+
+    ### ======================================================== ###
+    ###                         Pusher                           ###
+    ### ======================================================== ###
 
 PUSHER_APP_KEY = "55129"
 PUSHER_KEY = 'f073ebb6f5d1b918e59e'
 PUSHER_SECRET = '360b346d88ee47d4c230'
 
+    ### ======================================================== ###
+    ###                      Cities Light                        ###
+    ### ======================================================== ###
+
 CITIES_LIGHT_CITY_SOURCES = ['http://download.geonames.org/export/dump/cities5000.zip']
 
+    ### ======================================================== ###
+    ###                         SOUTH                            ###
+    ### ======================================================== ###
 
-SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
+SOUTH_MIGRATION_MODULES = {
+    'cities_light': 'cities_light.south_migrations',
+}
 
     ### ======================================================== ###
     ###                       Social Auth                        ###

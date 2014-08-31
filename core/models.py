@@ -441,7 +441,7 @@ class ChChat(models.Model):
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
         message.datetime = timezone.now()
-        message.client_datetime = timestamp
+        # message.client_datetime = timestamp
         message.content_type = content_type
         message.content = content
         message.save()
@@ -459,6 +459,23 @@ class ChChat(models.Model):
                                           encoder=DjangoJSONEncoder)
             event = 'msg'
             pusher_object[self.channel_unicode].trigger(event, json.loads(json_message))
+
+    @staticmethod
+    def confirm_messages(json_chats_array, profile):
+        for chat in json.loads(json_chats_array):
+            try:
+                chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
+                ChSubscription.objects.get(chat=chat_object, profile=profile)
+            except ChChat.DoesNotExist:
+                raise
+            except ChSubscription.DoesNotExist:
+                raise UnauthorizedException("no autorizado")
+            id_list = chat['MESSAGE_ID_LIST']
+            try:
+                ChMessage.objects.filter(_count__in=id_list).select_for_update().update(received=True)
+            except ChMessage.DoesNotExist:
+                raise
+
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
@@ -486,6 +503,7 @@ class ChMessage(models.Model):
     content_type = models.CharField(max_length=20, choices=CONTENTS)
     datetime = models.DateTimeField()
     client_datetime = models.CharField(max_length=30)
+    received = models.BooleanField(default=False)
 
     # Content of the message
     content = models.TextField(max_length=2048)
@@ -496,7 +514,7 @@ class ChMessage(models.Model):
 
     @id.setter
     def id(self, id):
-        self.id = id
+        self._count = id
 
     def save(self, *args, **kwargs):
         self._count = self.chat.count
@@ -562,3 +580,12 @@ def get_or_new_tag(stag):
         tag = TagModel(tag=stag)
         tag.save()
     return tag
+
+### ==========================================================
+###                          METHODS
+### ==========================================================
+
+
+class UnauthorizedException(Exception):
+    def __init__(self, message):
+        self.message = message
