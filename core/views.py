@@ -9,6 +9,9 @@ import pusher
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from core.pusher_extensions import ChPusher
+from core.models import AndroidDevice
 
 
 @login_required
@@ -200,22 +203,11 @@ def hives(request):
     if request.method == 'GET':
         # Getting needed info
         user = request.user
-        profile = ChProfile.objects.get(user=user)
+        profile = user.profile
 
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChSubscription.objects.filter(profile=profile)
-            hives = []
-            for subscription in subscriptions:
-                # Excluding duplicated hives
-                hive_appeared = False
-                for hive in hives:
-                    if subscription.hive == hive:
-                        hive_appeared = True
-                if not hive_appeared:
-                    # Adding the hive to the home view
-                    if subscription.hive:
-                        hives.append(subscription.hive)
+            hives = profile.hives
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
         return render(request, "core/home_hives.html", {
@@ -227,19 +219,10 @@ def hives(request):
 def chats(request):
     if request.method == 'GET':
         user = request.user
-        profile = ChProfile.objects.get(user=user)
+        profile = user.profile
 
         try:
-            subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
-            chats = []
-            for subscription in subscriptions:
-                if subscription.chat:
-                    subscribed = []
-                    if subscription.chat.type == 'private':
-                        subscribed = ChSubscription.objects.select_related().filter(chat=subscription.chat).exclude(
-                            profile=profile).get().profile.public_name
-                    chats.append({"chat": subscription.chat, "subscribed": subscribed})
-
+            chats = profile.chats
         except ChSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
 
@@ -339,30 +322,32 @@ def chat(request, chat_url):
 
     # GET vs POST
     if request.method == 'POST':
-
         try:
-            ChSubscription.objects.get(chat=chat, profile=profile)
+            ChSubscription.objects.get(profile=profile, chat=chat)
             msg = request.POST.get("message")
             timestamp = request.POST.get("timestamp")
-            p = pusher.Pusher(
-                app_id=app_key,
-                key=key,
-                secret=secret,
-                encoder=DjangoJSONEncoder,
-            )
-            message = ChMessage(profile=profile, chat=chat)
-            message.date = timezone.now()
-            message.content_type = 'text'
-            message.content = msg
+            message = chat.new_message(profile=profile,
+                                       content_type='text',
+                                       content=msg,
+                                       timestamp=timestamp)
+            chat.save()
 
-            p[chat.channel_unicode].trigger(event, {"username": user.username,
-                                                    "public_name": profile.public_name,
-                                                    "message": msg,
-                                                    "timestamp": timestamp,
-                                                    "server_time": message.date.astimezone(),
-            })
+            json_message = json.dumps({"username": user.username,
+                                       "public_name": profile.public_name,
+                                       "message": msg,
+                                       "timestamp": timestamp,
+                                       "server_time": message.datetime.astimezone()},
+                                      cls=DjangoJSONEncoder)
 
-            message.save()
+            try:
+                chat.send_message(sender_profile=profile, json_message=json_message)
+            except AndroidDevice.DoesNotExist:
+                return HttpResponse("Not delivered")
+
+            # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",
+            #                           "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
+            # ChChat.confirm_messages(json_chats, profile)
+
             return HttpResponse("Server Ok")
 
         except ChSubscription.DoesNotExist:
@@ -493,9 +478,9 @@ def get_messages(request, chat_name, init, interval):
         try:
             ChSubscription.objects.get(profile=profile, hive=hive)
             if init == 'last':
-                messages = ChMessage.objects.filter(chat=chat).order_by('-id')[0:int(interval)]
+                messages = ChMessage.objects.filter(chat=chat).order_by('-_id')[0:int(interval)]
             elif init.isnumeric():
-                messages = ChMessage.objects.filter(chat=chat, id__lte=int(init)).order_by('-id')[0:int(interval)]
+                messages = ChMessage.objects.filter(chat=chat, _id__lte=int(init)).order_by('-_id')[0:int(interval)]
             else:
                 raise Http404
             messages_row = []
@@ -503,8 +488,8 @@ def get_messages(request, chat_name, init, interval):
                 messages_row.append({"username": message.profile.username,
                                      "public_name": message.profile.public_name,
                                      "message": message.content,
-                                     "timestamp": message.date.astimezone(),
-                                     "server_time": message.date.astimezone(),
+                                     "timestamp": message.client_datetime,
+                                     "server_time": message.datetime.astimezone(),
                                      "id": message.id
                 })
             return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
@@ -512,6 +497,35 @@ def get_messages(request, chat_name, init, interval):
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
+    else:
+        raise Http404
+
+
+@csrf_exempt
+def pusher_webhooks(request):
+    app_key = "55129"
+    key = 'f073ebb6f5d1b918e59e'
+    secret = '360b346d88ee47d4c230'
+
+    # GET vs POST
+    if request.method == 'POST':
+        p = ChPusher(
+            app_id=app_key,
+            key=key,
+            secret=secret,
+            encoder=DjangoJSONEncoder,
+        )
+
+        webhook = p.webhook(request)
+        if webhook.is_valid():
+            for event in webhook.events():
+                print(event)
+                if event == 'member_added':
+                    if event['channel'] == 'presence' + event['user_id']:
+                        print('self')
+
+        else:
+            raise Http404
     else:
         raise Http404
 

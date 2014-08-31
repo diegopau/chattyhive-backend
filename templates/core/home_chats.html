@@ -20,10 +20,10 @@
     <br />
     {% for chat in chats %}
       <li>
-        {% if chat.chat.type == 'private' %}
-            <a href="/chat/{{ chat.chat.channel_unicode }}">chat with {{ chat.subscribed }} in {{ chat.chat.hive }}</a>
+        {% if chat.type == 'private' %}
+            <a href="/chat/{{ chat.channel_unicode }}">private chat in {{ chat.hive }}</a>
         {% else %}
-            <a href="/chat/{{ chat.chat.channel_unicode }}">{{ chat.chat.hive }}</a>
+            <a href="/chat/{{ chat.channel_unicode }}">{{ chat.hive }}</a>
         {% endif %}
       </li>
     {% endfor %}

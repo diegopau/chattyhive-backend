@@ -1,4 +1,9 @@
 # -*- encoding: utf-8 -*-
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from CH import settings
+from core.google_ccs import send_gcm_message
+import pusher
 
 __author__ = 'lorenzo'
 
@@ -104,11 +109,47 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     def profile(self):
         return ChProfile.objects.get(user=self)
 
+    @property
+    def device(self):
+        return AndroidDevice.objects.get(user=self)
+
     def __str__(self):
         try:
             return '@' + ChProfile.objects.get(user=self).public_name + '[' + self.username + ']'
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
+
+
+class AndroidDevice(models.Model):
+    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
+    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
+    reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
+    active = models.BooleanField(default=True)
+
+    def send_message(self, msg, collapse_key="message"):
+        json_response = send_gcm_message(regs_id=[self.reg_id],
+                                         data={'msg': msg},
+                                         collapse_key=collapse_key)
+
+        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
+            return 'Ok'
+        else:
+            for result in json_response['results']:
+                if result['message_id'] and result['registration_id']:
+                    self.reg_id = result['registration_id']
+                    return 'Reg Updated'
+                else:
+                    if result['error'] == 'Unavailable':
+                        return 'Not sent'
+                    elif result['error'] == 'NotRegistered':
+                        self.active = False
+                        return 'Unregistered'
+                    else:
+                        self.active = False
+                        return 'Unknown'
+
+    def __unicode__(self):
+        return self.dev_id
 
 
 class LanguageModel(models.Model):
@@ -374,6 +415,7 @@ class ChChat(models.Model):
     )
 
     # Relation between chat and hive
+    count = models.PositiveIntegerField(blank=False, null=False, default=0)
     type = models.CharField(max_length=32, choices=TYPE, default='private')
     hive = models.ForeignKey(ChHive, related_name="hive", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
@@ -395,6 +437,46 @@ class ChChat(models.Model):
         """
         self.channel_unicode = 'presence-' + channel_unicode
 
+    def new_message(self, profile, content_type, content, timestamp):
+        self.count += 1
+        message = ChMessage(profile=profile, chat=self)
+        message.datetime = timezone.now()
+        # message.client_datetime = timestamp
+        message.content_type = content_type
+        message.content = content
+        message.save()
+        return message
+
+    def send_message(self, sender_profile, json_message):
+        if self.type == 'private':
+            subscription = ChSubscription.objects.filter(chat=self).exclude(profile=sender_profile).select_related()[0]
+            device = subscription.profile.user.device
+            device.send_message(msg=json_message, collapse_key='')
+        else:
+            pusher_object = pusher.Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
+                                          key=getattr(settings, 'PUSHER_KEY', None),
+                                          secret=getattr(settings, 'PUSHER_SECRET', None),
+                                          encoder=DjangoJSONEncoder)
+            event = 'msg'
+            pusher_object[self.channel_unicode].trigger(event, json.loads(json_message))
+
+    @staticmethod
+    def confirm_messages(json_chats_array, profile):
+        for chat in json.loads(json_chats_array):
+            try:
+                chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
+                ChSubscription.objects.get(chat=chat_object, profile=profile)
+            except ChChat.DoesNotExist:
+                raise
+            except ChSubscription.DoesNotExist:
+                raise UnauthorizedException("no autorizado")
+            id_list = chat['MESSAGE_ID_LIST']
+            try:
+                ChMessage.objects.filter(_count__in=id_list).select_for_update().update(received=True)
+            except ChMessage.DoesNotExist:
+                raise
+
+
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
 
@@ -410,16 +492,33 @@ class ChMessage(models.Model):
         ('file', 'File')
     )
 
+    _id = models.AutoField(primary_key=True)
+    _count = models.PositiveIntegerField(null=False, blank=False)
+
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
     chat = models.ForeignKey(ChChat, null=True, blank=True)
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
-    date = models.DateTimeField()
+    datetime = models.DateTimeField()
+    client_datetime = models.CharField(max_length=30)
+    received = models.BooleanField(default=False)
 
     # Content of the message
     content = models.TextField(max_length=2048)
+
+    @property
+    def id(self):
+        return self._count
+
+    @id.setter
+    def id(self, id):
+        self._count = id
+
+    def save(self, *args, **kwargs):
+        self._count = self.chat.count
+        super(ChMessage, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.profile.public_name + " said: " + self.content
@@ -481,3 +580,12 @@ def get_or_new_tag(stag):
         tag = TagModel(tag=stag)
         tag.save()
     return tag
+
+### ==========================================================
+###                          METHODS
+### ==========================================================
+
+
+class UnauthorizedException(Exception):
+    def __init__(self, message):
+        self.message = message
