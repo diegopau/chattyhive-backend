@@ -125,6 +125,7 @@ class AndroidDevice(models.Model):
     dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(default=timezone.now())
 
     def send_message(self, msg, collapse_key="message"):
         json_response = send_gcm_message(regs_id=[self.reg_id],
@@ -169,6 +170,7 @@ class TagModel(models.Model):
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
+    last_login = models.DateTimeField(default=timezone.now())
 
     # Here are the choices definitions
     SEX = (
@@ -370,9 +372,11 @@ class ChHive(models.Model):
     name_url = models.CharField(max_length=540, unique=True)
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
+    _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
+    featured = models.BooleanField(default=False)
 
     def set_tags(self, tags_array):
         for stag in tags_array:
@@ -387,6 +391,29 @@ class ChHive(models.Model):
         """
         return self.tags.all
 
+    def get_users_by_country(self, country):
+        """
+        :return: profiles of users joining the hive in the country specified
+        """
+        return self.users.filter(country=country)
+
+    def get_users_recently_online(self):
+        """
+        :return: profiles of users joining the hive in the country specified
+        """
+        return self.users.order_by('-last_login')
+
+    def get_users_recommended(self, profile):
+        """
+        :return: profiles of users joining the hive in the country specified
+        """
+        subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self, profile__country=profile.country)
+        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-subscription__creation_date')
+        subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self).exclude(profile__country=profile.country)
+        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-subscription__creation_date')
+        users_list = users_list_near | users_list_far
+        return users_list
+
     def toJSON(self):
         return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
                % (self.name, self.name_url, self.description, self.category, self.creation_date)
@@ -397,11 +424,15 @@ class ChHive(models.Model):
         :return: profiles of users joining the hive
         """
         Subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self)
-        users_list = []
-        for Subscription in Subscriptions:
-            users_list.append(Subscription.profile)
+        users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
         return users_list
 
+    @property
+    def languages(self):
+        """
+        :return: profile's languages QuerySet
+        """
+        return self._languages.all
 
     def __str__(self):
         return self.name
@@ -531,9 +562,10 @@ class ChAnswer(ChMessage):
 
 class ChSubscription(models.Model):
     # Subscription object which relates Profiles with Hives/Chats
-    profile = models.ForeignKey(ChProfile, unique=False)
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscription')
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscription')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     def __str__(self):
         return self.profile.first_name + " links with"
@@ -550,7 +582,7 @@ class TagForm(forms.Form):
 class CreateHiveForm(forms.ModelForm):
     class Meta:
         model = ChHive
-        fields = ('name', 'category', 'description')
+        fields = ('name', 'category', '_languages', 'description')
 
 
 class MsgForm(forms.Form):

@@ -442,9 +442,10 @@ def get_hive_users(request, hive_url, init, interval):
     """
     if request.method == 'GET':
         hive = ChHive.objects.get(name_url=hive_url)
+        profile = request.user.profile
         try:
             profiles = []
-            for hive_user in hive.users:
+            for hive_user in hive.get_users_recommended(profile):
                 profiles.append({"public_name": hive_user.public_name})
             return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
 
