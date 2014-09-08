@@ -51,6 +51,8 @@ def chat(request):
         secret = '360b346d88ee47d4c230'
         channel = 'public_test'
         event = 'msg'
+        status = "OK"
+        error = None
 
         # GET vs POST
         if request.method == 'POST':
@@ -58,34 +60,46 @@ def chat(request):
             aux = request.body
             data = json.loads(aux.decode('utf-8'))
             data_message = data["MESSAGE"]
-            id_data = data["ID"]
-            profile_data = data["PROFILE"]
-            server_timestamp_data = data["SERVER_TIMESTAMP"]
-            channel_unicode_data = data["CHANNEL_UNICODE"]
-            confirmed_data = data["CONFIRMED"]
-            content_data = data["CONTENT"]
-            timestamp_data = data["TIMESTAMP"]
+            id_data = data_message["ID"]
+            profile_data = data_message["PROFILE"]
+            server_timestamp_data = data_message["SERVER_TIMESTAMP"]
+            channel_unicode_data = data_message["CHANNEL_UNICODE"]
+            confirmed_data = data_message["CONFIRMED"]
+            content_data = data_message["CONTENT"]
+            timestamp_data = data_message["TIMESTAMP"]
 
-            msg = content_data['CONTENT']
-            msg_type = content_data['CONTENT_TYPE']
+            # msg = content_data['CONTENT']
+            # msg_type = content_data['CONTENT_TYPE']
 
-            msg = request.POST.get("message")
-            timestamp = request.POST.get("timestamp")
+            msg1 = {"ID": id_data, "PROFILE": profile_data, "SERVER_TIMESTAMP": server_timestamp_data,
+                    "CHANNEL_UNICODE": channel_unicode_data, "CONFIRMED": confirmed_data, "CONTENT": content_data,
+                    "TIMESTAMP": timestamp_data}
+            msg = {"MESSAGE": msg1}
+
+            channel = channel_unicode_data
+
+            # msg = request.POST.get("message")
+            # timestamp = request.POST.get("timestamp")
             p = pusher.Pusher(
                 app_id=app_key,
                 key=key,
                 secret=secret
             )
-            p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
+            # p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp_data})
+            p[channel].trigger(event, {msg})
             request.session.set_expiry(300)
-            status = "RECEIVED"
-            return HttpResponse({"status": status})
+            common = {'STATUS': status, 'ERROR': error}
+            return HttpResponse({"COMMON": common})
         else:
             status = "ERROR"
-            return HttpResponse({"status": status})
+            error = "Expired"
+            common = {'STATUS': status, 'ERROR': error}
+            return HttpResponse({"COMMON": common})
     else:
-        status = "EXPIRED"
-        return HttpResponse({"status": status})
+        status = "ERROR"
+        error = "Expired"
+        common = {'STATUS': status, 'ERROR': error}
+        return HttpResponse({"COMMON": common})
 
 
 # ================================== #

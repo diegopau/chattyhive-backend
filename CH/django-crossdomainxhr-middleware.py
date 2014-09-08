@@ -64,7 +64,15 @@ class XsSharing(object):
             print("RESPONSE-HAS-ACCESS-CONTROL-ALLOW-ORIGIN")
             return response
 
-        print("RESPONSE-1")
+        if request.method == 'POST':
+            if request.META['HTTP_ORIGIN']:
+                print("RESPONSE-1")
+                response['Access-Control-Allow-Credentials'] = 'true'
+            else:
+                print("RESPONSE-2")
+        else:
+            print("RESPONSE-3")
+
         # response['Access-Control-Allow-Credentials'] = 'true'
 
         # if request.method == 'POST':
