@@ -70,6 +70,65 @@ def create_hive(request):
 
 
 @login_required
+def create_community(request):
+    """
+    :param request:
+    :return: Web page with the form for creating a hive
+    """
+    if request.method == 'POST':
+        formCommunity = CreateHiveForm(request.POST, prefix='formHive')
+        formCommunityTags = TagForm(request.POST, prefix='formTags')
+        if formCommunity.is_valid() and formCommunityTags.is_valid():
+            user = request.user
+            profile = ChProfile.objects.get(user=user)
+
+            transaction.set_autocommit(False)
+
+            hive_name = formCommunity.cleaned_data['name']
+            hive = formCommunity.save(commit=False)
+            hive.creator = profile
+            hive.name_url = hive_name.replace(" ", "_")
+            hive.name_url = replace_unicode(hive.name_url)
+
+            try:
+                ChHive.objects.get(name_url=hive.name_url)
+                return HttpResponse("This hive already exists")
+            except ChHive.DoesNotExist:
+                # hive.name_url = replace_unicode(hive_name)
+                hive.save()
+
+            # Adding tags
+            tagsText = formCommunityTags.cleaned_data['tags']
+            tagsArray = tagsText.split(" ")
+            hive.set_tags(tagsArray)
+            hive.save()
+
+            # Creating community from hive
+            community = ChCommunity(hive=hive, admin=profile)
+            community.save()
+
+            # Creating subscription
+            subscription = ChSubscription(hive=hive, profile=profile)
+            subscription.save()
+
+            # Creating public chat of hive
+            community.new_public_chat(name=hive.name, description=hive.description)
+
+            # return HttpResponseRedirect("/create_hive/create/")
+            transaction.set_autocommit(True)
+            return HttpResponseRedirect("/home/")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        formHive = CreateHiveForm(prefix="formHive")
+        formTags = TagForm(prefix="formTags")
+        return render(request, "core/create_community.html", {
+            'formHive': formHive,
+            'formTags': formTags
+        })
+
+
+@login_required
 def create_chat(request, hive_url, public_name):
     """
     :param request:

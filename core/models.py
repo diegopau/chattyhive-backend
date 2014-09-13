@@ -1,6 +1,8 @@
 # -*- encoding: utf-8 -*-
+from copy import deepcopy
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from django.middleware import transaction
 from CH import settings
 from core.google_ccs import send_gcm_message
 import pusher
@@ -8,7 +10,7 @@ import pusher
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models
+from django.db import models, IntegrityError
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
@@ -438,6 +440,30 @@ class ChHive(models.Model):
         return self.name
 
 
+class ChCommunity(models.Model):
+    hive = models.OneToOneField(ChHive, related_name='community')
+    admin = models.ForeignKey(ChProfile, related_name='administrates')
+    moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
+    # todo: administrative info?
+
+    def new_public_chat(self, name, description):
+        chat = ChChat(hive=self.hive, type='public')
+        chat.channel = replace_unicode(name)
+        chat.save()
+        chat_extension = ChCommunityChat(chat=chat, name=name, description=description)
+        chat_extension.save()
+        subscriptions = ChSubscription.objects.filter(hive=self.hive)
+        insert_list = []
+        for subscription in subscriptions:
+            new = deepcopy(subscription)
+            new.id = None
+            new.chat = self
+            new.hive = ""
+            new.save()
+
+        # transaction.commit()
+
+
 class ChChat(models.Model):
     # Chat TYPE definitions
     TYPE = (
@@ -507,9 +533,25 @@ class ChChat(models.Model):
             except ChMessage.DoesNotExist:
                 raise
 
-
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
+
+
+class ChCommunityChat(models.Model):
+    chat = models.OneToOneField(ChChat, related_name='community_extra_info')
+    name = models.CharField(max_length=60)  # todo unique for each community, basic regex
+    photo = models.CharField(max_length=200)
+    description = models.TextField(max_length=2048)
+
+    def save(self, *args, **kwargs):
+        try:
+            public_chats = ChChat.objects.filter(hive=self.chat.hive, type='public').values('id')
+            ChCommunityChat.objects.get(chat__in=public_chats)
+            raise IntegrityError("ChChat already exists")
+        except ChCommunityChat.DoesNotExist:
+            super(ChCommunityChat, self).save(*args, **kwargs)
+        except ChChat.DoesNotExist:
+            raise IntegrityError("No chat to associate")
 
 
 class ChMessage(models.Model):
@@ -614,7 +656,7 @@ def get_or_new_tag(stag):
     return tag
 
 ### ==========================================================
-###                          METHODS
+###                        EXCEPTIONS
 ### ==========================================================
 
 
