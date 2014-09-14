@@ -27,7 +27,7 @@ DATABASES = {
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = []
 
-# CORS configuration for the widget (and for other front-ends and external servers in the future) (see https://github.com/ottoyiu/django-cors-headers)
+# CORS configuration for the widget (and for other front-ends and external servers in the future)  (see https://github.com/ottoyiu/django-cors-headers)
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = ()
