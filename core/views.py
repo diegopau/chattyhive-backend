@@ -89,6 +89,7 @@ def create_community(request):
             hive.creator = profile
             hive.name_url = hive_name.replace(" ", "_")
             hive.name_url = replace_unicode(hive.name_url)
+            hive.type = 'Community'
 
             try:
                 ChHive.objects.get(name_url=hive.name_url)
@@ -171,6 +172,23 @@ def create_chat(request, hive_url, public_name):
     else:
         raise Http404
 
+@login_required
+def create_public_chat(request, hive_url):
+    """
+    :param request:
+    :return: Web page with the form for creating a new public chat
+    """
+    if request.method == 'POST':
+        form = CreateCommunityChatForm(request.POST)
+        if form.is_valid():
+            print("do")
+        else:
+            return HttpResponse("ERROR, invalid form")
+    else:
+        form = CreateCommunityChatForm
+        return render(request, "core/create_public_chat.html", {
+            'form': form
+        })
 
 @login_required
 def join(request, hive_url):
@@ -478,12 +496,19 @@ def hive_description(request, hive_url):
         try:
             ChSubscription.objects.get(hive=hive, profile=profile)
             subscribed = True
+            ChCommunity.objects.get(hive=hive, admin=profile)
+            owner = True
         except ChSubscription.DoesNotExist:
             subscribed = False
+            owner = False
+        except ChCommunity.DoesNotExist:
+            subscribed = True
+            owner = False
 
         return render(request, "core/hive_description.html", {
             'hive': hive,
             'subscribed': subscribed,
+            'owner': owner,
         })
  
     else:

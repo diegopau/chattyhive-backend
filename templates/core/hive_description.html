@@ -25,6 +25,9 @@
              {{ tag }},
         {% endfor %}
     </div>
+    {% if owner == True %}
+        <div><a href="/leave/{{ hive.name_url }}">leave</a></div>
+    {% endif %}
 
 </body>
 </html>

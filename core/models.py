@@ -369,6 +369,11 @@ class ChCategory(models.Model):
 
 
 class ChHive(models.Model):
+    TYPES = (
+        ('Hive', 'Hive'),
+        ('Community', 'Community'),
+    )
+
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
     name_url = models.CharField(max_length=540, unique=True)
@@ -378,7 +383,9 @@ class ChHive(models.Model):
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
+
     featured = models.BooleanField(default=False)
+    type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
     def set_tags(self, tags_array):
         for stag in tags_array:
@@ -625,6 +632,12 @@ class CreateHiveForm(forms.ModelForm):
     class Meta:
         model = ChHive
         fields = ('name', 'category', '_languages', 'description')
+
+
+class CreateCommunityChatForm(forms.ModelForm):
+    class Meta:
+        model = ChCommunityChat
+        fields = ('name', 'description')
 
 
 class MsgForm(forms.Form):

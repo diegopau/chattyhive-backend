@@ -24,6 +24,8 @@ urlpatterns = patterns('',
     url(r'^create_community/$', 'core.views.create_community', name='create_community'),
     url(r'^create_chat/(?P<hive_url>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
         'core.views.create_chat', name='create_chat'),
+    url(r'^create_public_chat/(?P<hive_url>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
+        'core.views.create_public_chat', name='create_public_chat'),
 
     url(r'^home/$', 'core.views.hives', name='home'),
     url(r'^home/hives/$', 'core.views.hives', name='hives'),
