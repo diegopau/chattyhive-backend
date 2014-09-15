@@ -51,7 +51,7 @@ CORS_ALLOW_HEADERS = (
 )
 CORS_EXPOSE_HEADERS = ()
 CORS_PREFLIGHT_MAX_AGE = 86400
-CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_CREDENTIALS = True
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
