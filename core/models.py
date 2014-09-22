@@ -298,26 +298,26 @@ class ChProfile(models.Model):
     def hives(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChSubscription.objects.filter(profile=self, hive__isnull=False)
+            subscriptions = ChHiveSubscription.objects.filter(profile=self)
             hives = []
             for subscription in subscriptions:
                 if subscription.hive:
                     hives.append(subscription.hive)
             return hives
-        except ChSubscription.DoesNotExist:
+        except ChHiveSubscription.DoesNotExist:
             return []
 
     @property
     def chats(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChSubscription.objects.select_related().filter(profile=self)
+            subscriptions = ChChatSubscription.objects.select_related().filter(profile=self)
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
                     chats.append(subscription.chat)
             return chats
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             return []
 
     def toJSON(self):
@@ -416,10 +416,10 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive in the country specified
         """
-        subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self, profile__country=profile.country)
-        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-subscription__creation_date')
-        subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self).exclude(profile__country=profile.country)
-        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, profile__country=profile.country)
+        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-hive_subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self).exclude(profile__country=profile.country)
+        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
 
@@ -432,7 +432,7 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive
         """
-        Subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self)
+        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self)
         users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
         return users_list
 
@@ -459,15 +459,10 @@ class ChCommunity(models.Model):
         chat.save()
         chat_extension = ChCommunityChat(chat=chat, name=name, description=description)
         chat_extension.save()
-        subscriptions = ChSubscription.objects.filter(hive=self.hive)
-        insert_list = []
+        subscriptions = ChHiveSubscription.objects.filter(hive=self.hive)
         for subscription in subscriptions:
-            new = deepcopy(subscription)
-            new.id = None
-            new.chat = self
-            new.hive = ""
+            new = ChChatSubscription(chat=chat, profile=subscription.profile)
             new.save()
-
         # transaction.commit()
 
 
@@ -513,7 +508,7 @@ class ChChat(models.Model):
 
     def send_message(self, sender_profile, json_message):
         if self.type == 'private':
-            subscription = ChSubscription.objects.filter(chat=self).exclude(profile=sender_profile).select_related()[0]
+            subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=sender_profile).select_related()[0]
             device = subscription.profile.user.device
             device.send_message(msg=json_message, collapse_key='')
         else:
@@ -529,16 +524,28 @@ class ChChat(models.Model):
         for chat in json.loads(json_chats_array):
             try:
                 chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
-                ChSubscription.objects.get(chat=chat_object, profile=profile)
+                ChChatSubscription.objects.get(chat=chat_object, profile=profile)
             except ChChat.DoesNotExist:
                 raise
-            except ChSubscription.DoesNotExist:
+            except ChChatSubscription.DoesNotExist:
                 raise UnauthorizedException("no autorizado")
             id_list = chat['MESSAGE_ID_LIST']
             try:
                 ChMessage.objects.filter(_count__in=id_list).select_for_update().update(received=True)
             except ChMessage.DoesNotExist:
                 raise
+
+    def save(self, *args, **kwargs):
+
+        hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+        while True:
+            try:
+                # if the email is already used
+                ChChat.objects.get(channel_unicode=hex_channel_unicode)
+                hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+            except ChChat.DoesNotExist:
+                break
+        super(ChChat, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
@@ -551,14 +558,12 @@ class ChCommunityChat(models.Model):
     description = models.TextField(max_length=2048)
 
     def save(self, *args, **kwargs):
-        try:
-            public_chats = ChChat.objects.filter(hive=self.chat.hive, type='public').values('id')
-            ChCommunityChat.objects.get(chat__in=public_chats)
+        extensions = ChCommunityChat.objects.filter(name=self.name).values('chat')
+        chats = ChChat.objects.filter(id__in=extensions, hive=self.chat.hive)
+        if chats:
             raise IntegrityError("ChChat already exists")
-        except ChCommunityChat.DoesNotExist:
+        else:
             super(ChCommunityChat, self).save(*args, **kwargs)
-        except ChChat.DoesNotExist:
-            raise IntegrityError("No chat to associate")
 
 
 class ChMessage(models.Model):
@@ -609,11 +614,20 @@ class ChAnswer(ChMessage):
     message = models.ForeignKey(ChMessage, related_name='response')
 
 
-class ChSubscription(models.Model):
+class ChChatSubscription(models.Model):
     # Subscription object which relates Profiles with Hives/Chats
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='subscription')
-    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscription')
-    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscription')
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    def __str__(self):
+        return self.profile.first_name + " links with"
+
+
+class ChHiveSubscription(models.Model):
+    # Subscription object which relates Profiles with Hives/Chats
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     def __str__(self):

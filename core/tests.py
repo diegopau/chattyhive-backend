@@ -2,7 +2,7 @@
 __author__ = 'xurxo'
 
 from django.test import TestCase
-from core.models import ChUser, ChUserManager, ChProfile, ChHive, ChChat, ChSubscription
+from core.models import ChUser, ChUserManager, ChProfile, ChHive, ChChat, ChChatSubscription
 
 
 class UserTestCase(TestCase):

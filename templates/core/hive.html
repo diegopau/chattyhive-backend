@@ -15,7 +15,9 @@
     <br />
     <div>
         :{{ hive.name }} -- <a href="/hive_description/{{ hive.name_url }}">Description</a> <br />
-        <a href="/chat/{{ chat.channel_unicode }}"> public chat</a>
+        {% for chat in chats %}
+            <a href="/chat/{{ chat.channel_unicode }}"> public chat</a><br />
+        {% endfor %}
     </div>
     <br />
     <button type="button" id="btn_up" style="text-align: right">Up</button>

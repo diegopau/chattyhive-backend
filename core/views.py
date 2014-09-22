@@ -54,8 +54,11 @@ def create_hive(request):
             chat.save()
 
             # Creating subscription
-            subscription = ChSubscription(chat=chat, hive=hive, profile=profile)
-            subscription.save()
+            chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+            chat_subscription.save()
+            hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
+            hive_subscription.save()
+
             # return HttpResponseRedirect("/create_hive/create/")
             return HttpResponseRedirect("/home/")
         else:
@@ -82,7 +85,7 @@ def create_community(request):
             user = request.user
             profile = ChProfile.objects.get(user=user)
 
-            transaction.set_autocommit(False)
+            # transaction.set_autocommit(False)
 
             hive_name = formCommunity.cleaned_data['name']
             hive = formCommunity.save(commit=False)
@@ -109,14 +112,14 @@ def create_community(request):
             community.save()
 
             # Creating subscription
-            subscription = ChSubscription(hive=hive, profile=profile)
+            subscription = ChHiveSubscription(hive=hive, profile=profile)
             subscription.save()
 
             # Creating public chat of hive
             community.new_public_chat(name=hive.name, description=hive.description)
 
             # return HttpResponseRedirect("/create_hive/create/")
-            transaction.set_autocommit(True)
+            # transaction.set_autocommit(True)
             return HttpResponseRedirect("/home/")
         else:
             return HttpResponse("ERROR, invalid form")
@@ -143,8 +146,8 @@ def create_chat(request, hive_url, public_name):
         if profile == invited:
             raise Http404
 
-        profile_subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
-        invited_subscription = ChSubscription.objects.none()
+        profile_subscriptions = ChChatSubscription.objects.select_related().filter(profile=profile)
+        invited_subscription = ChChatSubscription.objects.none()
         if profile_subscriptions:
             for profile_subscription in profile_subscriptions:
                 try:
@@ -158,12 +161,12 @@ def create_chat(request, hive_url, public_name):
             chat = ChChat()
             chat.hive = hive
             chat.type = 'private'
-            chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url)
+            # chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url)
             chat.save()
 
-            subscription1 = ChSubscription(chat=chat, profile=profile)
+            subscription1 = ChChatSubscription(chat=chat, profile=profile)
             subscription1.save()
-            subscription2 = ChSubscription(chat=chat, profile=invited)
+            subscription2 = ChChatSubscription(chat=chat, profile=invited)
             subscription2.save()
 
             return HttpResponseRedirect("/chat/" + chat.channel_unicode)
@@ -171,6 +174,7 @@ def create_chat(request, hive_url, public_name):
             return HttpResponseRedirect("/chat/" + invited_subscription.chat.channel_unicode)
     else:
         raise Http404
+
 
 @login_required
 def create_public_chat(request, hive_url):
@@ -181,14 +185,20 @@ def create_public_chat(request, hive_url):
     if request.method == 'POST':
         form = CreateCommunityChatForm(request.POST)
         if form.is_valid():
-            print("do")
+            hive = ChHive.objects.get(name_url=hive_url)
+            community = ChCommunity.objects.get(hive=hive)
+            community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'])
+            return HttpResponseRedirect("/home/")
         else:
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateCommunityChatForm
+        hive = ChHive.objects.get(name_url=hive_url)
         return render(request, "core/create_public_chat.html", {
-            'form': form
+            'form': form,
+            'hive': hive
         })
+
 
 @login_required
 def join(request, hive_url):
@@ -206,7 +216,7 @@ def join(request, hive_url):
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
-            subscriptions = ChSubscription.objects.filter(profile=profile)
+            subscriptions = ChHiveSubscription.objects.filter(profile=profile)
             hives = []
             for subscription in subscriptions:
                 # Excluding duplicated hives
@@ -217,7 +227,7 @@ def join(request, hive_url):
                 if not hive_appeared:
                     # Adding the hive to the hives array (only hives subscribed)
                     hives.append(subscription.hive)
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
 
         hive_appeared = False
@@ -227,9 +237,14 @@ def join(request, hive_url):
 
         if not hive_appeared:
 
-        # Creating subscription
-            subscription = ChSubscription(chat=public_chat, hive=hive_joining, profile=profile)
-            subscription.save()
+            # Creating subscription
+            hive_subscription = ChHiveSubscription(hive=hive_joining, profile=profile)
+            hive_subscription.save()
+            chats = ChChat.objects.get(hive=hive_joining, type='public')
+            for chat in chats:
+                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+                chat_subscription.save()
+
             return HttpResponseRedirect("/home/")
 
         else:
@@ -254,8 +269,10 @@ def leave(request, hive_url):
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
-            subscriptions = ChSubscription.objects.select_related().filter(profile=profile)
-            for subscription in subscriptions:
+            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=hive_leaving)
+            hive_subscription.delete()
+            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=hive_leaving)
+            for subscription in chat_subscriptions:
                 chat = subscription.chat
                 if chat.hive == hive_leaving:
                     if chat.type == 'private':
@@ -263,7 +280,7 @@ def leave(request, hive_url):
                     else:
                         subscription.delete()
 
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
 
         return HttpResponseRedirect("/home/")
@@ -285,7 +302,7 @@ def hives(request):
         # Trying to get all the subscriptions of this profile
         try:
             hives = profile.hives
-        except ChSubscription.DoesNotExist:
+        except ChHiveSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
         return render(request, "core/home_hives.html", {
             'hives': hives
@@ -300,7 +317,7 @@ def chats(request):
 
         try:
             chats = profile.chats
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
 
         return render(request, "core/home_chats.html", {
@@ -400,7 +417,7 @@ def chat(request, chat_url):
     # GET vs POST
     if request.method == 'POST':
         try:
-            ChSubscription.objects.get(profile=profile, chat=chat)
+            ChChatSubscription.objects.get(profile=profile, chat=chat)
             msg = request.POST.get("message")
             timestamp = request.POST.get("timestamp")
             message = chat.new_message(profile=profile,
@@ -427,14 +444,14 @@ def chat(request, chat_url):
 
             return HttpResponse("Server Ok")
 
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
     # GET
     else:
         try:
-            ChSubscription.objects.get(chat=chat, profile=profile)
+            ChChatSubscription.objects.get(chat=chat, profile=profile)
 
             form = MsgForm()
             return render(request, "core/chat.html", {
@@ -448,7 +465,7 @@ def chat(request, chat_url):
                 'form': form,
             })
 
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
@@ -467,13 +484,13 @@ def hive(request, hive_url):
         profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name_url=hive_url)
         try:
-            ChSubscription.objects.get(hive=hive, profile=profile)
-            chat = ChChat.objects.get(hive=hive, type='public')
+            ChHiveSubscription.objects.get(hive=hive, profile=profile)
+            chats = ChChat.objects.filter(hive=hive, type='public')
             return render(request, "core/hive.html", {
                 'hive': hive,
-                'chat': chat,
+                'chats': chats,
             })
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
@@ -494,11 +511,11 @@ def hive_description(request, hive_url):
         profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name_url=hive_url)
         try:
-            ChSubscription.objects.get(hive=hive, profile=profile)
+            ChHiveSubscription.objects.get(hive=hive, profile=profile)
             subscribed = True
             ChCommunity.objects.get(hive=hive, admin=profile)
             owner = True
-        except ChSubscription.DoesNotExist:
+        except ChHiveSubscription.DoesNotExist:
             subscribed = False
             owner = False
         except ChCommunity.DoesNotExist:
@@ -533,7 +550,7 @@ def get_hive_users(request, hive_url, init, interval):
                 profiles.append({"public_name": hive_user.public_name})
             return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
 
-        except ChSubscription.DoesNotExist:
+        except ChHiveSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
@@ -558,10 +575,9 @@ def get_messages(request, chat_name, init, interval):
         user = request.user
         profile = ChProfile.objects.get(user=user)
         chat = ChChat.objects.get(channel_unicode=chat_name)
-        hive = chat.hive
 
         try:
-            ChSubscription.objects.get(profile=profile, hive=hive)
+            ChChatSubscription.objects.get(profile=profile, chat=chat)
             if init == 'last':
                 messages = ChMessage.objects.filter(chat=chat).order_by('-_id')[0:int(interval)]
             elif init.isnumeric():
@@ -578,7 +594,7 @@ def get_messages(request, chat_name, init, interval):
                                      "id": message.id
                 })
             return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
