@@ -414,6 +414,7 @@ class ChHive(models.Model):
 
     def get_users_recommended(self, profile):
         """
+        :param profile: profile for the users are recommended for
         :return: profiles of users joining the hive in the country specified
         """
         subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, profile__country=profile.country)
@@ -422,6 +423,39 @@ class ChHive(models.Model):
         users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
+
+    def join(self, profile):
+        """
+        :param profile:  profile joining the hive
+        :return: void
+        """
+        try:
+            hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
+            if hive_subscription.expelled:
+                raise UnauthorizedException("The user was expelled")
+            elif hive_subscription.deleted:
+                hive_subscription.deleted = False
+                hive_subscription.save()
+                chats = ChChat.objects.filter(hive=self, type='public')
+                for chat in chats:  # todo, more efficient?
+                    try:
+                        chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
+                        if not chat_subscription.expelled:
+                            chat_subscription.deleted = False
+                            chat_subscription.save()
+                    except ChChatSubscription.DoesNotExist:
+                        chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+                        chat_subscription.save()
+            raise IntegrityError("ChHiveSubscription already exists")
+        except ChHiveSubscription.DoesNotExist:
+            hive_subscription = ChHiveSubscription(hive=self, profile=profile)
+            hive_subscription.save()
+            chats = ChChat.objects.filter(hive=self, type='public')
+            for chat in chats:
+                chat_subscription = ChHiveSubscription(chat=chat, profile=profile)
+                chat_subscription.save()
+
+    # todo def leave(self, profile):
 
     def toJSON(self):
         return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
@@ -620,6 +654,9 @@ class ChChatSubscription(models.Model):
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
+    deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
+
     def __str__(self):
         return self.profile.first_name + " links with"
 
@@ -629,6 +666,9 @@ class ChHiveSubscription(models.Model):
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.profile.first_name + " links with"
