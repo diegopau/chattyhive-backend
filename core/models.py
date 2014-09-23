@@ -695,6 +695,19 @@ class ChHiveSubscription(models.Model):
         return self.profile.first_name + " links with"
 
 
+class UserReports(models.Model):
+
+    REASONS = (
+        ('', ''),
+        ('fooreason', 'fooreason'),
+    )
+
+    reported_user = models.ForeignKey(ChProfile, unique=False, related_name='reported_by')
+    reporting_user = models.ForeignKey(ChProfile, unique=False, related_name='reported')
+    observations = models.TextField(max_length=1024)
+    reason = models.CharField(max_length=20, choices=REASONS, default='')
+
+
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================
