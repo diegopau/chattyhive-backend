@@ -455,7 +455,28 @@ class ChHive(models.Model):
                 chat_subscription = ChHiveSubscription(chat=chat, profile=profile)
                 chat_subscription.save()
 
-    # todo def leave(self, profile):
+    def leave(self, profile):
+        """
+        :param profile:  profile leaving the hive
+        :return: void
+        """
+        try:
+            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self)
+            hive_subscription.deleted = True
+            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
+            for subscription in chat_subscriptions:
+                subscription.deleted = True
+                chat = subscription.chat
+                others_subscriptions = ChChatSubscription.objects.filter(chat=chat).exclude(profile=profile, deleted=False)
+                if not others_subscriptions:
+                    ChChatSubscription.objects.filter(chat=chat).delete()
+                    chat.delete()
+            others_hive_subscriptions = ChHiveSubscription.objects.filter(hive=self).exclude(profile=profile, deleted=False)
+            if not others_hive_subscriptions:
+                ChHiveSubscription.objects.filter(hive=self).delete()
+                self.delete()
+        except ChHiveSubscription.DoesNotExist:
+            raise IntegrityError("User have not joined the hive")
 
     def toJSON(self):
         return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \

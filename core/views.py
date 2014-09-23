@@ -212,43 +212,10 @@ def join(request, hive_url):
         user = request.user
         profile = ChProfile.objects.get(user=user)
         hive_joining = ChHive.objects.get(name_url=hive_url)
-        public_chat = ChChat.objects.get(hive=hive_joining, type='public')
 
-        # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
-        try:
-            subscriptions = ChHiveSubscription.objects.filter(profile=profile)
-            hives = []
-            for subscription in subscriptions:
-                # Excluding duplicated hives
-                hive_appeared = False
-                for hive in hives:
-                    if subscription.hive == hive:
-                        hive_appeared = True
-                if not hive_appeared:
-                    # Adding the hive to the hives array (only hives subscribed)
-                    hives.append(subscription.hive)
-        except ChChatSubscription.DoesNotExist:
-            return HttpResponse("Subscription not found")
+        hive_joining.join(profile)
 
-        hive_appeared = False
-        for hive_aux in hives:
-            if hive_aux == hive_joining:
-                hive_appeared = True
-
-        if not hive_appeared:
-
-            # Creating subscription
-            hive_subscription = ChHiveSubscription(hive=hive_joining, profile=profile)
-            hive_subscription.save()
-            chats = ChChat.objects.get(hive=hive_joining, type='public')
-            for chat in chats:
-                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-                chat_subscription.save()
-
-            return HttpResponseRedirect("/home/")
-
-        else:
-            return HttpResponse("You're already subscribed to this hive")
+        return HttpResponseRedirect('/home/')
     else:
         raise Http404
 
@@ -267,21 +234,7 @@ def leave(request, hive_url):
         profile = ChProfile.objects.get(user=username)
         hive_leaving = ChHive.objects.get(name_url=hive_url)
 
-        # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
-        try:
-            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=hive_leaving)
-            hive_subscription.delete()
-            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=hive_leaving)
-            for subscription in chat_subscriptions:
-                chat = subscription.chat
-                if chat.hive == hive_leaving:
-                    if chat.type == 'private':
-                        chat.delete()
-                    else:
-                        subscription.delete()
-
-        except ChChatSubscription.DoesNotExist:
-            return HttpResponse("Subscription not found")
+        hive_leaving.leave(profile)
 
         return HttpResponseRedirect("/home/")
     else:
