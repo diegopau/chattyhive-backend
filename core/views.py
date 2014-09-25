@@ -387,7 +387,7 @@ def chat(request, chat_url):
                                       cls=DjangoJSONEncoder)
 
             try:
-                chat.send_message(sender_profile=profile, json_message=json_message)
+                chat.send_message(profile=profile, json_message=json_message)
             except AndroidDevice.DoesNotExist:
                 return HttpResponse("Not delivered")
 

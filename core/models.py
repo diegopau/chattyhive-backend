@@ -298,7 +298,7 @@ class ChProfile(models.Model):
     def hives(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChHiveSubscription.objects.filter(profile=self)
+            subscriptions = ChHiveSubscription.objects.filter(profile=self, deleted=False, expelled=False)
             hives = []
             for subscription in subscriptions:
                 if subscription.hive:
@@ -311,7 +311,7 @@ class ChProfile(models.Model):
     def chats(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChChatSubscription.objects.select_related().filter(profile=self)
+            subscriptions = ChChatSubscription.objects.filter(profile=self, deleted=False, expelled=False)
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
@@ -446,13 +446,14 @@ class ChHive(models.Model):
                     except ChChatSubscription.DoesNotExist:
                         chat_subscription = ChChatSubscription(chat=chat, profile=profile)
                         chat_subscription.save()
-            raise IntegrityError("ChHiveSubscription already exists")
+            else:
+                raise IntegrityError("ChHiveSubscription already exists")
         except ChHiveSubscription.DoesNotExist:
             hive_subscription = ChHiveSubscription(hive=self, profile=profile)
             hive_subscription.save()
             chats = ChChat.objects.filter(hive=self, type='public')
             for chat in chats:
-                chat_subscription = ChHiveSubscription(chat=chat, profile=profile)
+                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription.save()
 
     def leave(self, profile):
@@ -467,14 +468,18 @@ class ChHive(models.Model):
             for subscription in chat_subscriptions:
                 subscription.deleted = True
                 chat = subscription.chat
-                others_subscriptions = ChChatSubscription.objects.filter(chat=chat).exclude(profile=profile, deleted=False)
+                others_subscriptions = ChChatSubscription.objects.filter(chat=chat).exclude(profile=profile).exclude(deleted=True)
                 if not others_subscriptions:
                     ChChatSubscription.objects.filter(chat=chat).delete()
                     chat.delete()
-            others_hive_subscriptions = ChHiveSubscription.objects.filter(hive=self).exclude(profile=profile, deleted=False)
+                else:
+                    subscription.save()
+            others_hive_subscriptions = ChHiveSubscription.objects.filter(hive=self).exclude(profile=profile).exclude(deleted=True)
             if not others_hive_subscriptions:
                 ChHiveSubscription.objects.filter(hive=self).delete()
                 self.delete()
+            else:
+                hive_subscription.save()
         except ChHiveSubscription.DoesNotExist:
             raise IntegrityError("User have not joined the hive")
 
@@ -551,19 +556,30 @@ class ChChat(models.Model):
         """
         self.channel_unicode = 'presence-' + channel_unicode
 
+    def check_permissions(self, profile):
+
+        try:
+            ChChatSubscription.objects.get(profile=profile, chat=self, deleted=False, expelled=False)
+        except ChChatSubscription.DoesNotExist:
+            raise UnauthorizedException("User isn't part of this chat")
+
     def new_message(self, profile, content_type, content, timestamp):
+
+        self.check_permissions(profile)
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
         message.datetime = timezone.now()
-        # message.client_datetime = timestamp
+        message.client_datetime = timestamp
         message.content_type = content_type
         message.content = content
         message.save()
         return message
 
-    def send_message(self, sender_profile, json_message):
+    def send_message(self, profile, json_message):
+
+        self.check_permissions(profile)
         if self.type == 'private':
-            subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=sender_profile).select_related()[0]
+            subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=profile).select_related()[0]
             device = subscription.profile.user.device
             device.send_message(msg=json_message, collapse_key='')
         else:
@@ -576,6 +592,7 @@ class ChChat(models.Model):
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):
+
         for chat in json.loads(json_chats_array):
             try:
                 chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
