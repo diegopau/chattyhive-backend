@@ -417,10 +417,14 @@ class ChHive(models.Model):
         :param profile: profile for the users are recommended for
         :return: profiles of users joining the hive in the country specified
         """
-        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, profile__country=profile.country)
-        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-hive_subscription__creation_date')
-        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self).exclude(profile__country=profile.country)
-        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by('-hive_subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile')\
+                        .filter(hive=self, deleted=False, expelled=False, profile__country=profile.country)
+        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile'))\
+                        .order_by('-hive_subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile')\
+                        .filter(hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country)
+        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile'))\
+                        .order_by('-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
 
@@ -492,7 +496,7 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive
         """
-        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self)
+        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False, expelled=False)
         users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
         return users_list
 
@@ -519,7 +523,7 @@ class ChCommunity(models.Model):
         chat.save()
         chat_extension = ChCommunityChat(chat=chat, name=name, description=description)
         chat_extension.save()
-        subscriptions = ChHiveSubscription.objects.filter(hive=self.hive)
+        subscriptions = ChHiveSubscription.objects.filter(hive=self.hive, deleted=False, expelled=False)
         for subscription in subscriptions:
             new = ChChatSubscription(chat=chat, profile=subscription.profile)
             new.save()
@@ -596,7 +600,7 @@ class ChChat(models.Model):
         for chat in json.loads(json_chats_array):
             try:
                 chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
-                ChChatSubscription.objects.get(chat=chat_object, profile=profile)
+                ChChatSubscription.objects.get(chat=chat_object, profile=profile, deleted=False, expelled=False)
             except ChChat.DoesNotExist:
                 raise
             except ChChatSubscription.DoesNotExist:
