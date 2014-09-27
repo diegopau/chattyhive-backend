@@ -107,6 +107,20 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
 
+    def deactivate_account(self):
+
+        hives = self.profile.hives
+        for hive in hives:
+            hive.leave(self.profile)
+
+        # remaining (private?) chats
+        ChChatSubscription.objects.filter(profile=self.profile, deleted=False).select_for_update().update(deleted=True)
+
+    def delete_account(self):
+
+        self.deactivate_account()
+        self.profile.erase_info()
+
     @property
     def profile(self):
         return ChProfile.objects.get(user=self)
@@ -201,9 +215,9 @@ class ChProfile(models.Model):
     private_status = models.CharField(max_length=140, blank=True, null=True)
     public_status = models.CharField(max_length=140, blank=True, null=True)
     personal_color = RGBColorField()
-    # todo image fields
-    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
-    # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
+    # image fields
+    photo = models.URLField(null=True)
+    avatar = models.URLField(null=True)
 
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
@@ -271,6 +285,25 @@ class ChProfile(models.Model):
             possible_countries = Country.objects.filter(code3__contains=text_location)
             if possible_countries.count() >= 1:
                 self.country = possible_countries[0]
+
+    def erase_info(self):
+        self.first_name = ""
+        self.last_name = ""
+        self.sex = "male"
+        self.birth_date = None
+        self._languages = None
+        self.country = None
+        self.region = None
+        self.city = None
+        self.private_status = None
+        self.public_status = None
+        self.private_show_age = False
+        self.public_show_age = None
+        self.public_show_location = False
+        self.public_show_sex = False
+        self.photo = None
+        self.avatar = None
+
 
     # properties (fake fields)
     @property
