@@ -1,11 +1,4 @@
 # -*- encoding: utf-8 -*-
-from copy import deepcopy
-import json
-from django.core.serializers.json import DjangoJSONEncoder
-from django.middleware import transaction
-from CH import settings
-from core.google_ccs import send_gcm_message
-import pusher
 
 __author__ = 'lorenzo'
 
@@ -21,9 +14,13 @@ from django.core import validators
 from django.utils import timezone
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
+from django.core.serializers.json import DjangoJSONEncoder
+from CH import settings
+from core.google_ccs import send_gcm_message
+import json
+import pusher
 import hashlib
 import re
-from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
 
 
 class ChUserManager(UserManager):
