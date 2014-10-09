@@ -162,7 +162,7 @@ INSERT INTO core_chcategory ("name", "group", "description")
 
 -- Books & Comics // Libros y cómics
 INSERT INTO core_chcategory ("name", "group", "description")
-  VALUES ('Books & Comics', 'Libros y cómics', 'Dummy description');
+  VALUES ('Books & Comics', 'Books & Comics', 'Dummy description');
 
 -- Cars, Motorbikes & Others // Motor
 INSERT INTO core_chcategory ("name", "group", "description")
