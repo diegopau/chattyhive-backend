@@ -362,6 +362,7 @@ class ChCategory(models.Model):
 
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=140)
+    code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
 
     def __str__(self):
