@@ -364,34 +364,35 @@ class ChProfile(models.Model):
 class ChCategory(models.Model):
     # Groups definitions
     GROUPS = (
-        ('Aficiones y ocio', 'Aficiones y ocio'),
-        ('Amor y amistad', 'Amor y amistad'),
-        ('Arte y eventos culturales', 'Arte y eventos culturales'),
-        ('Ciencias naturales', 'Ciencias naturales'),
-        ('Ciencias sociales', 'Ciencias sociales'),
-        ('Cine y TV', 'Cine y TV'),
-        ('Compras y mercadillo', 'Compras y mercadillo'),
-        ('Conocer gente', 'Conocer gente'),
-        ('Deporte', 'Deporte'),
-        ('Educación', 'Educación'),
-        ('Estilo de vida', 'Estilo de vida'),
-        ('Familia y hogar', 'Familia y hogar'),
+        ('Art & Cultural events', 'Art & Cultural events'),
+        ('Books & Comics', 'Books & Comics'),
+        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
+        ('Education', 'Education'),
+        ('Family, Home & Pets', 'Family, Home & Pets'),
+        ('Free time', 'Free time'),
+        ('Health & Fitness', 'Health & Fitness'),
         ('Internet', 'Internet'),
-        ('Libros y cómics', 'Libros y cómics'),
-        ('Motor', 'Motor'),
-        ('Música', 'Música'),
-        ('Noticias y actualidad', 'Noticias y actualidad'),
-        ('Política y activismo', 'Política y activismo'),
-        ('Salud y fitness', 'Salud y fitness'),
-        ('Sitios, empresas y marcas', 'Sitios, empresas y marcas'),
-        ('Tecnología e informática', 'Tecnología e informática'),
-        ('Trabajo y negocios', 'Trabajo y negocios'),
-        ('Viajes y turismo', 'Viajes y turismo'),
-        ('Videojuegos', 'Videojuegos'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Love & Friendship', 'Love & Friendship'),
+        ('Meet new people', 'Meet new people'),
+        ('Movies & TV', 'Movies & TV'),
+        ('Music', 'Music'),
+        ('Natural sciences', 'Natural sciences'),
+        ('News & Current affairs', 'News & Current affairs'),
+        ('Places, Companies & Brands', 'Places, Companies & Brands'),
+        ('Politics & Activism', 'Politics & Activism'),
+        ('Shopping & Market', 'Shopping & Market'),
+        ('Social sciences', 'Social sciences'),
+        ('Sports', 'Sports'),
+        ('Technology & Computers', 'Technology & Computers'),
+        ('Trips & Places', 'Trips & Places'),
+        ('Video games', 'Video games'),
+        ('Work & Business', 'Work & Business'),
     )
 
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=140)
+    code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
 
     def __str__(self):
@@ -749,8 +750,17 @@ class ChHiveSubscription(models.Model):
 class UserReports(models.Model):
 
     REASONS = (
-        ('', ''),
-        ('fooreason', 'fooreason'),
+#the first value of each pair is the value set on the model, the second value is a human-readable name.
+        ('TROLL', 'TROLL'),
+        ('SPAM', 'SPAM'),
+        ('FLOOD', 'FLOOD'),
+        ('HATE_SPEECH', 'HATE_SPEECH'),
+        ('BULLYING_OR_HARASSMENT', 'BULLYING_AND_HARASSMENT'),
+        ('PORN_OR_NUDITY', 'PORN_OR_NUDITY'),
+        ('PRIVACY', 'PRIVACY'),
+        ('SELF-HARM', 'SELF-HARM'),
+        ('THREATS', 'THREATS'),
+        ('OTHER', 'OTHER'),
     )
 
     reported_user = models.ForeignKey(ChProfile, unique=False, related_name='reported_by')
