@@ -1,2 +1,2 @@
 __author__ = 'lorenzo'
-import core.signals
+# import core.signals
