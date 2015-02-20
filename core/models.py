@@ -12,6 +12,7 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 from django.core import validators
 from django.utils import timezone
+# TODO: should I add colorful to requirements?
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
@@ -24,9 +25,12 @@ import re
 
 
 class ChUserManager(UserManager):
-    # Creates a simple user with only email and password
+    """Creates a simple user with only email and password."""
+
     def create_user(self, username, email, password, *args, **kwargs):
-        """
+        """Creates a user with an email and password
+
+        We assign an hex
         :param username: Email of the user used as username
         :param email: Email also saved
         :param password: Password for the user
@@ -34,13 +38,14 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+
+        hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+                hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
