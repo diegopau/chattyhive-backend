@@ -7,7 +7,7 @@ import json
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
-from core.models import ChUser, ChProfile, ChUserManager, ChSubscription, ChHive, ChChat, ChMessage
+from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHive, ChChat, ChMessage
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
 import pusher
@@ -109,7 +109,7 @@ def login_v2(request):
 
                     # Trying to get all the subscriptions of this profile
                     try:
-                        subscriptions = ChSubscription.objects.filter(profile=profile)
+                        subscriptions = ChChatSubscription.objects.filter(profile=profile)
                         hives = []
                         for subscription in subscriptions:
                             # Excluding duplicated hives
@@ -120,7 +120,7 @@ def login_v2(request):
                             if not hive_appeared:
                                 # Adding the hive to the home view
                                 hives.append(subscription.hive.toJSON())
-                    except ChSubscription.DoesNotExist:
+                    except ChChatSubscription.DoesNotExist:
                         return HttpResponse("Subscription not found")
 
                     print(profile.toJSON())  # PRINT
@@ -290,7 +290,7 @@ def join(request):
 
         # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
         try:
-            subscriptions = ChSubscription.objects.filter(profile=profile)
+            subscriptions = ChChatSubscription.objects.filter(profile=profile)
             hives = []
             for subscription in subscriptions:
                 # Excluding duplicated hives
@@ -301,7 +301,7 @@ def join(request):
                 if not hive_appeared:
                     # Adding the hive to the hives array (only hives subscribed)
                     hives.append(subscription.hive.toJSON())
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
 
         # Checking if the user is already subscribed to this hive
@@ -317,7 +317,7 @@ def join(request):
             chat2 = ChChat.objects.get(hive=hive_joining)
 
             # Creating subscription
-            subscription = ChSubscription()
+            subscription = ChChatSubscription()
             subscription.hive = hive_joining
             subscription.profile = profile
             subscription.chat = chat2

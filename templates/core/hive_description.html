@@ -25,6 +25,9 @@
              {{ tag }},
         {% endfor %}
     </div>
+    {% if owner == True %}
+        <div><a href="/create_public_chat/{{ hive.name_url }}">New public chat</a></div>
+    {% endif %}
 
 </body>
 </html>

@@ -269,10 +269,9 @@ def chat_auth(request):
         socket_id = request.POST['socket_id']
 
         profile = ChProfile.objects.get(user=user)
-        hive = chat.hive
 
         try:
-            ChSubscription.objects.get(hive=hive, profile=profile)
+            ChChatSubscription.objects.get(chat=chat, profile=profile)
 
             channel_data = {'user_id': socket_id,
                             'user_info': {'public_name': profile.public_name,
@@ -295,7 +294,7 @@ def chat_auth(request):
 
             return HttpResponse(json.dumps(auth_response, cls=DjangoJSONEncoder))
 
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response

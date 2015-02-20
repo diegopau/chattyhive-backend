@@ -1,14 +1,9 @@
 # -*- encoding: utf-8 -*-
-import json
-from django.core.serializers.json import DjangoJSONEncoder
-from CH import settings
-from core.google_ccs import send_gcm_message
-import pusher
 
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models
+from django.db import models, IntegrityError
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
@@ -17,17 +12,25 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 from django.core import validators
 from django.utils import timezone
+# TODO: should I add colorful to requirements?
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
+from django.core.serializers.json import DjangoJSONEncoder
+from CH import settings
+from core.google_ccs import send_gcm_message
+import json
+import pusher
 import hashlib
 import re
-from email_confirmation.models import EmailAddress, EmailAddressManager, EmailConfirmation, EmailConfirmationManager
 
 
 class ChUserManager(UserManager):
-    # Creates a simple user with only email and password
+    """Creates a simple user with only email and password."""
+
     def create_user(self, username, email, password, *args, **kwargs):
-        """
+        """Creates a user with an email and password
+
+        We assign an hex
         :param username: Email of the user used as username
         :param email: Email also saved
         :param password: Password for the user
@@ -35,13 +38,14 @@ class ChUserManager(UserManager):
         :param kwargs:
         :return: Normal user
         """
-        hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+
+        hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex[:30]     # 16^30 values low collision probabilities
+                hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
@@ -105,6 +109,20 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     def is_authenticated(self):
         return AbstractUser.is_authenticated(self)
 
+    def deactivate_account(self):
+
+        hives = self.profile.hives
+        for hive in hives:
+            hive.leave(self.profile)
+
+        # remaining (private?) chats
+        ChChatSubscription.objects.filter(profile=self.profile, deleted=False).select_for_update().update(deleted=True)
+
+    def delete_account(self):
+
+        self.deactivate_account()
+        self.profile.erase_info()
+
     @property
     def profile(self):
         return ChProfile.objects.get(user=self)
@@ -125,6 +143,7 @@ class AndroidDevice(models.Model):
     dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(default=timezone.now())
 
     def send_message(self, msg, collapse_key="message"):
         json_response = send_gcm_message(regs_id=[self.reg_id],
@@ -169,6 +188,7 @@ class TagModel(models.Model):
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
+    last_login = models.DateTimeField(default=timezone.now())
 
     # Here are the choices definitions
     SEX = (
@@ -197,9 +217,9 @@ class ChProfile(models.Model):
     private_status = models.CharField(max_length=140, blank=True, null=True)
     public_status = models.CharField(max_length=140, blank=True, null=True)
     personal_color = RGBColorField()
-    # todo image fields
-    # photo = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
-    # avatar = models.ImageField(upload_to=None, height_field=None, width_field=None, max_length=100)
+    # image fields
+    photo = models.URLField(null=True)
+    avatar = models.URLField(null=True)
 
     private_show_age = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
@@ -268,6 +288,25 @@ class ChProfile(models.Model):
             if possible_countries.count() >= 1:
                 self.country = possible_countries[0]
 
+    def erase_info(self):
+        self.first_name = ""
+        self.last_name = ""
+        self.sex = "male"
+        self.birth_date = None
+        self._languages = None
+        self.country = None
+        self.region = None
+        self.city = None
+        self.private_status = None
+        self.public_status = None
+        self.private_show_age = False
+        self.public_show_age = None
+        self.public_show_location = False
+        self.public_show_sex = False
+        self.photo = None
+        self.avatar = None
+
+
     # properties (fake fields)
     @property
     def username(self):
@@ -294,26 +333,26 @@ class ChProfile(models.Model):
     def hives(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChSubscription.objects.filter(profile=self, hive__isnull=False)
+            subscriptions = ChHiveSubscription.objects.filter(profile=self, deleted=False, expelled=False)
             hives = []
             for subscription in subscriptions:
                 if subscription.hive:
                     hives.append(subscription.hive)
             return hives
-        except ChSubscription.DoesNotExist:
+        except ChHiveSubscription.DoesNotExist:
             return []
 
     @property
     def chats(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChSubscription.objects.select_related().filter(profile=self)
+            subscriptions = ChChatSubscription.objects.filter(profile=self, deleted=False, expelled=False)
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
                     chats.append(subscription.chat)
             return chats
-        except ChSubscription.DoesNotExist:
+        except ChChatSubscription.DoesNotExist:
             return []
 
     def toJSON(self):
@@ -330,34 +369,35 @@ class ChProfile(models.Model):
 class ChCategory(models.Model):
     # Groups definitions
     GROUPS = (
-        ('Aficiones y ocio', 'Aficiones y ocio'),
-        ('Amor y amistad', 'Amor y amistad'),
-        ('Arte y eventos culturales', 'Arte y eventos culturales'),
-        ('Ciencias naturales', 'Ciencias naturales'),
-        ('Ciencias sociales', 'Ciencias sociales'),
-        ('Cine y TV', 'Cine y TV'),
-        ('Compras y mercadillo', 'Compras y mercadillo'),
-        ('Conocer gente', 'Conocer gente'),
-        ('Deporte', 'Deporte'),
-        ('Educación', 'Educación'),
-        ('Estilo de vida', 'Estilo de vida'),
-        ('Familia y hogar', 'Familia y hogar'),
+        ('Art & Cultural events', 'Art & Cultural events'),
+        ('Books & Comics', 'Books & Comics'),
+        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
+        ('Education', 'Education'),
+        ('Family, Home & Pets', 'Family, Home & Pets'),
+        ('Free time', 'Free time'),
+        ('Health & Fitness', 'Health & Fitness'),
         ('Internet', 'Internet'),
-        ('Libros y cómics', 'Libros y cómics'),
-        ('Motor', 'Motor'),
-        ('Música', 'Música'),
-        ('Noticias y actualidad', 'Noticias y actualidad'),
-        ('Política y activismo', 'Política y activismo'),
-        ('Salud y fitness', 'Salud y fitness'),
-        ('Sitios, empresas y marcas', 'Sitios, empresas y marcas'),
-        ('Tecnología e informática', 'Tecnología e informática'),
-        ('Trabajo y negocios', 'Trabajo y negocios'),
-        ('Viajes y turismo', 'Viajes y turismo'),
-        ('Videojuegos', 'Videojuegos'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Love & Friendship', 'Love & Friendship'),
+        ('Meet new people', 'Meet new people'),
+        ('Movies & TV', 'Movies & TV'),
+        ('Music', 'Music'),
+        ('Natural sciences', 'Natural sciences'),
+        ('News & Current affairs', 'News & Current affairs'),
+        ('Places, Companies & Brands', 'Places, Companies & Brands'),
+        ('Politics & Activism', 'Politics & Activism'),
+        ('Shopping & Market', 'Shopping & Market'),
+        ('Social sciences', 'Social sciences'),
+        ('Sports', 'Sports'),
+        ('Technology & Computers', 'Technology & Computers'),
+        ('Trips & Places', 'Trips & Places'),
+        ('Video games', 'Video games'),
+        ('Work & Business', 'Work & Business'),
     )
 
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=140)
+    code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
 
     def __str__(self):
@@ -365,14 +405,23 @@ class ChCategory(models.Model):
 
 
 class ChHive(models.Model):
+    TYPES = (
+        ('Hive', 'Hive'),
+        ('Community', 'Community'),
+    )
+
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
     name_url = models.CharField(max_length=540, unique=True)
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
+    _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
+
+    featured = models.BooleanField(default=False)
+    type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
     def set_tags(self, tags_array):
         for stag in tags_array:
@@ -387,6 +436,93 @@ class ChHive(models.Model):
         """
         return self.tags.all
 
+    def get_users_by_country(self, country):
+        """
+        :return: profiles of users joining the hive in the country specified
+        """
+        return self.users.filter(country=country)
+
+    def get_users_recently_online(self):
+        """
+        :return: profiles of users joining the hive in the country specified
+        """
+        return self.users.order_by('-last_login')
+
+    def get_users_recommended(self, profile):
+        """
+        :param profile: profile for the users are recommended for
+        :return: profiles of users joining the hive in the country specified
+        """
+        subscriptions = ChHiveSubscription.objects.select_related('profile')\
+                        .filter(hive=self, deleted=False, expelled=False, profile__country=profile.country)
+        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile'))\
+                        .order_by('-hive_subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile')\
+                        .filter(hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country)
+        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile'))\
+                        .order_by('-hive_subscription__creation_date')
+        users_list = users_list_near | users_list_far
+        return users_list
+
+    def join(self, profile):
+        """
+        :param profile:  profile joining the hive
+        :return: void
+        """
+        try:
+            hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
+            if hive_subscription.expelled:
+                raise UnauthorizedException("The user was expelled")
+            elif hive_subscription.deleted:
+                hive_subscription.deleted = False
+                hive_subscription.save()
+                chats = ChChat.objects.filter(hive=self, type='public')
+                for chat in chats:  # todo, more efficient?
+                    try:
+                        chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
+                        if not chat_subscription.expelled:
+                            chat_subscription.deleted = False
+                            chat_subscription.save()
+                    except ChChatSubscription.DoesNotExist:
+                        chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+                        chat_subscription.save()
+            else:
+                raise IntegrityError("ChHiveSubscription already exists")
+        except ChHiveSubscription.DoesNotExist:
+            hive_subscription = ChHiveSubscription(hive=self, profile=profile)
+            hive_subscription.save()
+            chats = ChChat.objects.filter(hive=self, type='public')
+            for chat in chats:
+                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+                chat_subscription.save()
+
+    def leave(self, profile):
+        """
+        :param profile:  profile leaving the hive
+        :return: void
+        """
+        try:
+            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self)
+            hive_subscription.deleted = True
+            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
+            for subscription in chat_subscriptions:
+                subscription.deleted = True
+                chat = subscription.chat
+                others_subscriptions = ChChatSubscription.objects.filter(chat=chat).exclude(profile=profile).exclude(deleted=True)
+                if not others_subscriptions:
+                    ChChatSubscription.objects.filter(chat=chat).delete()
+                    chat.delete()
+                else:
+                    subscription.save()
+            others_hive_subscriptions = ChHiveSubscription.objects.filter(hive=self).exclude(profile=profile).exclude(deleted=True)
+            if not others_hive_subscriptions:
+                ChHiveSubscription.objects.filter(hive=self).delete()
+                self.delete()
+            else:
+                hive_subscription.save()
+        except ChHiveSubscription.DoesNotExist:
+            raise IntegrityError("User have not joined the hive")
+
     def toJSON(self):
         return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
                % (self.name, self.name_url, self.description, self.category, self.creation_date)
@@ -396,15 +532,38 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive
         """
-        Subscriptions = ChSubscription.objects.select_related('profile').filter(hive=self)
-        users_list = []
-        for Subscription in Subscriptions:
-            users_list.append(Subscription.profile)
+        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False, expelled=False)
+        users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
         return users_list
 
+    @property
+    def languages(self):
+        """
+        :return: profile's languages QuerySet
+        """
+        return self._languages.all
 
     def __str__(self):
         return self.name
+
+
+class ChCommunity(models.Model):
+    hive = models.OneToOneField(ChHive, related_name='community')
+    admin = models.ForeignKey(ChProfile, related_name='administrates')
+    moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
+    # todo: administrative info?
+
+    def new_public_chat(self, name, description):
+        chat = ChChat(hive=self.hive, type='public')
+        chat.channel = replace_unicode(name)
+        chat.save()
+        chat_extension = ChCommunityChat(chat=chat, name=name, description=description)
+        chat_extension.save()
+        subscriptions = ChHiveSubscription.objects.filter(hive=self.hive, deleted=False, expelled=False)
+        for subscription in subscriptions:
+            new = ChChatSubscription(chat=chat, profile=subscription.profile)
+            new.save()
+        # transaction.commit()
 
 
 class ChChat(models.Model):
@@ -437,19 +596,30 @@ class ChChat(models.Model):
         """
         self.channel_unicode = 'presence-' + channel_unicode
 
+    def check_permissions(self, profile):
+
+        try:
+            ChChatSubscription.objects.get(profile=profile, chat=self, deleted=False, expelled=False)
+        except ChChatSubscription.DoesNotExist:
+            raise UnauthorizedException("User isn't part of this chat")
+
     def new_message(self, profile, content_type, content, timestamp):
+
+        self.check_permissions(profile)
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
         message.datetime = timezone.now()
-        # message.client_datetime = timestamp
+        message.client_datetime = timestamp
         message.content_type = content_type
         message.content = content
         message.save()
         return message
 
-    def send_message(self, sender_profile, json_message):
+    def send_message(self, profile, json_message):
+
+        self.check_permissions(profile)
         if self.type == 'private':
-            subscription = ChSubscription.objects.filter(chat=self).exclude(profile=sender_profile).select_related()[0]
+            subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=profile).select_related()[0]
             device = subscription.profile.user.device
             device.send_message(msg=json_message, collapse_key='')
         else:
@@ -462,13 +632,14 @@ class ChChat(models.Model):
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):
+
         for chat in json.loads(json_chats_array):
             try:
                 chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
-                ChSubscription.objects.get(chat=chat_object, profile=profile)
+                ChChatSubscription.objects.get(chat=chat_object, profile=profile, deleted=False, expelled=False)
             except ChChat.DoesNotExist:
                 raise
-            except ChSubscription.DoesNotExist:
+            except ChChatSubscription.DoesNotExist:
                 raise UnauthorizedException("no autorizado")
             id_list = chat['MESSAGE_ID_LIST']
             try:
@@ -476,9 +647,35 @@ class ChChat(models.Model):
             except ChMessage.DoesNotExist:
                 raise
 
+    def save(self, *args, **kwargs):
+
+        hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+        while True:
+            try:
+                # if the email is already used
+                ChChat.objects.get(channel_unicode=hex_channel_unicode)
+                hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+            except ChChat.DoesNotExist:
+                break
+        super(ChChat, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
+
+
+class ChCommunityChat(models.Model):
+    chat = models.OneToOneField(ChChat, related_name='community_extra_info')
+    name = models.CharField(max_length=60)  # todo unique for each community, basic regex
+    photo = models.CharField(max_length=200)
+    description = models.TextField(max_length=2048)
+
+    def save(self, *args, **kwargs):
+        extensions = ChCommunityChat.objects.filter(name=self.name).values('chat')
+        chats = ChChat.objects.filter(id__in=extensions, hive=self.chat.hive)
+        if chats:
+            raise IntegrityError("ChChat already exists")
+        else:
+            super(ChCommunityChat, self).save(*args, **kwargs)
 
 
 class ChMessage(models.Model):
@@ -529,14 +726,52 @@ class ChAnswer(ChMessage):
     message = models.ForeignKey(ChMessage, related_name='response')
 
 
-class ChSubscription(models.Model):
+class ChChatSubscription(models.Model):
     # Subscription object which relates Profiles with Hives/Chats
-    profile = models.ForeignKey(ChProfile, unique=False)
-    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscription')
-    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscription')
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.profile.first_name + " links with"
+
+
+class ChHiveSubscription(models.Model):
+    # Subscription object which relates Profiles with Hives/Chats
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.profile.first_name + " links with"
+
+
+class UserReports(models.Model):
+
+    REASONS = (
+#the first value of each pair is the value set on the model, the second value is a human-readable name.
+        ('TROLL', 'TROLL'),
+        ('SPAM', 'SPAM'),
+        ('FLOOD', 'FLOOD'),
+        ('HATE_SPEECH', 'HATE_SPEECH'),
+        ('BULLYING_OR_HARASSMENT', 'BULLYING_AND_HARASSMENT'),
+        ('PORN_OR_NUDITY', 'PORN_OR_NUDITY'),
+        ('PRIVACY', 'PRIVACY'),
+        ('SELF-HARM', 'SELF-HARM'),
+        ('THREATS', 'THREATS'),
+        ('OTHER', 'OTHER'),
+    )
+
+    reported_user = models.ForeignKey(ChProfile, unique=False, related_name='reported_by')
+    reporting_user = models.ForeignKey(ChProfile, unique=False, related_name='reported')
+    observations = models.TextField(max_length=1024)
+    reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
 ### ==========================================================
@@ -550,7 +785,13 @@ class TagForm(forms.Form):
 class CreateHiveForm(forms.ModelForm):
     class Meta:
         model = ChHive
-        fields = ('name', 'category', 'description')
+        fields = ('name', 'category', '_languages', 'description')
+
+
+class CreateCommunityChatForm(forms.ModelForm):
+    class Meta:
+        model = ChCommunityChat
+        fields = ('name', 'description')
 
 
 class MsgForm(forms.Form):
@@ -582,7 +823,7 @@ def get_or_new_tag(stag):
     return tag
 
 ### ==========================================================
-###                          METHODS
+###                        EXCEPTIONS
 ### ==========================================================
 
 

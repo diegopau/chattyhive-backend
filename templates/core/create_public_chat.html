@@ -6,10 +6,8 @@
 <body>
     <a href="/home/">Home</a>
     </br>
-    <a href="/create_community/">Community</a>
-    <form action="/create_hive/" method="post">{% csrf_token %}
-            {{ formHive.as_p }}
-            {{ formTags.as_p }}
+    <form action="/create_public_chat/{{ hive.name_url }}/" method="post">{% csrf_token %}
+            {{ form.as_p }}
         <input type="submit" value="Create" />
     </form>
 </body>
