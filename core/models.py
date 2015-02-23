@@ -30,7 +30,6 @@ class ChUserManager(UserManager):
     def create_user(self, username, email, password, *args, **kwargs):
         """Creates a user with an email and password
 
-        We assign an hex
         :param username: Email of the user used as username
         :param email: Email also saved
         :param password: Password for the user
@@ -39,6 +38,7 @@ class ChUserManager(UserManager):
         :return: Normal user
         """
 
+        """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
         hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
 
         while True:
@@ -52,6 +52,7 @@ class ChUserManager(UserManager):
         user = ChUser(username=hex_username)
         user.email = email
         user.set_password(password)
+        #TODO: es esto necesario? si sólo hay una BBDD posiblemente no lo sea...
         user.save(using=self._db)
 
         return user
@@ -77,10 +78,8 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_('username'), max_length=30, unique=True,
                                 help_text=_('Required. 30 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
-                                validators=[
-                                    validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'),
-                                                              'invalid')
-                                ])
+                                validators=[validators.RegexValidator(re.compile('^[\w.@+-]+$'),
+                                                                      _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin '
@@ -774,6 +773,7 @@ class UserReports(models.Model):
     reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
+# TODO: Forms should be moved to its own file (forms.py)
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================
