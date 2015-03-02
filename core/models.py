@@ -30,7 +30,6 @@ class ChUserManager(UserManager):
     def create_user(self, username, email, password, *args, **kwargs):
         """Creates a user with an email and password
 
-        We assign an hex
         :param username: Email of the user used as username
         :param email: Email also saved
         :param password: Password for the user
@@ -39,6 +38,7 @@ class ChUserManager(UserManager):
         :return: Normal user
         """
 
+        """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
         hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
 
         while True:
@@ -52,6 +52,7 @@ class ChUserManager(UserManager):
         user = ChUser(username=hex_username)
         user.email = email
         user.set_password(password)
+        # TODO: es esto necesario? si sólo hay una BBDD posiblemente no lo sea...
         user.save(using=self._db)
 
         return user
@@ -74,13 +75,13 @@ class ChUserManager(UserManager):
 
 
 class ChUser(AbstractBaseUser, PermissionsMixin):
+    """Provides the fields and attributes of the ChUser model
+    """
     username = models.CharField(_('username'), max_length=30, unique=True,
                                 help_text=_('Required. 30 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
-                                validators=[
-                                    validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'),
-                                                              'invalid')
-                                ])
+                                validators=[validators.RegexValidator(re.compile('^[\w.@+-]+$'),
+                                                                      _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin '
@@ -93,9 +94,12 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     is_authenticated = models.BooleanField(default=False)
     objects = ChUserManager()
 
+    # TODO: por qué se define esto aquí? parece relacionado con formularios...
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
 
+    # This Meta class is used to give a human-readable name to each instance of the ChUser class
+    # The plural wouldn't be needed in this case because Django defaults to do verbose_name_plural = verbose_name + "s"
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
@@ -497,7 +501,8 @@ class ChHive(models.Model):
                 chat_subscription.save()
 
     def leave(self, profile):
-        """
+        """Marks the Hive Subscription as deleted, then takes every chat subscription of the user
+           related with this hive and will mark it as deleted too
         :param profile:  profile leaving the hive
         :return: void
         """
@@ -508,14 +513,24 @@ class ChHive(models.Model):
             for subscription in chat_subscriptions:
                 subscription.deleted = True
                 chat = subscription.chat
-                others_subscriptions = ChChatSubscription.objects.filter(chat=chat).exclude(profile=profile).exclude(deleted=True)
+                # This is just to know if there is any other subscriptions to this chat (we won't count the subscription
+                # that the user is using and we won't count the subscriptions that are marked as deleted either)
+                others_subscriptions = ChChatSubscription.objects.filter(
+                    chat=chat).exclude(profile=profile).exclude(deleted=True)
                 if not others_subscriptions:
+                    # If there was no more subscriptions to this chat or if all subscriptions were marked as deleted,
+                    # we delete all this subscriptions first and then we also delete the chat itself
+                    #TODO: ¿Qué pasa si se trata de un chat público. Puede que no todos los usuarios que estén en el hive tengan una subscripción en su lista de chats (esto ocurre si simplemente no lo tienen en su lista de chats, o si en algún momento se marcó como deleted) Se eliminaría también ese chat público?? un chat público nunca debería eliminarse...
                     ChChatSubscription.objects.filter(chat=chat).delete()
                     chat.delete()
                 else:
                     subscription.save()
-            others_hive_subscriptions = ChHiveSubscription.objects.filter(hive=self).exclude(profile=profile).exclude(deleted=True)
+            # Now we check if there are more users subscribed to this hive
+            # (hive subscriptions marked as deleted don't count)
+            others_hive_subscriptions = ChHiveSubscription.objects.filter(
+                hive=self).exclude(profile=profile).exclude(deleted=True)
             if not others_hive_subscriptions:
+                # and again, if not more users are subscribed we delete all hive subscriptions and the hive itself.
                 ChHiveSubscription.objects.filter(hive=self).delete()
                 self.delete()
             else:
@@ -774,6 +789,7 @@ class UserReports(models.Model):
     reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
+# TODO: Forms should be moved to its own file (forms.py)
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================
