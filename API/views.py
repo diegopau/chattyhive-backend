@@ -1,6 +1,6 @@
 from django.utils import timezone
 
-__author__ = 'xulegaspi'
+__author__ = 'diego'
 
 import django
 import json
@@ -17,13 +17,70 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import UserSerializer
+from API.serializers import ChUserSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
 
 
-# ViewSets define the view behavior.
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = ChUser.objects.all()
-    serializer_class = UserSerializer
+class ChUserList(APIView):
+    """Lists all users or creates new user
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+    def get(self, request, format=None):
+        users = ChUser.objects.all()
+        serializer = ChUserSerializer(users, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = ChUserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChUserDetail(APIView):
+    """Show user detail, updates user detail or deletes specific user
+
+    User detail is just avaliable from the browsable API, the endpoint is only exposed for a PUT with a new user
+    (user registration)
+    """
+    def get_object(self, username):
+        try:
+            return ChUser.objects.get(username=username)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, username, format=None):
+        user = self.get_object(username)
+        serializer = ChUserSerializer(user)
+        return Response(serializer.data)
+
+    def put(self, request, username, format=None):
+        user = self.get_object(username)
+        serializer = ChUserSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, username, format=None):
+        user = self.get_object(username)
+        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es
+        # indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
+        # Falta confirmar esto bien
+        user.delete_account()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+# # ViewSets define the view behavior.
+# class UserViewSet(viewsets.ModelViewSet):
+#     queryset = ChUser.objects.all()
+#     serializer_class = UserSerializer
 
 
 
@@ -38,65 +95,65 @@ def start_session(request):
         raise Http404
 
 
-# @csrf_exempt
-def login(request, user):
-    """
-    :param request:
-    :param user: username for the login request
-    :return: JSON with status, csrf and session_id
-    """
-    if request.method == 'GET':
-        # print("if")  # PRINT
-        request.session['user'] = user
-        request.session['active'] = True
-        request.session.set_expiry(300)
-        session_id = request.session.session_key
-        csrf = django.middleware.csrf.get_token(request)
-        status = "LOGGED"
-        # print(status)  # PRINT
-        return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
-                            mimetype="application/json")
-    else:
-        status = "ERROR"
-        # print(status)  # PRINT
-        return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
-
-
-# @csrf_exempt
-def chat(request):
-    """
-    :param request:
-    :return: JSON with status
-    """
-    # Variable declaration
-    if 'user' in request.session and request.session['active']:
-        user = request.session['user']
-        app_key = "55129"
-        key = 'f073ebb6f5d1b918e59e'
-        secret = '360b346d88ee47d4c230'
-        channel = 'public_test'
-        event = 'msg'
-
-        # GET vs POST
-        if request.method == 'POST':
-
-            msg = request.POST.get("message")
-            timestamp = request.POST.get("timestamp")
-            p = pusher.Pusher(
-                app_id=app_key,
-                key=key,
-                secret=secret
-            )
-            p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
-            request.session.set_expiry(300)
-            status = "RECEIVED"
-            return HttpResponse({"status": status})
-        else:
-            status = "ERROR"
-            return HttpResponse({"status": status})
-    else:
-        status = "EXPIRED"
-        return HttpResponse({"status": status})
+# # @csrf_exempt
+# def login(request, user):
+#     """
+#     :param request:
+#     :param user: username for the login request
+#     :return: JSON with status, csrf and session_id
+#     """
+#     if request.method == 'GET':
+#         # print("if")  # PRINT
+#         request.session['user'] = user
+#         request.session['active'] = True
+#         request.session.set_expiry(300)
+#         session_id = request.session.session_key
+#         csrf = django.middleware.csrf.get_token(request)
+#         status = "LOGGED"
+#         # print(status)  # PRINT
+#         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
+#                             mimetype="application/json")
+#     else:
+#         status = "ERROR"
+#         # print(status)  # PRINT
+#         return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
+#
+#
+# # @csrf_exempt
+# def chat(request):
+#     """
+#     :param request:
+#     :return: JSON with status
+#     """
+#     # Variable declaration
+#     if 'user' in request.session and request.session['active']:
+#         user = request.session['user']
+#         app_key = "55129"
+#         key = 'f073ebb6f5d1b918e59e'
+#         secret = '360b346d88ee47d4c230'
+#         channel = 'public_test'
+#         event = 'msg'
+#
+#         # GET vs POST
+#         if request.method == 'POST':
+#
+#             msg = request.POST.get("message")
+#             timestamp = request.POST.get("timestamp")
+#             p = pusher.Pusher(
+#                 app_id=app_key,
+#                 key=key,
+#                 secret=secret
+#             )
+#             p[channel].trigger(event, {"username": user, "message": msg, "timestamp": timestamp})
+#             request.session.set_expiry(300)
+#             status = "RECEIVED"
+#             return HttpResponse({"status": status})
+#         else:
+#             status = "ERROR"
+#             return HttpResponse({"status": status})
+#     else:
+#         status = "EXPIRED"
+#         return HttpResponse({"status": status})
 
 
 # ================================== #

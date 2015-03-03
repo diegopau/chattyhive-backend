@@ -5,17 +5,34 @@ from django.contrib import admin
 
 admin.autodiscover()
 
+# Endpoints for the test browser view and the Django Admin
 urlpatterns = patterns('',
 
+    #######################
+    # urlpattern includes #
+    #######################
     url(r'^', include('API.urls')),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
+
+    ######################
+    # browser test views #
+    ######################
+
+    url(r'^$', 'login.views.login_view', name='login'),
+    url(r'^home/$', 'core.views.hives', name='home'),
+
+    ######################
+    #       admin        #
+    ######################
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-    #
-    # url(r'^$', 'login.views.login_view', name='login'),
+
+
+
     # url(r'^logout/', 'login.views.logout_view', name='logout'),
     # url(r'^chat_auth/', 'login.views.chat_auth', name='chat_auth'),
     # url(r'^create_user/$', 'login.views.create_user_view', name='create_user'),
@@ -97,5 +114,4 @@ urlpatterns = patterns('',
     ###                   Django REST FRAMEWORK API - URLS       ###
     ### ======================================================== ###
 
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 )
