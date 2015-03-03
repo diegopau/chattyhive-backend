@@ -133,7 +133,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'social.apps.django_app.default',  # social_auth app
-    'android_API',
+    'API',
     'core',
     'email_confirmation',
     'login',
@@ -143,6 +143,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    'rest_framework',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
@@ -309,4 +310,17 @@ from .email_info import *
 # ================================ #
 ANDROID_STATUS = {
 
+}
+
+    ### ======================================================== ###
+    ###                       Rest Framework                     ###
+    ### ======================================================== ###
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+    # 'rest_framework.permissions.IsAdminUser'
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ]
 }

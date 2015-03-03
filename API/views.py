@@ -6,11 +6,36 @@ import django
 import json
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
-from django.views.decorators.csrf import csrf_exempt
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHive, ChChat, ChMessage
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
 import pusher
+
+
+    ### ============================================================ ###
+    ###                     Django Rest Framework                    ###
+    ### ============================================================ ###
+
+from rest_framework import viewsets
+from API.serializers import UserSerializer
+
+
+# ViewSets define the view behavior.
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = ChUser.objects.all()
+    serializer_class = UserSerializer
+
+
+
+    ### ======================================================== ###
+
+def start_session(request):
+    if request.method == 'GET':
+        csrf = django.middleware.csrf.get_token(request)
+        return HttpResponse(json.dumps({'csrf': csrf}),
+                            mimetype="application/json")
+    else:
+        raise Http404
 
 
 # @csrf_exempt
@@ -77,13 +102,7 @@ def chat(request):
 # ================================== #
 #             0.2 Version            #
 # ================================== #
-def start_session(request):
-    if request.method == 'GET':
-        csrf = django.middleware.csrf.get_token(request)
-        return HttpResponse(json.dumps({'csrf': csrf}),
-                            mimetype="application/json")
-    else:
-        raise Http404
+
 
 
 def login_v2(request):
