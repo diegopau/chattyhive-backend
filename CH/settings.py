@@ -144,6 +144,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'rest_framework',
+    'rest_framework_swagger',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
@@ -313,7 +314,7 @@ ANDROID_STATUS = {
 }
 
     ### ======================================================== ###
-    ###                       Rest Framework                     ###
+    ###       Django Rest Framework & Django Rest Swagger        ###
     ### ======================================================== ###
 
 REST_FRAMEWORK = {
@@ -321,6 +322,10 @@ REST_FRAMEWORK = {
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
     # 'rest_framework.permissions.IsAdminUser'
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    #   'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
+}
+
+SWAGGER_SETTINGS = {
+    'api_path': '/',
 }

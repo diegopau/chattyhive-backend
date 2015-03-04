@@ -12,6 +12,7 @@ urlpatterns = patterns('',
     # urlpattern includes #
     #######################
     url(r'^', include('API.urls')),
+    url(r'^api-docs/', include('rest_framework_swagger.urls')),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
 
