@@ -204,7 +204,7 @@ class ChProfile(models.Model):
     public_name = models.CharField(max_length=20,
                                    unique=True,
                                    validators=[RegexValidator(r'^[0-9a-zA-Z_]*$',
-                                                              'Only alphanumeric characters an "_" are allowed.')])
+                                                              'Only alphanumeric characters and "_" are allowed.')])
     first_name = models.CharField(max_length=40)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
