@@ -70,8 +70,8 @@ class ChUserDetail(APIView):
 
     def delete(self, request, username, format=None):
         user = self.get_object(username)
-        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es
-        # indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
+        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es l
+        # lo indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
         # Falta confirmar esto bien
         user.delete_account()
         return Response(status=status.HTTP_204_NO_CONTENT)
