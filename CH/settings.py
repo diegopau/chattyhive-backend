@@ -133,7 +133,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'social.apps.django_app.default',  # social_auth app
-    'android_API',
+    'API',
     'core',
     'email_confirmation',
     'login',
@@ -143,6 +143,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    'rest_framework',
+    'rest_framework_swagger',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
@@ -309,4 +311,18 @@ from .email_info import *
 # ================================ #
 ANDROID_STATUS = {
 
+}
+
+    ### ======================================================== ###
+    ###       Django Rest Framework & Django Rest Swagger        ###
+    ### ======================================================== ###
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+    )
+}
+
+SWAGGER_SETTINGS = {
+    'api_path': '/',
 }

@@ -11,7 +11,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from core.pusher_extensions import ChPusher
-from core.models import AndroidDevice
+
 
 
 @login_required
