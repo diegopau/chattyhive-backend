@@ -2,6 +2,7 @@
 __author__ = 'xurxo'
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
+from django.conf import settings
 
 admin.autodiscover()
 
@@ -9,8 +10,9 @@ admin.autodiscover()
 urlpatterns = patterns('',
 
     #######################
-    # urlpattern includes #
+    #         API         #
     #######################
+
     url(r'^', include('API.urls')),
     url(r'^api-docs/', include('rest_framework_swagger.urls')),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
@@ -19,7 +21,7 @@ urlpatterns = patterns('',
     ######################
     # browser test views #
     ######################
-    url(r'^test_ui/', include('test_ui.urls')),
+    url(r'^' + settings.TEST_UI_BASE_URL, include('test_ui.urls')),
 
 
     ######################
@@ -30,6 +32,15 @@ urlpatterns = patterns('',
 
     # Uncomment the admin/doc line below to enable admin documentation:
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+
+
+    ######################
+    #       core URLs    #
+    ######################
+
+    url(r'^', include('core.urls')),
+
+
 
     # ### ======================================================== ###
     # ###                   Social_auth - URLS                     ###

@@ -327,3 +327,6 @@ REST_FRAMEWORK = {
 SWAGGER_SETTINGS = {
     'api_path': '/',
 }
+
+# This is the base URL for all test user interface app (test_ui)
+TEST_UI_BASE_URL = 'test-ui/'
