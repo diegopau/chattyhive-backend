@@ -17,7 +17,7 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer
+from API.serializers import ChUserSerializer, ChProfileSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -31,11 +31,15 @@ class ChUserList(APIView):
     (user registration)
     """
     def get(self, request, format=None):
+        """prueba
+        """
         users = ChUser.objects.all()
         serializer = ChUserSerializer(users, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
+        """post prueba
+        """
         serializer = ChUserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -77,6 +81,20 @@ class ChUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ChProfileDetail(APIView):
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.get(public_name=public_name)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+        serializer = ChProfileSerializer(profile)
+        return Response(serializer.data)
+
+
+
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
 # También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
 # móviles sino también para navegadores web.
@@ -85,7 +103,6 @@ class ChUserDetail(APIView):
 def start_session(request):
     """Returns a csrf cookie
     """
-
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
         return HttpResponse(json.dumps({'csrf': csrf}),

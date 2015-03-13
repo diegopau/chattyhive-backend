@@ -18,7 +18,7 @@ urlpatterns = patterns('',
 
     url(r'^users/(?P<username>[\w.@+-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),
 
-  # url(r'^profiles/')
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/$', views.ChProfileDetail.as_view(), name="profile_detail")
 )
 
 # Esto lo que hace es permitir que por ejemplo se haga /users/.json para que en un navegador te lo muestre en json en vez de html.
