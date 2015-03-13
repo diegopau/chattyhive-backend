@@ -21,7 +21,7 @@ urlpatterns = patterns('',
     ######################
     # browser test views #
     ######################
-    url(r'^' + settings.TEST_UI_BASE_URL, include('test_ui.urls')),
+    url(r'^' + settings.TEST_UI_BASE_URL + '/', include('test_ui.urls')),
 
 
     ######################

@@ -5,6 +5,9 @@ import os
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+# This is the base URL for all test user interface app (test_ui)
+TEST_UI_BASE_URL = 'test-ui'
+
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
@@ -142,7 +145,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
+    'django.contrib.admindocs',
     'rest_framework',
     'rest_framework_swagger',
     'test_ui',
@@ -327,6 +330,3 @@ REST_FRAMEWORK = {
 SWAGGER_SETTINGS = {
     'api_path': '/',
 }
-
-# This is the base URL for all test user interface app (test_ui)
-TEST_UI_BASE_URL = 'test-ui/'
