@@ -10,7 +10,7 @@
         function send_post(msg_text) {
             var form = document.createElement("FORM");
             form.method = 'POST';
-            form.action = '/chat/';
+            form.action = '/test-ui/chat/';
             form.value = msg_text;
             alert(msg_text);
             form.submit();
@@ -23,7 +23,7 @@
 //                alert("ajax1");
 //                print('ajax1');
                 type:"POST",
-                url: "/chat/",
+                url: "/test-ui/chat/",
                 data: {msg: msg_text},
                 success: function(newData){
                     document.getElementById("chat_field").html('---->ok');
@@ -136,7 +136,7 @@
                 alert("submit_catched")
                 $.ajax({
                     type: "POST",
-                    url: "/chat/",
+                    url: "/test-ui/chat/",
                     data: {msg: msg_text},
                     success: function(newData){
                         document.getElementById("chat_field").html('---->ok');

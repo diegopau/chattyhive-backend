@@ -17,18 +17,18 @@
     <div align="center">
         YOUR EMAIL IS NOT CONFIRMED YET, PLEASE CONFIRM IT WITHIN 24H OR YOUR ACCOUNT WILL BE DELETED!
     </div>
-    <a href="/profile/public">Profile</a>
-    <a href="/explore/">Explore</a>
-    <a href="/create_hive/">New Hive</a>
-    <a href="/chat/public_test">Chat</a>
+    <a href="/test-ui/profile/public">Profile</a>
+    <a href="/test-ui/explore/">Explore</a>
+    <a href="/test-ui/create_hive/">New Hive</a>
+    <a href="/test-ui/chat/public_test">Chat</a>
     <br />
     <br />
     My Hives
     <br />
     {% for hive in hives %}
       <li>
-        <a href="/hive/{{ hive.name_url }}">{{ hive.name }}</a>
-        <a href="/leave/{{ hive.name_url }}">leave</a>
+        <a href="/test-ui/hive/{{ hive.name_url }}">{{ hive.name }}</a>
+        <a href="/test-ui/leave/{{ hive.name_url }}">leave</a>
       </li>
     {% endfor %}
 
@@ -42,7 +42,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/logout/",
+                    url: "/test-ui/logout/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){

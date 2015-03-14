@@ -31,7 +31,7 @@
     {% if error == 'email' %}
         <p>This email already exists. Please, choose other</p>
     {% endif %}
-    <form action="/create_user/" method="post">{% csrf_token %}
+    <form action="/test-ui/create_user/" method="post">{% csrf_token %}
             {{ form.as_p }}
         <input type="submit" value="Create" />
     </form>

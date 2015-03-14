@@ -11,19 +11,19 @@
     <div align="right">
         <button type="button" id="btn_logout" style="text-align: right">Logout</button>
     </div>
-    <a href="/profile/my_profile/public">Profile</a>
-    <a href="/explore/">Explore</a>
-    <a href="/create_hive/">New Hive</a>
+    <a href="/test-ui/profile/my_profile/public">Profile</a>
+    <a href="/test-ui/explore/">Explore</a>
+    <a href="/test-ui/create_hive/">New Hive</a>
     <br />
     <br />
-    <a href="/home/hives/">My Hives</a>--My Chats
+    <a href="/test-ui/home/hives/">My Hives</a>--My Chats
     <br />
     {% for chat in chats %}
       <li>
         {% if chat.type == 'private' %}
-            <a href="/chat/{{ chat.channel_unicode }}">private chat in {{ chat.hive }}</a>
+            <a href="/test-ui/chat/{{ chat.channel_unicode }}">private chat in {{ chat.hive }}</a>
         {% else %}
-            <a href="/chat/{{ chat.channel_unicode }}">{{ chat.hive }}</a>
+            <a href="/test-ui/chat/{{ chat.channel_unicode }}">{{ chat.hive }}</a>
         {% endif %}
       </li>
     {% endfor %}
@@ -38,13 +38,13 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/logout/",
+                    url: "/test-ui/logout/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
                         alert(newData);
                         //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/";
+                        location.href="/test-ui/";
                     },
                     failure: function(errMsg) {
                         alert(errMsg);

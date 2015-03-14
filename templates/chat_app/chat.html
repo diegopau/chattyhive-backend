@@ -8,7 +8,7 @@
 {#    <script type="text/javascript" src="{{STATIC_URL}}js/chat.js"></script>#}
 </head>
 <body>
-    <a href="/home/">Home</a>
+    <a href="/test-ui/home/">Home</a>
     </br>
     Welcome, {{ user }}!
     <button type="button" id="btn_logout" style="text-align: right">Logout</button>
@@ -63,7 +63,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/chat_test/",
+                    url: "/test-ui/chat_test/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
                     success: function(newData){
@@ -88,7 +88,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/logout/",
+                    url: "/test-ui/logout/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
