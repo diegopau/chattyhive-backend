@@ -4,10 +4,10 @@
     <title></title>
 </head>
 <body>
-    <a href="/home/">Home</a>
+    <a href="/test-ui/home/">Home</a>
     </br>
     NEW COMMUNITY
-    <form action="/create_community/" method="post">{% csrf_token %}
+    <form action="/test-ui/create_community/" method="post">{% csrf_token %}
             {{ formHive.as_p }}
             {{ formTags.as_p }}
         <input type="submit" value="Create" />

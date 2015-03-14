@@ -5,6 +5,12 @@ import os
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+# This is the base URL for all test user interface app (test_ui)
+TEST_UI_BASE_URL = 'test-ui'
+# and this is the name of the app for the test user interface
+TEST_UI_APP_NAME = 'test_ui'
+
+
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
@@ -142,9 +148,10 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
+    'django.contrib.admindocs',
     'rest_framework',
     'rest_framework_swagger',
+    'test_ui',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
@@ -216,12 +223,12 @@ SOCIAL_AUTH_DISCONNECT_PIPELINE = (
     # 'logout_function' must be implemented
 )
 
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/home/'
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/' + TEST_UI_BASE_URL + '/home/'
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'   # todo create this page
 SOCIAL_AUTH_LOGIN_URL = '/login-url/'           # todo check if this is necessary
 SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/create_user/register1/'
-SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/home/'
-SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/' # not used
+SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/' + TEST_UI_BASE_URL + '/home/'
+SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'  # not used
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'   # not used
 
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
@@ -241,7 +248,7 @@ SOCIAL_AUTH_FACEBOOK_KEY = '1430000390551335'
 SOCIAL_AUTH_FACEBOOK_SECRET = 'eed2aa4e2ded3c4ad4c0ed7516acceae'
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_birthday', 'user_location']
 
-LOGIN_URL = '/'
+LOGIN_URL = '/' + TEST_UI_BASE_URL + '/'
 
 SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'

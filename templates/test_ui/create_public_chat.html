@@ -4,9 +4,9 @@
     <title></title>
 </head>
 <body>
-    <a href="/home/">Home</a>
+    <a href="/test-ui/home/">Home</a>
     </br>
-    <form action="/create_public_chat/{{ hive.name_url }}/" method="post">{% csrf_token %}
+    <form action="/test-ui/create_public_chat/{{ hive.name_url }}/" method="post">{% csrf_token %}
             {{ form.as_p }}
         <input type="submit" value="Create" />
     </form>

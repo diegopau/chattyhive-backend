@@ -11,7 +11,7 @@
     <div align="right">
         <button type="button" id="btn_logout" style="text-align: right">Logout</button>
     </div>
-    <a href="/home/chats/">Home</a>
+    <a href="/test-ui/home/chats/">Home</a>
     <br />
     Welcome, {{ user }}!  Hive: {{ hive }}
     <br />
@@ -36,7 +36,7 @@
         var csrftoken = $.cookie('csrftoken');
 
         // Connecting to pusher
-        var pusher = new Pusher(key, {  authEndpoint: '/chat_auth/',
+        var pusher = new Pusher(key, {  authEndpoint: '/test-ui/chat_auth/',
                                         auth: {
                                             headers: {'X-CSRFToken': csrftoken}
                                         }
@@ -85,7 +85,7 @@
 
                 $.ajax({
                     type: "GET",
-                    url: "/messages/" + channel_name + "/last-15",
+                    url: "/test-ui/messages/" + channel_name + "/last-15",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
@@ -109,7 +109,7 @@
                 var timestamp_server = null;
                 $.ajax({
                     type: "POST",
-                    url: "/chat/" + channel_name + "/",
+                    url: "/test-ui/chat/" + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
                     success: function(newData){
@@ -117,7 +117,7 @@
                             $("#status").html(newData);
                         } else {
                             alert(newData);
-                            location.href="/";
+                            location.href="/test-ui/";
                         }
                     },
                     failure: function(errMsg) {
@@ -134,7 +134,7 @@
                 older = $('#older').html();
                 $.ajax({
                     type: "GET",
-                    url: "/messages/" + channel_name + "/" + older + "-15",
+                    url: "/test-ui/messages/" + channel_name + "/" + older + "-15",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
@@ -153,7 +153,7 @@
             {
                 $.ajax({
                     type: "GET",
-                    url: "/messages/" + channel_name + "/last-15",
+                    url: "/test-ui/messages/" + channel_name + "/last-15",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
@@ -173,13 +173,13 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/logout/",
+                    url: "/test-ui/logout/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
                         alert(newData);
                         //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/";
+                        location.href="/test-ui/";
                     },
                     failure: function(errMsg) {
                         alert(errMsg);
