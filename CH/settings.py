@@ -248,7 +248,7 @@ SOCIAL_AUTH_FACEBOOK_KEY = '1430000390551335'
 SOCIAL_AUTH_FACEBOOK_SECRET = 'eed2aa4e2ded3c4ad4c0ed7516acceae'
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_birthday', 'user_location']
 
-LOGIN_URL = '/'
+LOGIN_URL = '/' + TEST_UI_BASE_URL + '/'
 
 SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
