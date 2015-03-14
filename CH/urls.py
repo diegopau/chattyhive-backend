@@ -9,6 +9,12 @@ admin.autodiscover()
 # Endpoints for the test browser view and the Django Admin
 urlpatterns = patterns('',
 
+    ##################################
+    #         Welcome screen         #
+    ##################################
+
+    url(r'^$', 'core.views.welcome_screen', name='welcome_dev'),
+
     #######################
     #         API         #
     #######################

@@ -12,6 +12,12 @@ from core.pusher_extensions import ChPusher
 
 
 @csrf_exempt
+def welcome_screen(request):
+    if request.method == 'GET':
+        return render(request, "core/welcome_dev.html")
+
+
+@csrf_exempt
 def pusher_webhooks(request):
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
