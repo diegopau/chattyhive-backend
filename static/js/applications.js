@@ -87,7 +87,7 @@
                 document.getElementById("chat_field").innerHTML+=xmlhttp.responseText;
             }
         }
-        xmlhttp.open("POST","/chat/",true);
+        xmlhttp.open("POST","/test-ui/chat/",true);
         xmlhttp.setRequestHeader("X-CSRFToken",csrftoken);
 //        xmlhttp.setRequestHeader("user",user);
 //        xmlhttp.setRequestHeader("msg",text_sent);

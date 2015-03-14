@@ -41,6 +41,12 @@ urlpatterns = patterns('',
     url(r'^', include('core.urls')),
 
 
+    #############################
+    #  email confirmation URLs  #
+    #############################
+
+    url(r'^', include('email_confirmation.urls')),
+
 
     # ### ======================================================== ###
     # ###                   Social_auth - URLS                     ###

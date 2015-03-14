@@ -11,12 +11,12 @@
     <div align="right">
         <button type="button" id="btn_logout" style="text-align: right">Logout</button>
     </div>
-    <a href="/home/">Home</a><br />
+    <a href="/test-ui/home/">Home</a><br />
     <br />
     <div>
-        :{{ hive.name }} -- <a href="/hive_description/{{ hive.name_url }}">Description</a> <br />
+        :{{ hive.name }} -- <a href="/test-ui/hive_description/{{ hive.name_url }}">Description</a> <br />
         {% for chat in chats %}
-            <a href="/chat/{{ chat.channel_unicode }}"> public chat</a><br />
+            <a href="/test-ui/chat/{{ chat.channel_unicode }}"> public chat</a><br />
         {% endfor %}
     </div>
     <br />
@@ -33,7 +33,7 @@
             var last=0;
             $.ajax({
                 type: "GET",
-                url: "/hive_users/" + hive_url + "/first-5",
+                url: "/test-ui/hive_users/" + hive_url + "/first-5",
                 headers: {"X-CSRFToken":csrftoken},
                 data: "",
                 success: function(newData){
@@ -48,14 +48,14 @@
             // AJAX method to reload users on screen
             function reload(users) {
                 var profile = users[0];
-                $('#profiles_list').html('<a href="/create_chat/' + hive_url + '/' + profile.public_name + '">@' +
-                                          profile.public_name + '</a>  (<a href="/profile/' + profile.public_name +
+                $('#profiles_list').html('<a href="/test-ui/create_chat/' + hive_url + '/' + profile.public_name + '">@' +
+                                          profile.public_name + '</a>  (<a href="/test-ui/profile/' + profile.public_name +
                                           '/public">profile</a>)<br />');
                 for(i = 1; i < users.length; i++){
                     profile = users[i]
                     $('#profiles_list').html($('#profiles_list').html() +
-                        '<a href="/create_chat/' + hive_url + '/' + profile.public_name + '">@' + profile.public_name +
-                        '</a>  (<a href="/profile/' + profile.public_name + '/public">profile</a>)<br />'
+                        '<a href="/test-ui/create_chat/' + hive_url + '/' + profile.public_name + '">@' + profile.public_name +
+                        '</a>  (<a href="/test-ui/profile/' + profile.public_name + '/public">profile</a>)<br />'
                     );
                 }
             }
@@ -65,7 +65,7 @@
             {
                 $.ajax({
                     type: "GET",
-                    url: "/hive_users/" + hive_url + "/first-5",
+                    url: "/test-ui/hive_users/" + hive_url + "/first-5",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
@@ -85,7 +85,7 @@
             {
                 $.ajax({
                     type: "GET",
-                    url: "/hive_users/" + hive_url + "/" + last + "-5",
+                    url: "/test-ui/hive_users/" + hive_url + "/" + last + "-5",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){
@@ -108,7 +108,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/logout/",
+                    url: "/test-ui/logout/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){

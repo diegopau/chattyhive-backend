@@ -20,7 +20,7 @@ from email_confirmation.models import EmailAddress, EmailConfirmation
 
 def login_view(request):
     if request.user.is_authenticated():
-        return HttpResponseRedirect("/home")
+        return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -47,7 +47,7 @@ def login_view(request):
                                 EmailAddress.objects.check_confirmation(login_string)
                             else:
                                 return HttpResponseRedirect("/email_warning/")
-                    return HttpResponseRedirect("/home/")
+                    return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
                 else:
                     # user.delete()
                     # TODO set an html to resend confirmation
@@ -66,7 +66,7 @@ def login_view(request):
 
 def create_user_view(request):
     if request.user.is_authenticated():
-        return HttpResponseRedirect("/home")
+        return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
@@ -102,7 +102,7 @@ def create_user_view(request):
                 else:
                     return HttpResponse("UNKNOWN ERROR")
 
-                return HttpResponseRedirect("/create_user/register1/")
+                return HttpResponseRedirect("/{base_url}/create_user/register1/".format(base_url=settings.TEST_UI_BASE_URL))
 
             # if the email is already used
             except IntegrityError:
@@ -140,7 +140,7 @@ def register_one(request):
         form = RegistrationFormOne(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect("/create_user/register2/")
+            return HttpResponseRedirect("/{base_url}/create_user/register2/".format(base_url=settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
     else:
@@ -167,7 +167,7 @@ def register_two(request):
         if form.is_valid():
             form.save()
 
-            return HttpResponseRedirect("/create_user/register3/")
+            return HttpResponseRedirect("/{base_url}/create_user/register3/".format(base_url=settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
     else:
@@ -231,7 +231,7 @@ def register_three(request):
                     'error': 'password',
                 })
 
-            return HttpResponseRedirect("/home/")
+            return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
 
         else:
             return HttpResponse("ERROR, invalid form")

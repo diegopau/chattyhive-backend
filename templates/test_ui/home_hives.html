@@ -11,18 +11,18 @@
     <div align="right">
         <button type="button" id="btn_logout" style="text-align: right">Logout</button>
     </div>
-    <a href="/profile/my_profile/public">Profile</a>
-    <a href="/explore/">Explore</a>
-    <a href="/create_hive/">New Hive</a>
+    <a href="/test-ui/profile/my_profile/public">Profile</a>
+    <a href="/test-ui/explore/">Explore</a>
+    <a href="/test-ui/create_hive/">New Hive</a>
     <br />
     <br />
-    My Hives--<a href="/home/chats/">My Chats</a>
+    My Hives--<a href="/test-ui/home/chats/">My Chats</a>
     <br />
     {% for hive in hives %}
       <li>
-        <a href="/hive/{{ hive.name_url }}">{{ hive.name }}</a>
-          --<a href="/hive_description/{{ hive.name_url }}">Description</a>
-          --<a href="/leave/{{ hive.name_url }}">leave</a>
+        <a href="/test-ui/hive/{{ hive.name_url }}">{{ hive.name }}</a>
+          --<a href="/test-ui/hive_description/{{ hive.name_url }}">Description</a>
+          --<a href="/test-ui/leave/{{ hive.name_url }}">leave</a>
       </li>
     {% endfor %}
 
@@ -36,7 +36,7 @@
                 var csrftoken = $.cookie('csrftoken');
                 $.ajax({
                     type: "POST",
-                    url: "/logout/",
+                    url: "/test-ui/logout/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: "",
                     success: function(newData){

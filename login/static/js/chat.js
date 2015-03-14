@@ -49,7 +49,7 @@ $(document).ready(function() {
         var csrftoken = $.cookie('csrftoken');
         $.ajax({
             type: "POST",
-            url: "/chat/" + channel_name + "/",
+            url: "/test-ui/chat/" + channel_name + "/",
             headers: {"X-CSRFToken":csrftoken},
             data: {username:user, timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
             success: function(newData){
@@ -74,7 +74,7 @@ $(document).ready(function() {
         var csrftoken = $.cookie('csrftoken');
         $.ajax({
             type: "POST",
-            url: "/logout/",
+            url: "/test-ui/logout/",
             headers: {"X-CSRFToken":csrftoken},
             data: "",
             success: function(newData){

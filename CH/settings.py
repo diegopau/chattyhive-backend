@@ -7,6 +7,9 @@ TEMPLATE_DEBUG = DEBUG
 
 # This is the base URL for all test user interface app (test_ui)
 TEST_UI_BASE_URL = 'test-ui'
+# and this is the name of the app for the test user interface
+TEST_UI_APP_NAME = 'test_ui'
+
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -220,12 +223,12 @@ SOCIAL_AUTH_DISCONNECT_PIPELINE = (
     # 'logout_function' must be implemented
 )
 
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/home/'
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/' + TEST_UI_BASE_URL + '/home/'
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'   # todo create this page
 SOCIAL_AUTH_LOGIN_URL = '/login-url/'           # todo check if this is necessary
 SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/create_user/register1/'
-SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/home/'
-SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/' # not used
+SOCIAL_AUTH_NEW_ASSOCIATION_REDIRECT_URL = '/' + TEST_UI_BASE_URL + '/home/'
+SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/account-disconnected-redirect-url/'  # not used
 SOCIAL_AUTH_INACTIVE_USER_URL = '/inactive-user/'   # not used
 
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
