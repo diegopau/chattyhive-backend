@@ -90,7 +90,11 @@ class ChProfileDetail(APIView):
 
     def get(self, request, public_name, format=None):
         profile = self.get_object(public_name)
-        serializer = ChProfileSerializer(profile)
+
+        # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
+        # del contexto
+        serializer = ChProfileSerializer(profile, context={'request': request})
+
         return Response(serializer.data)
 
 
