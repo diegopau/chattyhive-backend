@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from login.models import *
-from CH import settings
+from chattyhive_project import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from social.backends.google import GooglePlusAuth
@@ -16,9 +16,11 @@ from django.core.serializers.json import DjangoJSONEncoder
 import pusher
 from django.db import IntegrityError
 from email_confirmation.models import EmailAddress, EmailConfirmation
+from chattyhive_project import settings
 
 
 def login_view(request):
+    print("directorios staticos:", settings.STATICFILES_DIRS)
     if request.user.is_authenticated():
         return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
     if request.method == 'POST':
@@ -107,7 +109,7 @@ def create_user_view(request):
             # if the email is already used
             except IntegrityError:
                 form = CreateUserForm()
-                return render(request, "login/registration.html", {
+                return render(request, "login/create_user.html", {
                     'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
                     'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
                     'form': form,
@@ -118,7 +120,7 @@ def create_user_view(request):
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateUserForm()
-        return render(request, "login/registration.html", {
+        return render(request, "login/create_user.html", {
             'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
             'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
             'form': form
@@ -219,14 +221,14 @@ def register_three(request):
                 # if the email is already used
                 except IntegrityError:
                     form = RegistrationFormThree()
-                    return render(request, "login/create_user.html", {
+                    return render(request, "login/registration_3.html", {
                         'form': form,
                         'error': 'email',
                     })
 
             else:
                 form = RegistrationFormThree()
-                return render(request, "login/create_user.html", {
+                return render(request, "login/registration_3.html", {
                     'form': form,
                     'error': 'password',
                 })
@@ -248,7 +250,7 @@ def register_three(request):
             form = RegistrationFormThree(initial={
                 'email': request.user.email,
             })
-        return render(request, "login/create_user.html", {
+        return render(request, "login/registration_3.html", {
             'form': form,
             'error': 'none',
         })

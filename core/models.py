@@ -16,7 +16,7 @@ from django.utils import timezone
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
-from CH import settings
+from chattyhive_project import settings
 from core.google_ccs import send_gcm_message
 import json
 import pusher

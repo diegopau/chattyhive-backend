@@ -15,9 +15,9 @@ urlpatterns = patterns('',
 
     url(r'^$', 'core.views.welcome_screen', name='welcome_dev'),
 
-    #######################
-    #         API         #
-    #######################
+    ########################
+    #          API         #
+    ########################
 
     url(r'^', include('API.urls')),
     url(r'^api-docs/', include('rest_framework_swagger.urls')),
