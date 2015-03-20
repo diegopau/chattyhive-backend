@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hive</title>
+    <title></title>
+    <script src="http://code.jquery.com//jquery-2.0.3.min.js" type="text/javascript"></script>
+    <script src="http://cdn.jsdelivr.net/jquery.cookie/1.4.0/jquery.cookie.js" type="text/javascript"></script>
+    <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
+</head>
+<body>
+    <div align="right">
+        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
+    </div>
+    <a href="/test-ui/home/">Home</a><br />
+    <br />
+    {% if subscribed == True %}
+        <div>:{{ hive.name }} -- <a href="/test-ui/leave/{{ hive.name_url }}">leave</a></div>
+    {% else %}
+        <div>:{{ hive.name }} -- <a href="/test-ui/join/{{ hive.name_url }}">join</a></div>
+    {% endif %}
+    <div>Description: {{ hive.description }}</div>
+    <div>Category: {{ hive.category.name }}</div>
+    <div>Tags:
+        {% for tag in hive.tags.all %}
+             {{ tag }},
+        {% endfor %}
+    </div>
+    {% if owner == True %}
+        <div><a href="/test-ui/create_public_chat/{{ hive.name_url }}">New public chat</a></div>
+    {% endif %}
+
+</body>
+</html>

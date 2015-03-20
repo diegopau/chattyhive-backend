@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <a href="/test-ui/home/">Home</a>
+    </br>
+    <a href="/test-ui/create_community/">Community</a>
+    <form action="/test-ui/create_hive/" method="post">{% csrf_token %}
+            {{ formHive.as_p }}
+            {{ formTags.as_p }}
+        <input type="submit" value="Create" />
+    </form>
+</body>
+</html>
