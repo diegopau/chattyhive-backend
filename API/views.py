@@ -17,7 +17,7 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileSerializer
+from API.serializers import ChUserSerializer, ChProfileLevel1Serializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -93,7 +93,7 @@ class ChProfileDetail(APIView):
 
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
-        serializer = ChProfileSerializer(profile, context={'request': request})
+        serializer = ChProfileLevel1Serializer(profile, context={'request': request})
 
         return Response(serializer.data)
 

@@ -423,7 +423,6 @@ class ChHive(models.Model):
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
-
     featured = models.BooleanField(default=False)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
