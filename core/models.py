@@ -255,6 +255,9 @@ class ChProfile(models.Model):
         """
         try:
             lang = LanguageModel.objects.get(language=char_language)
+
+            # TODO: esto puede dar problemas, ver https://docs.djangoproject.com/en/1.7/releases/1.7/#remove-and-clear-methods-of-related-managers
+            # https://docs.djangoproject.com/en/1.7/ref/models/querysets/#nested-queries-performance
             self.language.remove(lang)
         except LanguageModel.DoesNotExist:
             return

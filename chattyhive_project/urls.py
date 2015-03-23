@@ -4,7 +4,7 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.conf import settings
 
-admin.autodiscover()
+# admin.autodiscover() ### this is no longer needed with Django 1.7
 
 # Endpoints for the test browser view and the Django Admin
 urlpatterns = patterns('',

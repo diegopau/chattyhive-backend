@@ -110,7 +110,7 @@ def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
         return HttpResponse(json.dumps({'csrf': csrf}),
-                            mimetype="application/json")
+                            mimetype="application/json")  #TODO: mimetype is deprecated
     else:
         raise Http404
 
