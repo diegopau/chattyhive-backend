@@ -232,6 +232,12 @@ class ChProfile(models.Model):
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
 
+    # Many-to-Many fields through the intermediate models (the subscriptions)
+    # IMPORTANTE, se meten los modelos entre comillas por necesidad (por estar declaradas las clases para ambos
+    # modelos después de esta clase, pero ese no es el modo habitual de hacer esto!
+    hive_subscriptions = models.ManyToManyField('ChHive', through='ChHiveSubscription')
+    chat_subscriptions = models.ManyToManyField('ChChat', through='ChChatSubscription')
+
     # methods
     def add_language(self, char_language):
         """
