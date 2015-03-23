@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from core.models import ChUser, ChProfile, LanguageModel, ChHive, ChChat
+from core.models import ChUser, ChProfile, LanguageModel, ChHive, ChChat, City, Region, Country
 
 
 class LanguageSerializer(serializers.ModelSerializer):
@@ -40,11 +40,18 @@ class ChProfileSerializer(serializers.ModelSerializer):
 
 class ChProfileLevel1Serializer(serializers.ModelSerializer):
 
-    user = serializers.SlugRelatedField(many=False, read_only=True, slug_field='username')
+    user = serializers.SlugRelatedField(read_only=True, slug_field='username', allow_null=False)
+    city = serializers.SlugRelatedField(read_only=True, slug_field='name', )  # TODO: read only??
+    region = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
+    country = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
+    languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')  # TODO: read only??
+
+    # Hive subscriptions (and not only hive of which he is the creator)
+    # hives = serializers.SlugRelatedField(many=True, slug_field='')
 
     class Meta:
         model = ChProfile
         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
-                  '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
+                  'languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
                   'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
                   'public_show_sex')
