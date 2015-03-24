@@ -4,6 +4,7 @@ import os
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 # This is the base URL for all test user interface app (test_ui)
 TEST_UI_BASE_URL = 'test-ui'
@@ -177,13 +178,6 @@ PUSHER_SECRET = '360b346d88ee47d4c230'
 
 CITIES_LIGHT_CITY_SOURCES = ['http://download.geonames.org/export/dump/cities5000.zip']
 
-    ### ======================================================== ###
-    ###                         SOUTH                            ###
-    ### ======================================================== ###
-
-SOUTH_MIGRATION_MODULES = {
-    'cities_light': 'cities_light.south_migrations',
-}
 
     ### ======================================================== ###
     ###                       Social Auth                        ###
