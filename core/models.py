@@ -261,6 +261,9 @@ class ChProfile(models.Model):
         """
         try:
             lang = LanguageModel.objects.get(language=char_language)
+
+            # TODO: esto puede dar problemas, ver https://docs.djangoproject.com/en/1.7/releases/1.7/#remove-and-clear-methods-of-related-managers
+            # https://docs.djangoproject.com/en/1.7/ref/models/querysets/#nested-queries-performance
             self.language.remove(lang)
         except LanguageModel.DoesNotExist:
             return
@@ -409,6 +412,10 @@ class ChCategory(models.Model):
     description = models.CharField(max_length=140)
     code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
+
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
 
     def __str__(self):
         return self.group + ': ' + self.name
