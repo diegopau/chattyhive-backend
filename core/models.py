@@ -407,6 +407,10 @@ class ChCategory(models.Model):
     code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
 
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
+
     def __str__(self):
         return self.group + ': ' + self.name
 
