@@ -47,7 +47,7 @@ class ChProfileLevel1Serializer(serializers.ModelSerializer):
     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')  # TODO: read only??
 
     # Hive subscriptions (and not only hive of which he is the creator)
-    # hives = serializers.SlugRelatedField(many=True, slug_field='')
+    hives = serializers.SlugRelatedField(many=True, slug_field='')
 
     class Meta:
         model = ChProfile

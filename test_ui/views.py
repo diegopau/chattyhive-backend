@@ -4,6 +4,7 @@ from core.models import *
 from django.contrib.auth.decorators import login_required
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from slugify import slugify
 
 @login_required
 def create_hive(request):
@@ -21,12 +22,10 @@ def create_hive(request):
             hive_name = formHive.cleaned_data['name']
             hive = formHive.save(commit=False)
             hive.creator = profile
-            hive.name_url = hive_name.replace(" ", "_")
-            hive.name_url = replace_unicode(hive.name_url)
-
+            hive.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=540)
             try:
-                ChHive.objects.get(name_url=hive.name_url)
-                return HttpResponse("This hive already exists")
+                ChHive.objects.get(slug=hive.slug)
+                return HttpResponse("The hive slug already exists")
             except ChHive.DoesNotExist:
                 # hive.name_url = replace_unicode(hive_name)
                 hive.save()

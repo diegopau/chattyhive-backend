@@ -429,7 +429,7 @@ class ChHive(models.Model):
 
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
-    name_url = models.CharField(max_length=540, unique=True)
+    slug = models.CharField(max_length=540, unique=True)
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
