@@ -19,7 +19,7 @@ class ChUserSerializer(serializers.ModelSerializer):
 class ChHiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
-        fields = ('name', 'name_url', 'description', 'category', '_languages', 'creator', 'creation_date', 'tags',
+        fields = ('name', 'slug', 'description', 'category', '_languages', 'creator', 'creation_date', 'tags',
                   'featured', 'type')
 
 
@@ -47,7 +47,7 @@ class ChProfileLevel1Serializer(serializers.ModelSerializer):
     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')  # TODO: read only??
 
     # Hive subscriptions (and not only hive of which he is the creator)
-    hives = serializers.SlugRelatedField(many=True, slug_field='')
+    hives = serializers.SlugRelatedField(many=True, slug_field='slug')
 
     class Meta:
         model = ChProfile

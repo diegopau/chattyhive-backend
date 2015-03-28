@@ -14,7 +14,7 @@
     <a href="/test-ui/home/">Home</a><br />
     <br />
     <div>
-        :{{ hive.name }} -- <a href="/test-ui/hive_description/{{ hive.name_url }}">Description</a> <br />
+        :{{ hive.name }} -- <a href="/test-ui/hive_description/{{ hive.slug }}">Description</a> <br />
         {% for chat in chats %}
             <a href="/test-ui/chat/{{ chat.channel_unicode }}"> public chat</a><br />
         {% endfor %}
@@ -28,7 +28,7 @@
     <script type="text/javascript">
         // Buttons behaviour
         $(document).ready(function() {
-            var hive_url="{{ hive.name_url }}";
+            var hive_url="{{ hive.slug }}";
             var csrftoken = $.cookie('csrftoken');
             var last=0;
             $.ajax({

@@ -551,8 +551,8 @@ class ChHive(models.Model):
             raise IntegrityError("User have not joined the hive")
 
     def toJSON(self):
-        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+        return u'{"name": "%s", "slug": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
+               % (self.name, self.slug, self.description, self.category, self.creation_date)
 
     @property
     def users(self):

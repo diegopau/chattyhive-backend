@@ -461,7 +461,7 @@ def chat_v2(request):
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name=hive_name)
-        # hive_url = hive.name_url
+        # hive_url = hive.slug
 
         chat2 = ChChat.objects.get(hive=hive)
 

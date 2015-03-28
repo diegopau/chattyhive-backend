@@ -17,7 +17,7 @@
     <br />
     {% for hive in hives %}
       <li>
-        <a href="/test-ui/hive_description/{{ hive.name_url }}">{{ hive.name }}</a> -- <a href="/join/{{ hive.name_url }}">join</a>
+        <a href="/test-ui/hive_description/{{ hive.slug }}">{{ hive.name }}</a> -- <a href="/join/{{ hive.slug }}">join</a>
       </li>
     {% endfor %}
 </body>
