@@ -17,7 +17,7 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileLevel1Serializer
+from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -79,6 +79,20 @@ class ChUserDetail(APIView):
         # Falta confirmar esto bien
         user.delete_account()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChHiveList(APIView):
+    """Lists hives in Explora or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+    def get(self, request, format=None):
+        """prueba
+        """
+        hives = ChHive.objects.all()
+        serializer = ChHiveSerializer(hives, many=True)
+        return Response(serializer.data)
 
 
 class ChProfileDetail(APIView):
@@ -461,7 +475,7 @@ def chat_v2(request):
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name=hive_name)
-        # hive_url = hive.slug
+        # hive_slug = hive.slug
 
         chat2 = ChChat.objects.get(hive=hive)
 

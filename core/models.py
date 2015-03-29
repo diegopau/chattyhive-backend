@@ -418,7 +418,7 @@ class ChCategory(models.Model):
         return cls.GROUPS
 
     def __str__(self):
-        return self.group + ': ' + self.name
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
 
 
 class ChHive(models.Model):
@@ -429,7 +429,7 @@ class ChHive(models.Model):
 
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
-    slug = models.CharField(max_length=540, unique=True)
+    slug = models.CharField(max_length=250, unique=True, default='')
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)

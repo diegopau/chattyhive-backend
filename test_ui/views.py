@@ -6,6 +6,7 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from slugify import slugify
 
+
 @login_required
 def create_hive(request):
     """
@@ -22,7 +23,7 @@ def create_hive(request):
             hive_name = formHive.cleaned_data['name']
             hive = formHive.save(commit=False)
             hive.creator = profile
-            hive.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=540)
+            hive.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=250)
             try:
                 ChHive.objects.get(slug=hive.slug)
                 return HttpResponse("The hive slug already exists")
@@ -123,7 +124,7 @@ def create_community(request):
 
 
 @login_required
-def create_chat(request, hive_url, public_name):
+def create_chat(request, hive_slug, public_name):
     """
     :param request:
     :return: Web page with the form for creating a hive
@@ -151,7 +152,7 @@ def create_chat(request, hive_url, public_name):
             chat = ChChat()
             chat.hive = hive
             chat.type = 'private'
-            # chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_url)
+            # chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_slug)
             chat.save()
 
             subscription1 = ChChatSubscription(chat=chat, profile=profile)
@@ -169,7 +170,7 @@ def create_chat(request, hive_url, public_name):
 
 
 @login_required
-def create_public_chat(request, hive_url):
+def create_public_chat(request, hive_slug):
     """
     :param request:
     :return: Web page with the form for creating a new public chat
@@ -193,7 +194,7 @@ def create_public_chat(request, hive_url):
 
 
 @login_required
-def join(request, hive_url):
+def join(request, hive_slug):
     """
     :param request:
     :param hive_name: Name of the hive that will be joined to
@@ -213,10 +214,10 @@ def join(request, hive_url):
 
 
 @login_required
-def leave(request, hive_url):
+def leave(request, hive_slug):
     """
     :param request:
-    :param hive_url:
+    :param hive_slug:
     :return:
     """
     if request.method == 'GET':
@@ -417,17 +418,17 @@ def chat(request, chat_url):
 
 
 @login_required
-def hive(request, hive_url):
+def hive(request, hive_slug):
     """
     :param request:
-    :param hive_url: Url of the hive, which will be used for the query
+    :param hive_slug: Url of the hive, which will be used for the query
     :return: hive view with users and public chat link
     """
 
     if request.method == 'GET':
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        hive = ChHive.objects.get(slug=slug)
+        hive = ChHive.objects.get(slug=hive_slug)
         try:
             ChHiveSubscription.objects.get(hive=hive, profile=profile)
             chats = ChChat.objects.filter(hive=hive, type='public')
@@ -445,10 +446,10 @@ def hive(request, hive_url):
 
 
 @login_required
-def hive_description(request, hive_url):
+def hive_description(request, hive_slug):
     """
     :param request:
-    :param hive_url: Url of the hive, which will be used for the query
+    :param hive_slug: Url of the hive, which will be used for the query
     :return: hive view with users and public chat link
     """
     if request.method == 'GET':
@@ -478,10 +479,10 @@ def hive_description(request, hive_url):
 
 
 @login_required
-def get_hive_users(request, hive_url, init, interval):
+def get_hive_users(request, hive_slug, init, interval):
     """
     :param request:
-    :param hive_url: Url of the hive, which will be used for the query
+    :param hive_slug: Url of the hive, which will be used for the query
     :param init: ID of the first message to return
     :param interval: Number of messages to return
     :return: *interval* users from *init*
