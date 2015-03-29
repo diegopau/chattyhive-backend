@@ -12,7 +12,6 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 from django.core import validators
 from django.utils import timezone
-# TODO: should I add colorful to requirements?
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
@@ -799,7 +798,7 @@ class UserReports(models.Model):
     reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
-# TODO: Forms should be moved to its own file (forms.py)
+# TODO: Forms should be moved to its own file (forms.py) and to test_ui app
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================
