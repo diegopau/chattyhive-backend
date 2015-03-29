@@ -441,8 +441,6 @@ class ChHive(models.Model):
 
     def set_tags(self, tags_array):
         for stag in tags_array:
-            if stag[0] != '#':
-                stag = '#' + stag
             tag = get_or_new_tag(stag)
             self.tags.add(tag)
 

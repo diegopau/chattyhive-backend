@@ -17,7 +17,7 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveSerializer
+from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveLevel1Serializer, ChHiveSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -91,8 +91,17 @@ class ChHiveList(APIView):
         """prueba
         """
         hives = ChHive.objects.all()
-        serializer = ChHiveSerializer(hives, many=True)
+        serializer = ChHiveLevel1Serializer(hives, many=True)
         return Response(serializer.data)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+        serializer = ChHiveSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChProfileDetail(APIView):
