@@ -7,14 +7,14 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_auto_20150323_2024'),
+        ('core', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='EmailAddress',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', auto_created=True, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
                 ('email', models.EmailField(max_length=75)),
                 ('warned', models.BooleanField(default=False)),
                 ('verified', models.BooleanField(default=False)),
@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='EmailConfirmation',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', auto_created=True, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, serialize=False, primary_key=True, verbose_name='ID')),
                 ('sent', models.DateTimeField()),
                 ('warned_day', models.DateTimeField()),
                 ('confirmation_key', models.CharField(max_length=40)),

@@ -21,7 +21,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'chattytest1db', # Or path to database file if using sqlite3.
+        'NAME': 'chattytestdb', # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
         'USER': 'chattytestuser',
         'PASSWORD': 'chattytestpass',
@@ -291,7 +291,7 @@ LOGGING = {
 import dj_database_url
 #DATABASES['default'] =  dj_database_url.config()
 DATABASES = {
-    'default': dj_database_url.config(default='postgres://chattytestuser:chattytestpass@localhost/chattytest1db')}
+    'default': dj_database_url.config(default='postgres://chattytestuser:chattytestpass@localhost/chattytestdb')}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
