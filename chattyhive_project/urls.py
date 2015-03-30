@@ -61,6 +61,12 @@ urlpatterns = patterns('',
     url('', include('social.apps.django_app.urls', namespace='social')),
 
 
+    # ### ======================================================== ###
+    # ###                  Cities_light - URLS                     ###
+    # ### ======================================================== ###
+
+    url(r'^location/', include('cities_light.contrib.restframework3')),
+
     #
     # ### ======================================================== ###
     # ###                     Android - URLS                       ###
