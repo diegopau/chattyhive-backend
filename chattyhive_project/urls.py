@@ -4,7 +4,7 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.conf import settings
 
-admin.autodiscover()
+# admin.autodiscover() ### this is no longer needed with Django 1.7
 
 # Endpoints for the test browser view and the Django Admin
 urlpatterns = patterns('',
@@ -15,9 +15,9 @@ urlpatterns = patterns('',
 
     url(r'^$', 'core.views.welcome_screen', name='welcome_dev'),
 
-    #######################
-    #         API         #
-    #######################
+    ########################
+    #          API         #
+    ########################
 
     url(r'^', include('API.urls')),
     url(r'^api-docs/', include('rest_framework_swagger.urls')),
@@ -60,6 +60,12 @@ urlpatterns = patterns('',
 
     url('', include('social.apps.django_app.urls', namespace='social')),
 
+
+    # ### ======================================================== ###
+    # ###                  Cities_light - URLS                     ###
+    # ### ======================================================== ###
+
+    url(r'^location/', include('cities_light.contrib.restframework3')),
 
     #
     # ### ======================================================== ###

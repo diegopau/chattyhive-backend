@@ -14,9 +14,9 @@
     <a href="/test-ui/home/">Home</a><br />
     <br />
     {% if subscribed == True %}
-        <div>:{{ hive.name }} -- <a href="/test-ui/leave/{{ hive.name_url }}">leave</a></div>
+        <div>:{{ hive.name }} -- <a href="/test-ui/leave/{{ hive.slug }}">leave</a></div>
     {% else %}
-        <div>:{{ hive.name }} -- <a href="/test-ui/join/{{ hive.name_url }}">join</a></div>
+        <div>:{{ hive.name }} -- <a href="/test-ui/join/{{ hive.slug }}">join</a></div>
     {% endif %}
     <div>Description: {{ hive.description }}</div>
     <div>Category: {{ hive.category.name }}</div>
@@ -26,7 +26,7 @@
         {% endfor %}
     </div>
     {% if owner == True %}
-        <div><a href="/test-ui/create_public_chat/{{ hive.name_url }}">New public chat</a></div>
+        <div><a href="/test-ui/create_public_chat/{{ hive.slug }}">New public chat</a></div>
     {% endif %}
 
 </body>

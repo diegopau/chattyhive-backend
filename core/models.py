@@ -12,11 +12,10 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 from django.core import validators
 from django.utils import timezone
-# TODO: should I add colorful to requirements?
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
-from CH import settings
+from chattyhive_project import settings
 from core.google_ccs import send_gcm_message
 import json
 import pusher
@@ -232,6 +231,12 @@ class ChProfile(models.Model):
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
 
+    # Many-to-Many fields through the intermediate models (the subscriptions)
+    # IMPORTANTE, se meten los modelos entre comillas por necesidad (por estar declaradas las clases para ambos
+    # modelos después de esta clase, pero ese no es el modo habitual de hacer esto!
+    hive_subscriptions = models.ManyToManyField('ChHive', through='ChHiveSubscription')
+    chat_subscriptions = models.ManyToManyField('ChChat', through='ChChatSubscription')
+
     # methods
     def add_language(self, char_language):
         """
@@ -255,6 +260,9 @@ class ChProfile(models.Model):
         """
         try:
             lang = LanguageModel.objects.get(language=char_language)
+
+            # TODO: esto puede dar problemas, ver https://docs.djangoproject.com/en/1.7/releases/1.7/#remove-and-clear-methods-of-related-managers
+            # https://docs.djangoproject.com/en/1.7/ref/models/querysets/#nested-queries-performance
             self.language.remove(lang)
         except LanguageModel.DoesNotExist:
             return
@@ -404,8 +412,12 @@ class ChCategory(models.Model):
     code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
 
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
+
     def __str__(self):
-        return self.group + ': ' + self.name
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
 
 
 class ChHive(models.Model):
@@ -416,21 +428,18 @@ class ChHive(models.Model):
 
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
-    name_url = models.CharField(max_length=540, unique=True)
+    slug = models.CharField(max_length=250, unique=True, default='')
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
-
     featured = models.BooleanField(default=False)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
     def set_tags(self, tags_array):
         for stag in tags_array:
-            if stag[0] != '#':
-                stag = '#' + stag
             tag = get_or_new_tag(stag)
             self.tags.add(tag)
 
@@ -539,8 +548,8 @@ class ChHive(models.Model):
             raise IntegrityError("User have not joined the hive")
 
     def toJSON(self):
-        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+        return u'{"name": "%s", "slug": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
+               % (self.name, self.slug, self.description, self.category, self.creation_date)
 
     @property
     def users(self):
@@ -789,7 +798,7 @@ class UserReports(models.Model):
     reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
-# TODO: Forms should be moved to its own file (forms.py)
+# TODO: Forms should be moved to its own file (forms.py) and to test_ui app
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================

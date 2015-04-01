@@ -17,7 +17,7 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileSerializer
+from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveLevel1Serializer, ChHiveSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -81,6 +81,29 @@ class ChUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ChHiveList(APIView):
+    """Lists hives in Explora or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+    def get(self, request, format=None):
+        """prueba
+        """
+        hives = ChHive.objects.all()
+        serializer = ChHiveLevel1Serializer(hives, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+        serializer = ChHiveSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class ChProfileDetail(APIView):
     def get_object(self, public_name):
         try:
@@ -90,7 +113,11 @@ class ChProfileDetail(APIView):
 
     def get(self, request, public_name, format=None):
         profile = self.get_object(public_name)
-        serializer = ChProfileSerializer(profile)
+
+        # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
+        # del contexto
+        serializer = ChProfileLevel1Serializer(profile, context={'request': request})
+
         return Response(serializer.data)
 
 
@@ -106,7 +133,7 @@ def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
         return HttpResponse(json.dumps({'csrf': csrf}),
-                            mimetype="application/json")
+                            mimetype="application/json")  #TODO: mimetype is deprecated
     else:
         raise Http404
 
@@ -457,7 +484,7 @@ def chat_v2(request):
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name=hive_name)
-        # hive_url = hive.name_url
+        # hive_slug = hive.slug
 
         chat2 = ChChat.objects.get(hive=hive)
 
