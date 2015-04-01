@@ -1,4 +1,5 @@
-from core.test.generators.random_generator import Generator
+from core.test.text_generator.random_generator import Generator
+from core.test.name_generator.names import
 from random import randint
 
 with open('data/sample.txt', 'r') as sample_txt:
