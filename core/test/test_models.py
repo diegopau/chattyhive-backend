@@ -10,8 +10,9 @@ from model_mommy import mommy
 from model_mommy.recipe import Recipe, foreign_key
 
 # Relative imports of the 'app-name' package
-from .models import Kid
+from core.models import TagModel
 
 
-class ChHiveTestModel(TestCase):
-     def setUp(self):
+class TagModelTestModel(TestCase):
+    def setUp(self):
+        self.tag = mommy.make(TagModel)

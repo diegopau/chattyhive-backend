@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-#import httplib
 try:
     import http.client as httplib
 except ImportError:
@@ -9,13 +8,16 @@ except ImportError:
 import hmac
 import json
 import hashlib
-#import urllib
 try:
     from urllib.parse import quote
 except ImportError:
     from urllib import quote
 import re
 import socket
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 if sys.version < '3':
     text_type = unicode
@@ -23,7 +25,6 @@ else:
     text_type = str
 
 host    = 'api.pusherapp.com'
-port    = 80
 app_id  = None
 key     = None
 secret  = None
@@ -32,20 +33,24 @@ channel_name_re = re.compile('^[-a-zA-Z0-9_=@,.;]+$')
 app_id_re       = re.compile('^[0-9]+$')
 
 def url2options(url):
-    assert url.startswith('http://'), "invalid URL"
-    url = url[7:]
-    key, url = url.split(':', 1)
-    secret, url = url.split('@', 1)
-    host, url = url.split('/', 1)
-    url, app_id = url.split('/', 1)
-    return {'key': key, 'secret': secret, 'host': host, 'app_id': app_id}
+    p = urlparse.urlsplit(url)
+    if not p.path.startswith("/apps/"):
+        raise ValueError("invalid URL path")
+    return {
+        'key': p.username,
+        'secret': p.password,
+        'host': p.hostname,
+        'app_id': p.path[6:],
+        'port': p.port,
+        'secure': p.scheme == 'https',
+    }
 
 def pusher_from_url(url=None):
     url = url or os.environ['PUSHER_URL']
     return Pusher(**url2options(url))
 
 class Pusher(object):
-    def __init__(self, app_id=None, key=None, secret=None, host=None, port=None, encoder=None):
+    def __init__(self, app_id=None, key=None, secret=None, host=None, port=None, encoder=None, secure=False):
         _globals = globals()
         self.app_id = str(app_id or _globals['app_id'])
         if not app_id_re.match(self.app_id):
@@ -53,12 +58,12 @@ class Pusher(object):
         self.key = key or _globals['key']
         self.secret = secret or _globals['secret']
         self.host = host or _globals['host']
-        self.port = port or _globals['port']
+        self.port = port or (443 if secure else 80)
+        self.secure = secure
         self.encoder = encoder
         self._channels = {}
 
     def __getitem__(self, key):
-        #if not self._channels.has_key(key):
         if key not in self._channels:
             return self._make_channel(key)
         return self._channels[key]
@@ -67,13 +72,16 @@ class Pusher(object):
         self._channels[name] = channel_type(name, self)
         return self._channels[name]
 
+    def sign(self, message):
+        return hmac.new(self.secret.encode('utf-8'),
+                        message, hashlib.sha256).hexdigest()
+
 class Channel(object):
     def __init__(self, name, pusher):
         self.pusher = pusher
         self.name = str(name)
         if not channel_name_re.match(self.name):
             raise NameError("Invalid channel id: %s" % self.name)
-        #self.path = '/apps/%s/channels/%s/events' % (self.pusher.app_id, urllib.quote(self.name))
         self.path = '/apps/%s/channels/%s/events' % (self.pusher.app_id, quote(self.name))
 
     def trigger(self, event, data={}, socket_id=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
@@ -95,26 +103,23 @@ class Channel(object):
     def signed_query(self, event, json_data, socket_id):
         query_string = self.compose_querystring(event, json_data, socket_id)
         string_to_sign = "POST\n%s\n%s" % (self.path, query_string)
-        #signature = hmac.new(self.pusher.secret, string_to_sign, hashlib.sha256).hexdigest()
-        signature = hmac.new(self.pusher.secret.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
+        signature = self.pusher.sign(string_to_sign.encode('utf-8'))
         return "%s&auth_signature=%s" % (query_string, signature)
 
     def compose_querystring(self, event, json_data, socket_id):
         hasher = hashlib.md5()
-        #hasher.update(json_data)
         hasher.update(json_data.encode('UTF-8'))
         hash_str = hasher.hexdigest()
         ret = "auth_key=%s&auth_timestamp=%s&auth_version=1.0&body_md5=%s&name=%s" % (self.pusher.key, int(time.time()), hash_str, event)
         if socket_id:
-            #ret += "&socket_id=" + unicode(socket_id)
             ret += "&socket_id=" + text_type(socket_id)
         return ret
 
     def send_request(self, signed_path, data_string, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
-        #http = httplib.HTTPConnection(self.pusher.host, self.pusher.port, timeout=timeout)
-        #http.request('POST', signed_path, data_string, {'Content-Type': 'application/json'})
-        #resp = http.getresponse()
-        client = httplib.HTTPConnection(self.pusher.host, self.pusher.port, timeout=timeout)
+        if not self.pusher.secure:
+            client = httplib.HTTPConnection(self.pusher.host, self.pusher.port, timeout=timeout)
+        else:
+            client = httplib.HTTPSConnection(self.pusher.host, self.pusher.port, timeout=timeout)
         client.request('POST', signed_path, data_string, {'Content-Type': 'application/json'})
         resp = client.getresponse()
         return resp.status, resp.read()
@@ -140,8 +145,7 @@ class Channel(object):
       if custom_string:
         string_to_sign += ":%s" % custom_string
 
-      # signature = hmac.new(self.pusher.secret, string_to_sign, hashlib.sha256).hexdigest()
-      signature = hmac.new(self.pusher.secret.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
+      signature = self.pusher.sign(string_to_sign.encode('utf-8'))
 
       return "%s:%s" % (self.pusher.key,signature)
 
@@ -167,7 +171,7 @@ try:
         @ndb.tasklet
         def trigger_async(self, event, data={}, socket_id=None):
             """Async trigger that in turn calls send_request_async"""
-            json_data = json.dumps(data)
+            json_data = json.dumps(data, cls=self.pusher.encoder)
             status = yield self.send_request_async(self.signed_query(event, json_data, socket_id), json_data)
             if status == 202:
                 raise ndb.Return(True)
@@ -196,14 +200,15 @@ except ImportError:
     pass
 
 class TornadoChannel(Channel):
-    def trigger(self, event, data={}, socket_id=None, callback=None):
+    def trigger(self, event, data={}, socket_id=None, callback=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
         self.callback = callback
-        return super(TornadoChannel, self).trigger(event, data, socket_id)
+        return super(TornadoChannel, self).trigger(event, data, socket_id, timeout=timeout)
 
-    def send_request(self, signed_path, data_string):
+    def send_request(self, signed_path, data_string, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+        timeout = None if timeout == socket._GLOBAL_DEFAULT_TIMEOUT else timeout
         import tornado.httpclient
         absolute_url = self.get_absolute_path(signed_path)
-        request = tornado.httpclient.HTTPRequest(absolute_url, method='POST', body=data_string)
+        request = tornado.httpclient.HTTPRequest(absolute_url, method='POST', body=data_string, request_timeout=timeout)
         client = tornado.httpclient.AsyncHTTPClient()
         client.fetch(request, callback=self.callback)
         # Returning 202 to avoid Channel errors. Actual error handling takes place in callback.

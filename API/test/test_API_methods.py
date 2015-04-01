@@ -13,8 +13,8 @@ class GetMethods(unittest.TestCase):
         response = self.client.get('/hives/')
 
         print("testing_get_hives")
-
-        print("Response: ")
-        print(response.body)
+        #
+        # print("Response: ")
+        # print(response.body)
         # Check that the response is 200 OK.
         self.assertEqual(response.status_code, 200)
