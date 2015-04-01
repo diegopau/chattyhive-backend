@@ -12,11 +12,10 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 from django.core import validators
 from django.utils import timezone
-# TODO: should I add colorful to requirements?
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
-from CH import settings
+from chattyhive_project import settings
 from core.google_ccs import send_gcm_message
 import json
 import pusher
@@ -30,7 +29,6 @@ class ChUserManager(UserManager):
     def create_user(self, username, email, password, *args, **kwargs):
         """Creates a user with an email and password
 
-        We assign an hex
         :param username: Email of the user used as username
         :param email: Email also saved
         :param password: Password for the user
@@ -39,6 +37,7 @@ class ChUserManager(UserManager):
         :return: Normal user
         """
 
+        """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
         hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
 
         while True:
@@ -52,6 +51,7 @@ class ChUserManager(UserManager):
         user = ChUser(username=hex_username)
         user.email = email
         user.set_password(password)
+        # TODO: es esto necesario? si sólo hay una BBDD posiblemente no lo sea...
         user.save(using=self._db)
 
         return user
@@ -74,13 +74,13 @@ class ChUserManager(UserManager):
 
 
 class ChUser(AbstractBaseUser, PermissionsMixin):
+    """Provides the fields and attributes of the ChUser model
+    """
     username = models.CharField(_('username'), max_length=30, unique=True,
                                 help_text=_('Required. 30 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
-                                validators=[
-                                    validators.RegexValidator(re.compile('^[\w.@+-]+$'), _('Enter a valid username.'),
-                                                              'invalid')
-                                ])
+                                validators=[validators.RegexValidator(re.compile('^[\w.@+-]+$'),
+                                                                      _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin '
@@ -93,9 +93,12 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     is_authenticated = models.BooleanField(default=False)
     objects = ChUserManager()
 
+    # TODO: por qué se define esto aquí? parece relacionado con formularios...
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
 
+    # This Meta class is used to give a human-readable name to each instance of the ChUser class
+    # The plural wouldn't be needed in this case because Django defaults to do verbose_name_plural = verbose_name + "s"
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
@@ -200,7 +203,7 @@ class ChProfile(models.Model):
     public_name = models.CharField(max_length=20,
                                    unique=True,
                                    validators=[RegexValidator(r'^[0-9a-zA-Z_]*$',
-                                                              'Only alphanumeric characters an "_" are allowed.')])
+                                                              'Only alphanumeric characters and "_" are allowed.')])
     first_name = models.CharField(max_length=40)
     last_name = models.CharField(max_length=40)
     sex = models.CharField(max_length=10, choices=SEX, default='male')
@@ -228,6 +231,12 @@ class ChProfile(models.Model):
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
 
+    # Many-to-Many fields through the intermediate models (the subscriptions)
+    # IMPORTANTE, se meten los modelos entre comillas por necesidad (por estar declaradas las clases para ambos
+    # modelos después de esta clase, pero ese no es el modo habitual de hacer esto!
+    hive_subscriptions = models.ManyToManyField('ChHive', through='ChHiveSubscription')
+    chat_subscriptions = models.ManyToManyField('ChChat', through='ChChatSubscription')
+
     # methods
     def add_language(self, char_language):
         """
@@ -251,6 +260,9 @@ class ChProfile(models.Model):
         """
         try:
             lang = LanguageModel.objects.get(language=char_language)
+
+            # TODO: esto puede dar problemas, ver https://docs.djangoproject.com/en/1.7/releases/1.7/#remove-and-clear-methods-of-related-managers
+            # https://docs.djangoproject.com/en/1.7/ref/models/querysets/#nested-queries-performance
             self.language.remove(lang)
         except LanguageModel.DoesNotExist:
             return
@@ -400,8 +412,12 @@ class ChCategory(models.Model):
     code = models.CharField(max_length=8, unique=True)
     group = models.CharField(max_length=32, choices=GROUPS)
 
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
+
     def __str__(self):
-        return self.group + ': ' + self.name
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
 
 
 class ChHive(models.Model):
@@ -412,21 +428,18 @@ class ChHive(models.Model):
 
     # Attributes of the Hive
     name = models.CharField(max_length=60, unique=True)
-    name_url = models.CharField(max_length=540, unique=True)
+    slug = models.CharField(max_length=250, unique=True, default='')
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
-
     featured = models.BooleanField(default=False)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
     def set_tags(self, tags_array):
         for stag in tags_array:
-            if stag[0] != '#':
-                stag = '#' + stag
             tag = get_or_new_tag(stag)
             self.tags.add(tag)
 
@@ -497,7 +510,8 @@ class ChHive(models.Model):
                 chat_subscription.save()
 
     def leave(self, profile):
-        """
+        """Marks the Hive Subscription as deleted, then takes every chat subscription of the user
+           related with this hive and will mark it as deleted too
         :param profile:  profile leaving the hive
         :return: void
         """
@@ -508,14 +522,24 @@ class ChHive(models.Model):
             for subscription in chat_subscriptions:
                 subscription.deleted = True
                 chat = subscription.chat
-                others_subscriptions = ChChatSubscription.objects.filter(chat=chat).exclude(profile=profile).exclude(deleted=True)
+                # This is just to know if there is any other subscriptions to this chat (we won't count the subscription
+                # that the user is using and we won't count the subscriptions that are marked as deleted either)
+                others_subscriptions = ChChatSubscription.objects.filter(
+                    chat=chat).exclude(profile=profile).exclude(deleted=True)
                 if not others_subscriptions:
+                    # If there was no more subscriptions to this chat or if all subscriptions were marked as deleted,
+                    # we delete all this subscriptions first and then we also delete the chat itself
+                    #TODO: ¿Qué pasa si se trata de un chat público. Puede que no todos los usuarios que estén en el hive tengan una subscripción en su lista de chats (esto ocurre si simplemente no lo tienen en su lista de chats, o si en algún momento se marcó como deleted) Se eliminaría también ese chat público?? un chat público nunca debería eliminarse...
                     ChChatSubscription.objects.filter(chat=chat).delete()
                     chat.delete()
                 else:
                     subscription.save()
-            others_hive_subscriptions = ChHiveSubscription.objects.filter(hive=self).exclude(profile=profile).exclude(deleted=True)
+            # Now we check if there are more users subscribed to this hive
+            # (hive subscriptions marked as deleted don't count)
+            others_hive_subscriptions = ChHiveSubscription.objects.filter(
+                hive=self).exclude(profile=profile).exclude(deleted=True)
             if not others_hive_subscriptions:
+                # and again, if not more users are subscribed we delete all hive subscriptions and the hive itself.
                 ChHiveSubscription.objects.filter(hive=self).delete()
                 self.delete()
             else:
@@ -524,8 +548,8 @@ class ChHive(models.Model):
             raise IntegrityError("User have not joined the hive")
 
     def toJSON(self):
-        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+        return u'{"name": "%s", "slug": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
+               % (self.name, self.slug, self.description, self.category, self.creation_date)
 
     @property
     def users(self):
@@ -774,6 +798,7 @@ class UserReports(models.Model):
     reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
+# TODO: Forms should be moved to its own file (forms.py) and to test_ui app
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================

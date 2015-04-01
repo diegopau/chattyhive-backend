@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <a href="/test-ui/home/">Home</a>
+    </br>
+    <form action="/test-ui/create_public_chat/{{ hive.slug }}/" method="post">{% csrf_token %}
+            {{ form.as_p }}
+        <input type="submit" value="Create" />
+    </form>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+    <script src="http://code.jquery.com//jquery-2.0.3.min.js" type="text/javascript"></script>
+    <script src="http://cdn.jsdelivr.net/jquery.cookie/1.4.0/jquery.cookie.js" type="text/javascript"></script>
+    <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
+
+</head>
+<body>
+    <div align="right">
+        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
+    </div>
+    <a href="/test-ui/profile/my_profile/public">Profile</a>
+    <a href="/test-ui/explore/">Explore</a>
+    <a href="/test-ui/create_hive/">New Hive</a>
+    <br />
+    <br />
+    My Hives--<a href="/test-ui/home/chats/">My Chats</a>
+    <br />
+    {% for hive in hives %}
+      <li>
+        <a href="/test-ui/hive/{{ hive.slug }}">{{ hive.name }}</a>
+          --<a href="/test-ui/hive_description/{{ hive.slug }}">Description</a>
+          --<a href="/test-ui/leave/{{ hive.slug }}">leave</a>
+      </li>
+    {% endfor %}
+
+
+    <script type="text/javascript">
+        // Buttons behaviour
+        $(document).ready(function() {
+            // Button logout behaviour when clicked
+            $('#btn_logout').on('click', function()
+            {
+                var csrftoken = $.cookie('csrftoken');
+                $.ajax({
+                    type: "POST",
+                    url: "/test-ui/logout/",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        alert(newData);
+                        //$.removeCookie(); TODO toggle to remove browser cookies
+                        location.href="/test-ui/";
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+</body>
+</html>

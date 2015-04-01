@@ -1,7 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 import requests
 import json
-from CH import settings
+from chattyhive_project import settings
 
 
 def send_gcm_message(regs_id, data, collapse_key=None):
