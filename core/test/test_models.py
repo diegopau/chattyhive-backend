@@ -9,10 +9,13 @@ from django.test import TestCase
 from model_mommy import mommy
 from model_mommy.recipe import Recipe, foreign_key
 
-# Relative imports of the 'app-name' package
-from core.models import TagModel
-
 
 class TagModelTestModel(TestCase):
     def setUp(self):
-        self.tag = mommy.make(TagModel)
+        self.tags = mommy.make('core.TagModel', _quantity=25)
+
+    def test_tag_creation(self):
+        for tag in self.tags:
+            print("tag name: ", tag.tag)
+
+        assert len(self.tags) == 25
