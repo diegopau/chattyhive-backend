@@ -427,7 +427,7 @@ class ChHive(models.Model):
     )
 
     # Attributes of the Hive
-    name = models.CharField(max_length=60, unique=True)
+    name = models.CharField(max_length=80, unique=True)
     slug = models.CharField(max_length=250, unique=True, default='')
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
@@ -689,7 +689,7 @@ class ChChat(models.Model):
 
 class ChCommunityChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='community_extra_info')
-    name = models.CharField(max_length=60)  # todo unique for each community, basic regex
+    name = models.CharField(max_length=80)  # todo unique for each community, basic regex
     photo = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
 

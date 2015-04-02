@@ -12,7 +12,7 @@ from model_mommy.recipe import Recipe, foreign_key
 
 class TagModelTestModel(TestCase):
     def setUp(self):
-        self.tags = mommy.make('core.TagModel', _quantity=25)
+        self.tags = mommy.make_recipe('core.tag', _quantity=100)
 
     def test_tag_creation(self):
         for tag in self.tags:

@@ -2,10 +2,11 @@
 
 """
 from random import randint
+import os
 
-
-categories_txt = open("categories.txt")
-categories = categories_txt.read().split()
+file_path = os.path.join(os.path.dirname(__file__), 'categories.txt')
+categories_txt = open(file_path)
+categories = categories_txt.read().split('\n')
 number_of_categories = len(categories)
 print("Number of categories: ", number_of_categories)
 
@@ -19,4 +20,3 @@ def choose_random_category():
     code = category.split(':')[3]
     print("Chosen category code: ", code)
     return code
-
