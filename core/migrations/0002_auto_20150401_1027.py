@@ -21,7 +21,7 @@ def create_categories(apps, schema_editor):
 
     # Cars, Motorbikes & Others // Motor
     add_category(CategoryModel, 'Cars, Motorbikes & Others - General', 'Cars, Motorbikes & Others', '03.01', 'Dummy description')
-    add_category(CategoryModel, 'Cars', 'Caca', '03.02', 'Dummy description')
+    add_category(CategoryModel, 'Cars', 'Cars, Motorbikes & Others', '03.02', 'Dummy description')
     add_category(CategoryModel, 'Motorbikes', 'Cars, Motorbikes & Others', '03.03', 'Dummy description')
     add_category(CategoryModel, 'Yachts', 'Cars, Motorbikes & Others', '03.04', 'Dummy description')
 

@@ -8,33 +8,33 @@ can simply return the text you desire. There are 2 sets of functions:
 On the average, you probably want to import the **get_** prefixed functions and
 just get the text:
 
->>> from loremipsum import get_sentences
->>>
->>> sentences_list = get_sentences(5)
->>> len(sentences_list)
+  > from loremipsum import get_sentences
+  >
+  > sentences_list = get_sentences(5)
+  > len(sentences_list)
 5
->>>
+  >
 
 If you fancy some statistics, you want to import the **generate_**
 prefixed functions:
 
->>> from loremipsum import generate_paragraph
->>>
->>> sentences_count, words_count, paragraph = generate_paragraph()
+  > from loremipsum import generate_paragraph
+  >
+  > sentences_count, words_count, paragraph = generate_paragraph()
 
 If you need generate text based on your own sample text and/or dictionary, you
 want to import the **Generator** class:
 
->>> from loremipsum import Generator
->>>
->>> with open('data/sample.txt', 'r') as sample_txt
->>>     sample = sample_txt.read()
->>> with open('data/dictionary.txt', 'r') as dictionary_txt
->>>     dictionary = dictionary_txt.read().split()
->>>
->>> g = Generator(sample, dictionary)
->>> sentence = g.get_sentence()
->>>
+  > from loremipsum import Generator
+  >
+  > with open('data/sample.txt', 'r') as sample_txt
+  >     sample = sample_txt.read()
+  > with open('data/dictionary.txt', 'r') as dictionary_txt
+  >     dictionary = dictionary_txt.read().split()
+  >
+  > g = Generator(sample, dictionary)
+  > sentence = g.get_sentence()
+  >
 """
 
 # The following (not so) special variables have been created for sphinx
