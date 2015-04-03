@@ -11,8 +11,11 @@ from model_mommy.recipe import Recipe, foreign_key
 
 
 class TagModelTestModel(TestCase):
+    tags = []
+
     def setUp(self):
-        self.tags = mommy.make_recipe('core.tag', _quantity=100)
+        for i in range(0, 100):
+            self.tags.append(mommy.make_recipe('core.tag'))
 
     def test_tag_creation(self):
         for tag in self.tags:
