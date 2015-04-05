@@ -133,7 +133,7 @@ def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
         return HttpResponse(json.dumps({'csrf': csrf}),
-                            mimetype="application/json")  #TODO: mimetype is deprecated
+                            content_type="application/json")
     else:
         raise Http404
 
@@ -164,11 +164,11 @@ def start_session(request):
 #         status = "LOGGED"
 #         # print(status)  # PRINT
 #         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
-#                             mimetype="application/json")
+#                             content_type="application/json")
 #     else:
 #         status = "ERROR"
 #         # print(status)  # PRINT
-#         return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
+#         return HttpResponse(json.dumps({"status": status}), content_type="application/json")
 #
 #
 # # @csrf_exempt
@@ -257,19 +257,19 @@ def login_v2(request):
                     answer = json.dumps({'status': status, 'profile': profile.toJSON(),
                                          'hives_subscribed': hives}, cls=DjangoJSONEncoder)
 
-                    return HttpResponse(answer, mimetype="application/json")
+                    return HttpResponse(answer, content_type="application/json")
                     # return HttpResponseRedirect("/home/")
                 else:
                     status = 'ERROR'
                     return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                        cls=DjangoJSONEncoder), mimetype="application/json")
+                                        cls=DjangoJSONEncoder), content_type="application/json")
         else:
             status = 'ERROR'
             return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                           cls=DjangoJSONEncoder), mimetype="application/json")
+                                           cls=DjangoJSONEncoder), content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
         # raise Http404
 
 
@@ -286,10 +286,10 @@ def explore(request):
             status = "NO HIVES"
 
         answer = json.dumps({'status': status, 'hives': hive_array}, cls=DjangoJSONEncoder)
-        return HttpResponse(answer, mimetype="application/json")
+        return HttpResponse(answer, content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
 
 
 def email_check(request):
@@ -317,11 +317,11 @@ def email_check(request):
         except ObjectDoesNotExist:
             status = "OK"
 
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
 
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
 
 
 def register(request):
@@ -452,14 +452,14 @@ def join(request):
             subscription.save()
 
             status = 'SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
 
         else:
             status = 'ALREADY_SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
         # raise Http404
 
 
@@ -509,8 +509,8 @@ def chat_v2(request):
         message.save()
 
         status = 'MESSAGE_SENT'
-        return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
         # raise Http404
