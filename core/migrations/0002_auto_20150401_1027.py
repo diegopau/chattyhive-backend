@@ -5,8 +5,8 @@ from django.db import models, migrations
 
 
 # TODO: podría ser conveniente añadir una excepción en caso de que el grupo al que se intenta añadir no exista.
-def add_category(CategoryModel, name, description, code, group):
-    category = CategoryModel(name=name, description=description, code=code, group=group)
+def add_category(CategoryModel, name, group, code, description):
+    category = CategoryModel(name=name, group=group, code=code, description=description)
     category.save()
 
 
