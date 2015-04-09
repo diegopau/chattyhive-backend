@@ -7,6 +7,7 @@ import hashlib
 import time
 from uuid import uuid4
 import string
+from datetime import datetime,date
 from core.models import ChCategory
 
 
@@ -62,11 +63,26 @@ def __string_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
+def get_random_date():
+    year = random.randint(2014, 2015)
+
+    if year == 2015:
+        month = random.randint(1, 3)
+    else:
+        month = random.randint(1, 12)
+
+    if month == 2:
+        day = random.randint(1, 28)
+    else:
+        day = random.randint(1, 30)
+
+    random_date = datetime(year, month, day)
+    return random_date
+
+
 def get_random_tag():
-    print("I've been called!")
     tag = __string_generator(size=random.randint(1, 32),
                              chars=string.ascii_uppercase + string.ascii_lowercase + string.digits + '_')
-    print("New Tag!: ", tag)
     return tag
 
 
