@@ -1,4 +1,4 @@
-from model_mommy.recipe import Recipe
+from model_mommy.recipe import Recipe, foreign_key
 from core.models import ChHive, TagModel
 from core.test import get_random_stuff
 
