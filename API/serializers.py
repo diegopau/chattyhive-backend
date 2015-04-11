@@ -68,7 +68,7 @@ class ChHiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
-                  'featured', 'type')
+                  'priority', 'type')
 
 
 class ChHiveLevel1Serializer(serializers.ModelSerializer):
@@ -84,4 +84,4 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
-                  'featured', 'type')
+                  'priority', 'type')

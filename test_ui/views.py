@@ -381,7 +381,7 @@ def chat(request, chat_url):
 
             try:
                 chat.send_message(profile=profile, json_message=json_message)
-            except AndroidDevice.DoesNotExist:
+            except Device.DoesNotExist:
                 return HttpResponse("Not delivered")
 
             # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",

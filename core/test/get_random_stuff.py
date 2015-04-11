@@ -27,6 +27,9 @@ with open(file_path2, 'r') as dictionary_txt:
 generator = Generator(sample, dictionary)
 ##########################################################
 
+# This is for get_random_email() method
+domains = [ "hotmail.com", "gmail.com", "aol.com", "mail.com" , "mail.kz", "yahoo.com"]
+
 SECRET_KEY = 'asd538J878hdfjKEidrfdgf0954lKUJMd03l4mfjejJKkek4AA'
 
 try:
@@ -61,6 +64,30 @@ def __string_generator(size=6, chars=string.ascii_uppercase + string.digits):
                     SECRET_KEY)).encode('utf-8')
             ).digest())
     return ''.join(random.choice(chars) for _ in range(size))
+
+
+def get_random_email():
+    if not using_sysrandom:
+        random.seed(
+            hashlib.sha256(
+                ("%s%s%s" % (
+                    random.getstate(),
+                    time.time(),
+                    SECRET_KEY)).encode('utf-8')
+            ).digest())
+    # Not all the possibilities are taking into account:
+    local_part = string.ascii_lowercase + string.ascii_uppercase + string.digits + "#-_~!$&'()*+,;=:"
+
+    email = ''
+    while True:
+        # Django demands a maximum of 75 chars for EmailField, this is a limitation of Django Framework
+        # If we need more we should look at the consecuences of raising this to 254 (estándar)
+
+        if len(email) < 75:
+            email = ''.join(random.choice(local_part) for _ in range(random.randint(1, 50))).join('@').join(random.choice(domains))
+            break
+    print("Chosen email: ", email)
+    return email
 
 
 def get_random_date():
