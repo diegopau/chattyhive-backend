@@ -7,8 +7,8 @@ import hashlib
 import time
 from uuid import uuid4
 import string
-from datetime import datetime,date
-from core.models import ChCategory
+from datetime import datetime
+from core.test.predefined_tags import predefined_tags
 
 
 ##########################################################
@@ -28,7 +28,7 @@ generator = Generator(sample, dictionary)
 ##########################################################
 
 # This is for get_random_email() method
-domains = [ "hotmail.com", "gmail.com", "aol.com", "mail.com" , "mail.kz", "yahoo.com"]
+domains = ["hotmail.com", "gmail.com", "aol.com", "mail.com", "mail.kz", "yahoo.com"]
 
 SECRET_KEY = 'asd538J878hdfjKEidrfdgf0954lKUJMd03l4mfjejJKkek4AA'
 
@@ -107,14 +107,30 @@ def get_random_date():
     return random_date
 
 
-def get_random_tag():
-    tag = __string_generator(size=random.randint(1, 32),
-                             chars=string.ascii_uppercase + string.ascii_lowercase + string.digits + '_')
+# probability defines de probability of having a totally random tag or a predefined tag
+def get_random_tag(probability=30):
+    if random.randrange(100) < probability:
+        # The higher percent value is, the more likely it will get into this part of the if else
+        tag = __string_generator(size=random.randint(1, 32),
+                                 chars=string.ascii_uppercase + string.ascii_lowercase + string.digits + '_')
+    else:
+        tag = random.choice(predefined_tags)
     return tag
+
+
+def get_random_tags(quantity=random.randint(1, 5)):
+    tags = []
+    for tag in range(0, quantity):
+        tags[tag] = get_random_tag(probability=40)
+    return tags
 
 
 def get_random_hive_name():
     return create_hive_name()
+
+
+def get_random_hive_priority():
+    return random.randint(1, 100)
 
 
 def get_random_public_name():
