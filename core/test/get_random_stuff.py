@@ -5,10 +5,11 @@ from core.test.text_generator.hive_name_generator import create_hive_name
 import random
 import hashlib
 import time
+from django.utils import timezone
 from uuid import uuid4
 import string
 from datetime import datetime
-from core.test.predefined_tags import predefined_tags
+from core.test.predefined_tags import predefined_unique_tags, predefined_non_unique_tags
 
 
 ##########################################################
@@ -84,7 +85,7 @@ def get_random_email():
         # If we need more we should look at the consecuences of raising this to 254 (estándar)
 
         if len(email) < 75:
-            email = ''.join(random.choice(local_part) for _ in range(random.randint(1, 50))).join('@').join(random.choice(domains))
+            email = ''.join(random.choice(local_part) for _ in range(random.randint(1, 50))) + '@' + random.choice(domains)
             break
     print("Chosen email: ", email)
     return email
@@ -103,7 +104,12 @@ def get_random_date():
     else:
         day = random.randint(1, 30)
 
-    random_date = datetime(year, month, day)
+    hour = random.randint(0, 23)
+    minute = random.randint(0, 59)
+    second = random.randint(0, 59)
+    microsecond = random.randint(0, 999999)
+
+    random_date = datetime(year, month, day, hour, minute, second, microsecond, tzinfo=timezone.get_default_timezone())
     return random_date
 
 
@@ -114,14 +120,20 @@ def get_random_tag(probability=30):
         tag = __string_generator(size=random.randint(1, 32),
                                  chars=string.ascii_uppercase + string.ascii_lowercase + string.digits + '_')
     else:
-        tag = random.choice(predefined_tags)
+        tag = random.choice(predefined_unique_tags)
+        predefined_unique_tags.remove(tag)
     return tag
 
 
-def get_random_tags(quantity=random.randint(1, 5)):
+def get_random_tags(quantity=random.randint(1, 5), probability=40):
     tags = []
     for tag in range(0, quantity):
-        tags[tag] = get_random_tag(probability=40)
+        if random.randrange(100) < probability:
+            # The higher percent value is, the more likely it will get into this part of the if else
+            tags[tag] = __string_generator(size=random.randint(1, 32),
+                                           chars=string.ascii_uppercase + string.ascii_lowercase + string.digits + '_')
+        else:
+            tags[tag] = random.choice(predefined_non_unique_tags)
     return tags
 
 
@@ -156,7 +168,10 @@ def get_random_hive_description():
     random_description = ''
     last_paragraph = ''
     while len(random_description) < (max_length + 1):
-        last_paragraph = generator.generate_paragraphs(1)
+        last_paragraph = generator.get_paragraphs(1)[0]
+        print("last_paragraph es de tipo")
+        type(last_paragraph)
+        print("last_paragraph: ", last_paragraph)
         random_description += last_paragraph + '\n'
     random_description = random_description[0:(len(random_description) - (len(last_paragraph) + 1))]
     return random_description
