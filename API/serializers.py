@@ -2,6 +2,7 @@ from rest_framework import serializers
 from core.models import ChUser, ChProfile, LanguageModel, TagModel, ChHive, ChChat, City, Region, Country
 
 
+
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
         model = LanguageModel

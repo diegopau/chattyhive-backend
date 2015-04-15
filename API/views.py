@@ -21,7 +21,8 @@ from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveL
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 
 class ChUserList(APIView):
@@ -121,13 +122,32 @@ class ChProfileDetail(APIView):
         return Response(serializer.data)
 
 
+# ============================================================ #
+#                     Sessions management                      #
+# ============================================================ #
+
+
+@api_view(['POST'])
+def login(request, format=None):
+    """POST sessions/login/
+
+    Returns 200 OK if credentials are ok
+    """
+
+
+    # try:
+    #
+    # except
+    #     return Response(status=status.HTTP_404_NOT_FOUND)
+
+    # user = authenticate(username=user.username, password=password)
 
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
 # También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
 # móviles sino también para navegadores web.
 # TODO: esto no está con la forma que una vista de Django REST debería tener... revisar y corregir.
 @api_view(['GET'])
-def start_session(request):
+def start_session(request, format=None):
     """Returns a csrf cookie
     """
     if request.method == 'GET':
