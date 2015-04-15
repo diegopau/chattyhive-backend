@@ -1,5 +1,5 @@
 from model_mommy.recipe import Recipe, foreign_key
-from core.models import ChHive, TagModel, ChUser
+from core.models import ChHive, TagModel, ChUser, ChCategory
 from core.test import get_random_stuff
 import random
 
@@ -19,9 +19,15 @@ tag = Recipe(
 )
 
 
+category = Recipe(
+    ChCategory,
+    code=get_random_stuff.get_random_category_code,
+)
+
+
 hive = Recipe(
     ChHive,
-    category=get_random_stuff.get_random_category_code,
+    category=foreign_key(category),
     creation_date=get_random_stuff.get_random_date,
     creator=foreign_key(user),
     description=get_random_stuff.get_random_hive_description,
@@ -30,5 +36,5 @@ hive = Recipe(
 
     # The model layer should decide if create a new tag (if it didn't exist) or get existing tag (establish
     # many-to-many relationship)
-    tags=get_random_stuff.get_random_tags,
+    tags=related(tag, tag, tag),
 )

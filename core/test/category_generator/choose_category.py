@@ -17,6 +17,6 @@ def choose_random_category():
 
     # In category we have a string that is a line from categories.txt, now we split that line in four and we take the
     # third param that is the code.
-    code = category.split(':')[3]
+    code = category.split(':')[2]
     print("Chosen category code: ", code)
     return code

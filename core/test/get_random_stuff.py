@@ -168,7 +168,7 @@ def get_random_hive_description():
     random_description = ''
     last_paragraph = ''
     while len(random_description) < (max_length + 1):
-        last_paragraph = generator.get_paragraphs(1)[0]
+        last_paragraph = generator.generate_paragraph(1)[2]
         print("last_paragraph es de tipo")
         type(last_paragraph)
         print("last_paragraph: ", last_paragraph)
