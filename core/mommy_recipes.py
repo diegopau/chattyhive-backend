@@ -1,4 +1,4 @@
-from model_mommy.recipe import Recipe, foreign_key
+from model_mommy.recipe import Recipe, foreign_key, related
 from core.models import ChHive, TagModel, ChUser, ChCategory
 from core.test import get_random_stuff
 import random
