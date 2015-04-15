@@ -154,6 +154,7 @@ INSTALLED_APPS = (
     'rest_framework_swagger',
     'test_ui',
     'datetimewidget',
+    'django_extensions',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'

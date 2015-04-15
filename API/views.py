@@ -17,7 +17,7 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileLevel1Serializer
+from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveLevel1Serializer, ChHiveSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -81,6 +81,29 @@ class ChUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ChHiveList(APIView):
+    """Lists hives in Explora or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+    def get(self, request, format=None):
+        """prueba
+        """
+        hives = ChHive.objects.all()
+        serializer = ChHiveLevel1Serializer(hives, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+        serializer = ChHiveSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class ChProfileDetail(APIView):
     def get_object(self, public_name):
         try:
@@ -110,7 +133,7 @@ def start_session(request):
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
         return HttpResponse(json.dumps({'csrf': csrf}),
-                            mimetype="application/json")  #TODO: mimetype is deprecated
+                            content_type="application/json")
     else:
         raise Http404
 
@@ -141,11 +164,11 @@ def start_session(request):
 #         status = "LOGGED"
 #         # print(status)  # PRINT
 #         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
-#                             mimetype="application/json")
+#                             content_type="application/json")
 #     else:
 #         status = "ERROR"
 #         # print(status)  # PRINT
-#         return HttpResponse(json.dumps({"status": status}), mimetype="application/json")
+#         return HttpResponse(json.dumps({"status": status}), content_type="application/json")
 #
 #
 # # @csrf_exempt
@@ -234,19 +257,19 @@ def login_v2(request):
                     answer = json.dumps({'status': status, 'profile': profile.toJSON(),
                                          'hives_subscribed': hives}, cls=DjangoJSONEncoder)
 
-                    return HttpResponse(answer, mimetype="application/json")
+                    return HttpResponse(answer, content_type="application/json")
                     # return HttpResponseRedirect("/home/")
                 else:
                     status = 'ERROR'
                     return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                        cls=DjangoJSONEncoder), mimetype="application/json")
+                                        cls=DjangoJSONEncoder), content_type="application/json")
         else:
             status = 'ERROR'
             return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                           cls=DjangoJSONEncoder), mimetype="application/json")
+                                           cls=DjangoJSONEncoder), content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
         # raise Http404
 
 
@@ -263,10 +286,10 @@ def explore(request):
             status = "NO HIVES"
 
         answer = json.dumps({'status': status, 'hives': hive_array}, cls=DjangoJSONEncoder)
-        return HttpResponse(answer, mimetype="application/json")
+        return HttpResponse(answer, content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
 
 
 def email_check(request):
@@ -294,11 +317,11 @@ def email_check(request):
         except ObjectDoesNotExist:
             status = "OK"
 
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
 
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
 
 
 def register(request):
@@ -429,14 +452,14 @@ def join(request):
             subscription.save()
 
             status = 'SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
 
         else:
             status = 'ALREADY_SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
         # raise Http404
 
 
@@ -461,7 +484,7 @@ def chat_v2(request):
         user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=user)
         hive = ChHive.objects.get(name=hive_name)
-        # hive_url = hive.name_url
+        # hive_slug = hive.slug
 
         chat2 = ChChat.objects.get(hive=hive)
 
@@ -486,8 +509,8 @@ def chat_v2(request):
         message.save()
 
         status = 'MESSAGE_SENT'
-        return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
     else:
         status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), mimetype="application/json")
+        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
         # raise Http404

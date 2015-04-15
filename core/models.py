@@ -12,7 +12,6 @@ from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
 from django.core import validators
 from django.utils import timezone
-# TODO: should I add colorful to requirements?
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
@@ -133,7 +132,7 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
 
     @property
     def device(self):
-        return AndroidDevice.objects.get(user=self)
+        return Device.objects.get(user=self)
 
     def __str__(self):
         try:
@@ -142,8 +141,10 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
             return self.username + '--NO PROFILE!'
 
 
-class AndroidDevice(models.Model):
+class Device(models.Model):
     user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
+    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
+    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
     dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
@@ -225,12 +226,19 @@ class ChProfile(models.Model):
     photo = models.URLField(null=True)
     avatar = models.URLField(null=True)
 
-    private_show_age = models.BooleanField(default=True)
+    private_show_age = models.BooleanField(default=False)
+    private_show_location = models.BooleanField(default=True)
     public_show_age = models.BooleanField(default=False)
     public_show_location = models.BooleanField(default=False)
     public_show_sex = models.BooleanField(default=False)
     # email_manager = EmailAddressManager()
     # confirmed = models.BooleanField(default=False)
+
+    # Many-to-Many fields through the intermediate models (the subscriptions)
+    # IMPORTANTE, se meten los modelos entre comillas por necesidad (por estar declaradas las clases para ambos
+    # modelos después de esta clase, pero ese no es el modo habitual de hacer esto!
+    hive_subscriptions = models.ManyToManyField('ChHive', through='ChHiveSubscription')
+    chat_subscriptions = models.ManyToManyField('ChChat', through='ChChatSubscription')
 
     # methods
     def add_language(self, char_language):
@@ -412,7 +420,7 @@ class ChCategory(models.Model):
         return cls.GROUPS
 
     def __str__(self):
-        return self.group + ': ' + self.name
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
 
 
 class ChHive(models.Model):
@@ -422,21 +430,21 @@ class ChHive(models.Model):
     )
 
     # Attributes of the Hive
-    name = models.CharField(max_length=60, unique=True)
-    name_url = models.CharField(max_length=540, unique=True)
+    name = models.CharField(max_length=80, unique=True)
+    slug = models.CharField(max_length=250, unique=True, default='')
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
-    featured = models.BooleanField(default=False)
+
+    # TODO: Add validator to ensure that this field has a value from 1 to 100
+    priority = models.IntegerField(default=50)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
     def set_tags(self, tags_array):
         for stag in tags_array:
-            if stag[0] != '#':
-                stag = '#' + stag
             tag = get_or_new_tag(stag)
             self.tags.add(tag)
 
@@ -545,8 +553,8 @@ class ChHive(models.Model):
             raise IntegrityError("User have not joined the hive")
 
     def toJSON(self):
-        return u'{"name": "%s", "name_url": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
-               % (self.name, self.name_url, self.description, self.category, self.creation_date)
+        return u'{"name": "%s", "slug": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
+               % (self.name, self.slug, self.description, self.category, self.creation_date)
 
     @property
     def users(self):
@@ -570,8 +578,9 @@ class ChHive(models.Model):
 
 class ChCommunity(models.Model):
     hive = models.OneToOneField(ChHive, related_name='community')
-    admin = models.ForeignKey(ChProfile, related_name='administrates')
-    moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
+    owner = models.ForeignKey(ChProfile, related_name='own')
+    # TODO: not sure if null=True and black=True necesary
+    admins = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='administrates')
     # todo: administrative info?
 
     def new_public_chat(self, name, description):
@@ -685,8 +694,9 @@ class ChChat(models.Model):
 
 
 class ChCommunityChat(models.Model):
+    moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
     chat = models.OneToOneField(ChChat, related_name='community_extra_info')
-    name = models.CharField(max_length=60)  # todo unique for each community, basic regex
+    name = models.CharField(max_length=80)  # todo unique for each community, basic regex
     photo = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
 
@@ -707,7 +717,8 @@ class ChMessage(models.Model):
         ('audio', 'Audio'),
         ('animation', 'Animation'),
         ('url', 'URL'),
-        ('file', 'File')
+        ('file', 'File'),
+        ('invitation', 'Invitation')
     )
 
     _id = models.AutoField(primary_key=True)
@@ -795,7 +806,7 @@ class UserReports(models.Model):
     reason = models.CharField(max_length=20, choices=REASONS, default='')
 
 
-# TODO: Forms should be moved to its own file (forms.py)
+# TODO: Forms should be moved to its own file (forms.py) and to test_ui app
 ### ==========================================================
 ###                          FORMS
 ### ==========================================================

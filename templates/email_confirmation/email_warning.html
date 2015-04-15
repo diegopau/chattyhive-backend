@@ -27,8 +27,8 @@
     <br />
     {% for hive in hives %}
       <li>
-        <a href="/test-ui/hive/{{ hive.name_url }}">{{ hive.name }}</a>
-        <a href="/test-ui/leave/{{ hive.name_url }}">leave</a>
+        <a href="/test-ui/hive/{{ hive.slug }}">{{ hive.name }}</a>
+        <a href="/test-ui/leave/{{ hive.slug }}">leave</a>
       </li>
     {% endfor %}
 

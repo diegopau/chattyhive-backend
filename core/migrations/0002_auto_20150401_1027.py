@@ -3,9 +3,10 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 
+
 # TODO: podría ser conveniente añadir una excepción en caso de que el grupo al que se intenta añadir no exista.
-def add_category(CategoryModel, name, description, code, group):
-    category = CategoryModel(name=name, description=description, code=code, group=group)
+def add_category(CategoryModel, name, group, code, description):
+    category = CategoryModel(name=name, group=group, code=code, description=description)
     category.save()
 
 
@@ -20,7 +21,7 @@ def create_categories(apps, schema_editor):
 
     # Cars, Motorbikes & Others // Motor
     add_category(CategoryModel, 'Cars, Motorbikes & Others - General', 'Cars, Motorbikes & Others', '03.01', 'Dummy description')
-    add_category(CategoryModel, 'Cars', 'Caca', '03.02', 'Dummy description')
+    add_category(CategoryModel, 'Cars', 'Cars, Motorbikes & Others', '03.02', 'Dummy description')
     add_category(CategoryModel, 'Motorbikes', 'Cars, Motorbikes & Others', '03.03', 'Dummy description')
     add_category(CategoryModel, 'Yachts', 'Cars, Motorbikes & Others', '03.04', 'Dummy description')
 
@@ -168,7 +169,7 @@ def create_categories(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_auto_20150323_2024'),
+        ('core', '0001_initial'),
     ]
 
     operations = [
