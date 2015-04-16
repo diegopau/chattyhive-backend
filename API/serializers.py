@@ -33,7 +33,6 @@ class LoginCredentialsSerializer(serializers.Serializer):
     def validate(self, data):
         if 'email' in data:
             # We set to an empty string the param that is not inside the request body
-            data['public_name'] = ''
             try:
                 user = ChUser.objects.get(email=data['email'])
                 # For security reasons we return a 401 instead of a 404 (we don't want to give clues of who is or who
@@ -42,7 +41,6 @@ class LoginCredentialsSerializer(serializers.Serializer):
                 raise ValidationError("The ChUser object does not exist", code="401")
             data['username'] = user.username
         elif 'public_name' in data:
-            data['email'] = ''
             try:
                 profile = ChProfile.objects.select_related().get(public_name=data['public_name'])
             except ChProfile.DoesNotExist:
