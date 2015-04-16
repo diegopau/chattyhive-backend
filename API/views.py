@@ -12,9 +12,9 @@ from django.http import HttpResponse, Http404
 import pusher
 
 
-    ### ============================================================ ###
-    ###                     Django Rest Framework                    ###
-    ### ============================================================ ###
+# ============================================================ #
+#                     Django Rest Framework                    #
+# ============================================================ #
 
 from rest_framework import viewsets
 from API import serializers
@@ -35,6 +35,47 @@ class JSONResponse(HttpResponse):
         content = JSONRenderer().render(data)
         kwargs['content_type'] = 'application/json'
         super(JSONResponse, self).__init__(content, **kwargs)
+
+
+
+# ============================================================ #
+#                     Sessions & sync                          #
+# ============================================================ #
+
+@api_view(['POST'])
+def login(request, format=None):
+    """POST sessions/login/
+
+    Returns 200 OK if credentials are ok
+    """
+
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        serializer = serializers.LoginCredentialsSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                ChUser.objects.get(email=)
+            except ChUser.DoesNotExist or ChProfile.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            else:
+                user = authenticate(username=user.username, password=password)
+                return Response(status=status.HTTP_200_OK)
+
+
+# TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
+# También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
+# móviles sino también para navegadores web.
+# TODO: esto no está con la forma que una vista de Django REST debería tener... revisar y corregir.
+@api_view(['GET'])
+def start_session(request, format=None):
+    """Returns a csrf cookie
+    """
+    if request.method == 'GET':
+        csrf = django.middleware.csrf.get_token(request)
+        return HttpResponse(json.dumps({'csrf': csrf}),
+                            content_type="application/json")
+    else:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class ChUserList(APIView):
@@ -133,55 +174,6 @@ class ChProfileDetail(APIView):
 
         return Response(serializer.data)
 
-
-# ============================================================ #
-#                     Sessions management                      #
-# ============================================================ #
-
-
-@api_view(['POST'])
-def login(request, format=None):
-    """POST sessions/login/
-
-    Returns 200 OK if credentials are ok
-    """
-
-    try:
-        ChUser.objects.get(email=)
-
-    except
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    user = authenticate(username=user.username, password=password)
-
-    if request.method == 'POST':
-        serializer = serializers.LoginCredentialsSerializer
-
-
-
-# TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
-# También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
-# móviles sino también para navegadores web.
-# TODO: esto no está con la forma que una vista de Django REST debería tener... revisar y corregir.
-@api_view(['GET'])
-def start_session(request, format=None):
-    """Returns a csrf cookie
-    """
-    if request.method == 'GET':
-        csrf = django.middleware.csrf.get_token(request)
-        return HttpResponse(json.dumps({'csrf': csrf}),
-                            content_type="application/json")
-    else:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-# # ViewSets define the view behavior.
-# class UserViewSet(viewsets.ModelViewSet):
-#     queryset = ChUser.objects.all()
-#     serializer_class = UserSerializer
-
-
-
-    ### ======================================================== ###
 
 
 # # @csrf_exempt
