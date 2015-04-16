@@ -1,4 +1,5 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.response import Response
 from core.models import ChUser, ChProfile, LanguageModel, TagModel, ChHive, ChChat, City, Region, Country
 
 
@@ -6,14 +7,37 @@ class LoginCredentialsSerializer(serializers.Serializer):
     """Serializer class used validate a public_name or email and a password
 
     """
+    email = serializers.EmailField()
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if ('email' in data) and ('public_name' in data):
+            raise serializers.ValidationError("Both username and email are defined. This should not happen")
+        elif 'email' in data:
+            # We set to an empty string the param that is not inside the request body
+            data['username'] = ''
+            try:
+                ChUser.objects.get(email=data['email'])
+                # For security reasons we return a 401 instead of a 404 (we don't want to give clues of who is or who
+                # is not registered in the service
+            except ChUser.DoesNotExist:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        elif 'public_name' in data:
+            data['email'] = data['']
+            if
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            raise serializers.ValidationError("No email or public_name specified")
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        email = self.validated_data['email']
+        username = self.validated_data['username']
+        password = self.validated_data['password']
 
 
-
-    def validate(self, attrs):
-        credentials = {
-            self.username_field:
-
-        }
 
 # ============================================================ #
 #                     Model Serializers                        #

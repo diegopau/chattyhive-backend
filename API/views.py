@@ -23,9 +23,13 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
+
+# ======================================================================= #
+#                    Support methods and classes                          #
+# ======================================================================= #
 
 class JSONResponse(HttpResponse):
     """
@@ -37,12 +41,12 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content, **kwargs)
 
 
-
 # ============================================================ #
 #                     Sessions & sync                          #
 # ============================================================ #
 
 @api_view(['POST'])
+@parser_classes((JSONParser,))
 def login(request, format=None):
     """POST sessions/login/
 
@@ -50,16 +54,13 @@ def login(request, format=None):
     """
 
     if request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = serializers.LoginCredentialsSerializer(data=data)
+        serializer = serializers.LoginCredentialsSerializer(data=request.data)
         if serializer.is_valid():
-            try:
-                ChUser.objects.get(email=)
-            except ChUser.DoesNotExist or ChProfile.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
-            else:
-                user = authenticate(username=user.username, password=password)
-                return Response(status=status.HTTP_200_OK)
+            authenticate(username=serializer.validated_data['login_id'], password=serializer.validated_data['password'])
+            return Response(status=status.HTTP_200_OK)
+        else
+            if
+            if
 
 
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.

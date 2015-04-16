@@ -38,13 +38,13 @@ class ChUserManager(UserManager):
         """
 
         """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
-        hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
+        hex_username = uuid4().hex    # 16^30 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
+                hex_username = uuid4().hex    # 16^30 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
@@ -76,11 +76,12 @@ class ChUserManager(UserManager):
 class ChUser(AbstractBaseUser, PermissionsMixin):
     """Provides the fields and attributes of the ChUser model
     """
-    username = models.CharField(_('username'), max_length=30, unique=True,
+    username = models.CharField(_('username'), max_length=32, unique=True,
                                 help_text=_('Required. 30 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
-                                validators=[validators.RegexValidator(re.compile('^[\w.@+-]+$'),
-                                                                      _('Enter a valid username.'), 'invalid')])
+                                validators=[validators.RegexValidator(
+                                    re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I),
+                                    _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin '
