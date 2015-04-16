@@ -54,14 +54,39 @@ def login(request, format=None):
     """
 
     if request.method == 'POST':
-        serializer = serializers.LoginCredentialsSerializer(data=request.data)
-        if serializer.is_valid():
-            authenticate(username=serializer.validated_data['login_id'], password=serializer.validated_data['password'])
-            return Response(status=status.HTTP_200_OK)
-        else
-            if
-            if
+        if 'email' in request.data and 'public_name' in request.data:
+            print("email and public_name should not be together in the JSON of the same request")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        elif 'email' in request.data:
+            fields = ('email', 'password')
+        elif 'public_name' in request.data:
+            fields = ('public_name', 'password')
+        else:
+            print("at least email or public_name should be in the JSON")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        # fields specifies the fields to be considered by the serializer
+        serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields)
+
+        if serializer.is_valid():
+            user = authenticate(username=serializer.validated_data['username'],
+                                password=serializer.validated_data['password'])
+            if user is not None:
+                # the password verified for the user
+                if user.is_active:
+                    print("User is valid, active and authenticated")
+                    return Response(status=status.HTTP_200_OK)
+                else:
+                    print("The password is valid, but the account has been disabled!")
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                # the authentication system was unable to verify the username and password
+                print("The username and password were incorrect.")
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            print("serializer errors: ", serializer.errors)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
 # También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps

@@ -34,6 +34,8 @@ def login_view(request):
                     user = authenticate(username=user.username, password=password)
                 else:
                     profile = ChProfile.objects.select_related().get(public_name=login_string)
+                    # TODO: no tengo muy claro que este profile.username (se está accediendo a un campo del ChUser a
+                    # través del ChProfile) esté funcionando. Ver bien lo de select_related()...
                     user = authenticate(username=profile.username, password=password)
                 if user.is_active:
                     login(request, user)

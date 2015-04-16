@@ -1,6 +1,9 @@
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from core.models import ChUser, ChProfile, LanguageModel, TagModel, ChHive, ChChat, City, Region, Country
+from django.utils.translation import ugettext_lazy as _
+from django.core.validators import RegexValidator, ValidationError
+import re
 
 
 class LoginCredentialsSerializer(serializers.Serializer):
@@ -8,35 +11,51 @@ class LoginCredentialsSerializer(serializers.Serializer):
 
     """
     email = serializers.EmailField()
-    username = serializers.CharField()
+    public_name = serializers.CharField(max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]*$', 'Only alphanumeric characters and "_" are allowed.')])
     password = serializers.CharField(write_only=True)
 
+    # In the init we will check which fields the view is telling the serializer to consider (this is because the
+    # serializer can't know which of the files email or public_name will be present
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
+
+        # Instantiate the superclass normally
+        super(LoginCredentialsSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
     def validate(self, data):
-        if ('email' in data) and ('public_name' in data):
-            raise serializers.ValidationError("Both username and email are defined. This should not happen")
-        elif 'email' in data:
+        if 'email' in data:
             # We set to an empty string the param that is not inside the request body
-            data['username'] = ''
+            data['public_name'] = ''
             try:
-                ChUser.objects.get(email=data['email'])
+                user = ChUser.objects.get(email=data['email'])
                 # For security reasons we return a 401 instead of a 404 (we don't want to give clues of who is or who
                 # is not registered in the service
             except ChUser.DoesNotExist:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+                raise ValidationError("The ChUser object does not exist", code="401")
+            data['username'] = user.username
         elif 'public_name' in data:
-            data['email'] = data['']
-            if
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            data['email'] = ''
+            try:
+                profile = ChProfile.objects.select_related().get(public_name=data['public_name'])
+            except ChProfile.DoesNotExist:
+                raise ValidationError("The ChUser object, obtained from the profile, does not exist", code="401")
+            data['username'] = profile.username
         else:
             raise serializers.ValidationError("No email or public_name specified")
         return data
 
     # We need a save() implementation to get an object instance from the view
     def save(self):
-        email = self.validated_data['email']
         username = self.validated_data['username']
         password = self.validated_data['password']
-
 
 
 # ============================================================ #

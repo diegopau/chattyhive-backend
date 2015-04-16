@@ -10,7 +10,6 @@ from django.conf.global_settings import LANGUAGES
 from django.core.validators import RegexValidator
 from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
-from django.core import validators
 from django.utils import timezone
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
@@ -77,9 +76,9 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     """Provides the fields and attributes of the ChUser model
     """
     username = models.CharField(_('username'), max_length=32, unique=True,
-                                help_text=_('Required. 30 characters or fewer. Letters, numbers and '
+                                help_text=_('Required. 32 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
-                                validators=[validators.RegexValidator(
+                                validators=[RegexValidator(
                                     re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I),
                                     _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
