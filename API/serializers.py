@@ -2,6 +2,22 @@ from rest_framework import serializers
 from core.models import ChUser, ChProfile, LanguageModel, TagModel, ChHive, ChChat, City, Region, Country
 
 
+class LoginCredentialsSerializer(serializers.Serializer):
+    """Serializer class used validate a public_name or email and a password
+
+    """
+
+
+
+    def validate(self, attrs):
+        credentials = {
+            self.username_field:
+
+        }
+
+# ============================================================ #
+#                     Model Serializers                        #
+# ============================================================ #
 
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:

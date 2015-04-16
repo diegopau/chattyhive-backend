@@ -17,12 +17,24 @@ import pusher
     ### ============================================================ ###
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveLevel1Serializer, ChHiveSerializer
+from API import serializers
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
+from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+
+
+class JSONResponse(HttpResponse):
+    """
+    An HttpResponse that renders its content into JSON.
+    """
+    def __init__(self, data, **kwargs):
+        content = JSONRenderer().render(data)
+        kwargs['content_type'] = 'application/json'
+        super(JSONResponse, self).__init__(content, **kwargs)
 
 
 class ChUserList(APIView):
@@ -35,13 +47,13 @@ class ChUserList(APIView):
         """prueba
         """
         users = ChUser.objects.all()
-        serializer = ChUserSerializer(users, many=True)
+        serializer = serializers.ChUserSerializer(users, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
         """post prueba
         """
-        serializer = ChUserSerializer(data=request.data)
+        serializer = serializers.ChUserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -62,12 +74,12 @@ class ChUserDetail(APIView):
 
     def get(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = ChUserSerializer(user)
+        serializer = serializers.ChUserSerializer(user)
         return Response(serializer.data)
 
     def put(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = ChUserSerializer(user, data=request.data)
+        serializer = serializers.ChUserSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -92,13 +104,13 @@ class ChHiveList(APIView):
         """prueba
         """
         hives = ChHive.objects.all()
-        serializer = ChHiveLevel1Serializer(hives, many=True)
+        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
         """post prueba
         """
-        serializer = ChHiveSerializer(data=request.data)
+        serializer = serializers.ChHiveSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -108,7 +120,7 @@ class ChHiveList(APIView):
 class ChProfileDetail(APIView):
     def get_object(self, public_name):
         try:
-            return ChProfile.objects.get(public_name=public_name)
+            return serializers.ChProfile.objects.get(public_name=public_name)
         except ChUser.DoesNotExist:
             raise Http404
 
@@ -117,7 +129,7 @@ class ChProfileDetail(APIView):
 
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
-        serializer = ChProfileLevel1Serializer(profile, context={'request': request})
+        serializer = serializers.ChProfileLevel1Serializer(profile, context={'request': request})
 
         return Response(serializer.data)
 
@@ -134,13 +146,18 @@ def login(request, format=None):
     Returns 200 OK if credentials are ok
     """
 
+    try:
+        ChUser.objects.get(email=)
 
-    # try:
-    #
-    # except
-    #     return Response(status=status.HTTP_404_NOT_FOUND)
+    except
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-    # user = authenticate(username=user.username, password=password)
+    user = authenticate(username=user.username, password=password)
+
+    if request.method == 'POST':
+        serializer = serializers.LoginCredentialsSerializer
+
+
 
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
 # También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
@@ -155,7 +172,7 @@ def start_session(request, format=None):
         return HttpResponse(json.dumps({'csrf': csrf}),
                             content_type="application/json")
     else:
-        raise Http404
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 # # ViewSets define the view behavior.
 # class UserViewSet(viewsets.ModelViewSet):
