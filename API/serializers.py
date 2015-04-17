@@ -177,6 +177,14 @@ class ChProfileSerializer(SelectProfileFieldsModelSerializer):
                   'public_show_sex')
 
 
+class ChProfileLevel0Serializer(SelectProfileFieldsModelSerializer):
+
+    class Meta:
+        model = ChProfile
+        fields = ('user', 'public_name', 'avatar', 'personal_color', 'first_name', 'last_name', 'photo', )
+
+
+
 class ChProfileLevel1Serializer(SelectProfileFieldsModelSerializer):
 
     user = serializers.SlugRelatedField(read_only=True, slug_field='username', allow_null=False)
@@ -197,7 +205,7 @@ class ChProfileLevel1Serializer(SelectProfileFieldsModelSerializer):
 
 
 class ChHiveSerializer(serializers.ModelSerializer):
-    # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados yl o que se
+    # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados y lo que se
     # hace es relacionarlos únicamente
 
     category = serializers.SlugRelatedField(read_only=True, slug_field='code')

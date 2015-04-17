@@ -88,6 +88,10 @@ def start_session(request, format=None):
         return Response(data=data_dict, status=status.HTTP_200_OK)
 
 
+# ============================================================ #
+#                            Users                             #
+# ============================================================ #
+
 class ChUserList(APIView):
     """Lists all users or creates new user
 
@@ -117,6 +121,9 @@ class ChUserDetail(APIView):
     User detail is just avaliable from the browsable API, the endpoint is only exposed for a PUT with a new user
     (user registration)
     """
+
+    permission_classes = (IsAuthenticated,)
+
     def get_object(self, username):
         try:
             return ChUser.objects.get(username=username)
@@ -145,12 +152,19 @@ class ChUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ============================================================ #
+#                          Explore                             #
+# ============================================================ #
+
 class ChHiveList(APIView):
     """Lists hives in Explora or creates new hive
 
     User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
     (user registration)
     """
+
+    permission_classes = (IsAuthenticated,)
+
     def get(self, request, format=None):
         """prueba
         """
@@ -168,11 +182,39 @@ class ChHiveList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChProfileDetail(APIView):
+# ============================================================ #
+#                         Profiles                             #
+# ============================================================ #
+
+class ChProfileHiveList(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
     def get_object(self, public_name):
         try:
-            return serializers.ChProfile.objects.get(public_name=public_name)
-        except ChUser.DoesNotExist:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+
+        if not request.user == :
+        # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
+        # del contexto
+        serializer = serializers.ChProfileLevel1Serializer(profile, context={'request': request})
+
+        return Response(serializer.data)
+
+
+class ChProfileDetail(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.get(public_name=public_name)
+        except ChProfile.DoesNotExist:
             raise Http404
 
     def get(self, request, public_name, format=None):

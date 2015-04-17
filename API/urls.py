@@ -18,7 +18,12 @@ urlpatterns = patterns('',
     url(r'^users/(?P<username>[\w.@+-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),
 
 
-    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>[]/$', views.ChProfileDetail.as_view(), name="profile_detail"),
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/hives/$', views.ChProfileHiveList.as_view(),
+        name="profile_hive_list"),
+
+
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>[completar])/$', views.ChProfileDetail.as_view(),
+        name="profile_detail"),
 
 
     url(r'^hives/$', views.ChHiveList.as_view(), name="hive_list"),
