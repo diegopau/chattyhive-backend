@@ -6,6 +6,24 @@ from django.core.validators import RegexValidator, ValidationError
 import re
 
 
+# ============================================================ #
+#                      Support Classes                         #
+# ============================================================ #
+
+class URLParamsError(Exception):
+    def __init__(self, message, errors):
+
+        # Call the base class constructor with the parameters it needs
+        super(ValidationError, self).__init__(message)
+
+        # Now for your custom code...
+        self.errors = errors
+
+
+# ============================================================= #
+#                     Session serializers                       #
+# ============================================================= #
+
 class LoginCredentialsSerializer(serializers.Serializer):
     """Serializer class used validate a public_name or email and a password
 
@@ -86,7 +104,71 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'channel_unicode')
 
 
-class ChProfileSerializer(serializers.ModelSerializer):
+# ============================================================ #
+#                       User profiles                          #
+# ============================================================ #
+
+# This support class will allow the other related ModelSerializers to use only the needed fields (depending on the
+# url path params and query params
+class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` argument that
+    controls which fields should be displayed.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        profile_type = kwargs.pop('type', None)
+        profile_package = kwargs.pop('package', None)
+
+        # Instantiate the superclass normally
+        super(SelectProfileFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        # In the related ModelSerializers we will set all possible fields, with this code we will dinamically drop some
+        # of these fields depending on the url path params and the query params of the client request
+        existing_fields = set(self.fiedls.keys())  # This will be all the fields that are set in the ModelSerializer
+
+        if profile_type is not None:
+            if profile_type == 'public':
+                if profile_package is not None:
+                    if profile_package == 'basic'
+                        allowed_fields = set("username", "public_name", )
+                    elif profile_package == 'info'
+
+                    elif profile_package == 'hives'
+
+                    elif profile_package == 'complete'
+
+                    else:
+                        raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+                else:
+                    raise URLParamsError("No profile package specified", errors={})
+            elif profile_type == 'private':
+                if profile_package is not None:
+                    if profile_package == 'basic'
+
+                    elif profile_package == 'info'
+
+                    elif profile_package == 'hives'
+
+                    elif profile_package == 'complete'
+
+                    else:
+                        raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+                else:
+                    raise URLParamsError("No profile package specified", errors={})
+            else:
+                allowed_fields = set("", "")
+
+        if allowed_fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(allowed_fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+
+class ChProfileSerializer(SelectProfileFieldsModelSerializer):
     class Meta:
         model = ChProfile
         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
@@ -95,7 +177,7 @@ class ChProfileSerializer(serializers.ModelSerializer):
                   'public_show_sex')
 
 
-class ChProfileLevel1Serializer(serializers.ModelSerializer):
+class ChProfileLevel1Serializer(SelectProfileFieldsModelSerializer):
 
     user = serializers.SlugRelatedField(read_only=True, slug_field='username', allow_null=False)
     city = serializers.SlugRelatedField(read_only=True, slug_field='name', )  # TODO: read only??

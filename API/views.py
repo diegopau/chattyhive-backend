@@ -27,20 +27,6 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 
-# ======================================================================= #
-#                    Support methods and classes                          #
-# ======================================================================= #
-
-class JSONResponse(HttpResponse):
-    """
-    An HttpResponse that renders its content into JSON.
-    """
-    def __init__(self, data, **kwargs):
-        content = JSONRenderer().render(data)
-        kwargs['content_type'] = 'application/json'
-        super(JSONResponse, self).__init__(content, **kwargs)
-
-
 # ============================================================ #
 #                     Sessions & sync                          #
 # ============================================================ #
@@ -91,17 +77,15 @@ def login(request, format=None):
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
 # También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
 # móviles sino también para navegadores web.
-# TODO: esto no está con la forma que una vista de Django REST debería tener... revisar y corregir.
 @api_view(['GET'])
+@parser_classes((JSONParser,))
 def start_session(request, format=None):
     """Returns a csrf cookie
     """
     if request.method == 'GET':
         csrf = django.middleware.csrf.get_token(request)
-        return HttpResponse(json.dumps({'csrf': csrf}),
-                            content_type="application/json")
-    else:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        data_dict = {'csrf': csrf}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
 
 
 class ChUserList(APIView):
