@@ -10,21 +10,32 @@ from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, Ch
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
 import pusher
+from API import serializers
 
 
-# ============================================================ #
-#                     Django Rest Framework                    #
-# ============================================================ #
+# =================================================================== #
+#                     Django Rest Framework imports                   #
+# =================================================================== #
 
 from rest_framework import viewsets
-from API import serializers
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, BasePermission
+
+
+# ================================================================== #
+#                     Object-level permissions                       #
+# ================================================================== #
+
+class CanGetHiveList(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user
+
 
 
 # ============================================================ #
@@ -198,11 +209,11 @@ class ChProfileHiveList(APIView):
 
     def get(self, request, public_name, format=None):
         profile = self.get_object(public_name)
-
-        if not request.user == :
+        self.check_object_permissions(self.request, profile)
+        hives = profile.hive_subscriptions
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
-        serializer = serializers.ChProfileLevel1Serializer(profile, context={'request': request})
+        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
 
         return Response(serializer.data)
 
