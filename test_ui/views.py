@@ -32,8 +32,8 @@ def create_hive(request):
 
             # Adding tags
             tagsText = formTags.cleaned_data['tags']
-            tagsArray = tagsText.split(" ")
-            hive.set_tags(tagsArray)
+            tagsList = re.split(r'[, ]+', tagsText)
+            hive.set_tags(tagsList)
             hive.save()
 
             # Creating public chat of hive
@@ -286,6 +286,9 @@ def explore(request):
         # Returns all the hives (subscribed and not subscribed)
         try:
             hives = ChHive.objects.all()
+            print("Hive suscribers: ")
+            for suscriber in hives[1].chprofile_set.all():
+                print("hive suscriber: ", suscriber.public_name)
         except ChHive.DoesNotExist:
             hives = None
         return render(request, "{app_name}/explore.html".format(app_name=settings.TEST_UI_APP_NAME), {

@@ -759,7 +759,7 @@ class ChAnswer(ChMessage):
 
 
 class ChChatSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives/Chats
+    # Subscription object which relates Profiles with Chats
     profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
@@ -772,7 +772,7 @@ class ChChatSubscription(models.Model):
 
 
 class ChHiveSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives/Chats
+    # Subscription object which relates Profiles with Hives
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
