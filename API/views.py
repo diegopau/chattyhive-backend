@@ -25,6 +25,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, BasePermission
+from rest_framework.exceptions import APIException
 
 
 # ================================================================== #
@@ -34,6 +35,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 class CanGetHiveList(BasePermission):
 
     def has_object_permission(self, request, view, obj):
+        print("object permission is returning: ", obj.user == request.user)
         return obj.user == request.user
 
 
@@ -199,7 +201,7 @@ class ChHiveList(APIView):
 
 class ChProfileHiveList(APIView):
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, CanGetHiveList)
 
     def get_object(self, public_name):
         try:
@@ -209,7 +211,10 @@ class ChProfileHiveList(APIView):
 
     def get(self, request, public_name, format=None):
         profile = self.get_object(public_name)
-        self.check_object_permissions(self.request, profile)
+        try:
+            self.check_object_permissions(self.request, profile)
+        except APIException:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         hives = profile.hive_subscriptions
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
