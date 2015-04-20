@@ -38,17 +38,19 @@ def login_view(request):
                     # través del ChProfile) esté funcionando. Ver bien lo de select_related()...
                     user = authenticate(username=profile.username, password=password)
                 if user.is_active:
+                     # With login we persist the authentication, so the client won't have to reathenticate with each
+                     # request.
                     login(request, user)
                     email_address = EmailAddress.objects.get(email=user.email)
                     if not email_address.verified:
                         if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
                                 email_address=EmailAddress.objects.get(email=user.email))) and not email_address.warned:
-                            EmailAddress.objects.warn(login_string)
+                            EmailAddress.objects.warn(email_address)
                             return HttpResponseRedirect("/email_warning/")
                         if email_address.warned:
                             if EmailConfirmation.warning_expired(
                                     EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
-                                EmailAddress.objects.check_confirmation(login_string)
+                                EmailAddress.objects.check_confirmation(email_address)
                             else:
                                 return HttpResponseRedirect("/email_warning/")
                     return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))

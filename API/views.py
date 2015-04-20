@@ -10,6 +10,7 @@ from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, Ch
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
 import pusher
+from email_confirmation.models import EmailAddress, EmailConfirmation
 from API import serializers
 
 
@@ -39,10 +40,23 @@ class CanGetHiveList(BasePermission):
         return obj.user == request.user
 
 
-
 # ============================================================ #
 #                     Sessions & sync                          #
 # ============================================================ #
+
+# TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
+# También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
+# móviles sino también para navegadores web.
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def start_session(request, format=None):
+    """Returns a csrf cookie
+    """
+    if request.method == 'GET':
+        csrf = django.middleware.csrf.get_token(request)
+        data_dict = {'csrf': csrf}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
@@ -53,11 +67,14 @@ def login(request, format=None):
     """
 
     if request.method == 'POST':
+        data_dict = {}  # This will contain the data to be sent as JSON
+        needs_public_name = False
         if 'email' in request.data and 'public_name' in request.data:
             print("email and public_name should not be together in the JSON of the same request")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         elif 'email' in request.data:
             fields = ('email', 'password')
+            needs_public_name = True
         elif 'public_name' in request.data:
             fields = ('public_name', 'password')
         else:
@@ -74,7 +91,37 @@ def login(request, format=None):
                 # the password verified for the user
                 if user.is_active:
                     print("User is valid, active and authenticated")
-                    return Response(status=status.HTTP_200_OK)
+                    email_address = EmailAddress.objects.get(email=user.email)
+                    if not email_address.verified:
+                        if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
+                                email_address=EmailAddress.objects.get(email=user.email))) and not email_address.warned:
+                            EmailAddress.objects.warn(email_address)
+                            # With login method we persist the authentication, so the client won't have to reathenticate with
+                            # each request.
+                            login(request, user)
+                            if needs_public_name:
+                                data_dict['public_name'] = user.chprofile.public_name
+                            data_dict['email_verification'] = 'warn'
+                            return Response(data_dict, status=status.HTTP_200_OK)
+                        if email_address.warned:
+                            if EmailConfirmation.warning_expired(
+                                    EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
+                                data_dict['email_verification'] = 'expired'
+                                EmailAddress.objects.check_confirmation(email_address)
+                                return Response(data_dict, status=status.HTTP_401_UNAUTHORIZED)
+                            else:
+                                login(request, user)
+                                data_dict['email_verification'] = 'warned'
+                                if needs_public_name:
+                                    data_dict['public_name'] = user.chprofile.public_name
+                                return Response(data_dict, status=status.HTTP_200_OK)
+                    else:
+                        login(request, user)
+                        if needs_public_name:
+                            data_dict['public_name'] = user.chprofile.public_name
+                            return Response(data_dict, status=status.HTTP_200_OK)
+                        else:
+                            return Response(status=status.HTTP_200_OK)
                 else:
                     print("The password is valid, but the account has been disabled!")
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -86,19 +133,6 @@ def login(request, format=None):
         else:
             print("serializer errors: ", serializer.errors)
             return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-# TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
-# También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
-# móviles sino también para navegadores web.
-@api_view(['GET'])
-@parser_classes((JSONParser,))
-def start_session(request, format=None):
-    """Returns a csrf cookie
-    """
-    if request.method == 'GET':
-        csrf = django.middleware.csrf.get_token(request)
-        data_dict = {'csrf': csrf}
-        return Response(data=data_dict, status=status.HTTP_200_OK)
 
 
 # ============================================================ #
