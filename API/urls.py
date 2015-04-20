@@ -22,7 +22,7 @@ urlpatterns = patterns('',
         name="profile_hive_list"),
 
 
-    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>[completar])/$', views.ChProfileDetail.as_view(),
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>(public|private)?)/$', views.ChProfileDetail.as_view(),
         name="profile_detail"),
 
 
