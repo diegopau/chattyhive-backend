@@ -12,7 +12,8 @@ from django.http import HttpResponse, Http404
 import pusher
 from email_confirmation.models import EmailAddress, EmailConfirmation
 from API import serializers
-
+from email_confirmation import email_info
+import datetime
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -93,29 +94,57 @@ def login(request, format=None):
                     print("User is valid, active and authenticated")
                     email_address = EmailAddress.objects.get(email=user.email)
                     if not email_address.verified:
-                        if EmailConfirmation.key_expired(EmailConfirmation.objects.get(
-                                email_address=EmailAddress.objects.get(email=user.email))) and not email_address.warned:
-                            EmailAddress.objects.warn(email_address)
-                            # With login method we persist the authentication, so the client won't have to reathenticate with
-                            # each request.
-                            login(request, user)
-                            if needs_public_name:
-                                data_dict['public_name'] = user.chprofile.public_name
-                            data_dict['email_verification'] = 'warn'
-                            return Response(data_dict, status=status.HTTP_200_OK)
-                        if email_address.warned:
-                            if EmailConfirmation.warning_expired(
-                                    EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
-                                data_dict['email_verification'] = 'expired'
-                                EmailAddress.objects.check_confirmation(email_address)
-                                return Response(data_dict, status=status.HTTP_401_UNAUTHORIZED)
+                        try:
+                            user_email_confirmation = EmailConfirmation.objects.get(
+                                email_address=EmailAddress.objects.get(email=user.email))
+                            if email_address.warned:
+                                # THE USER HAS BEEN ALREADY WARNED
+                                if user_email_confirmation.warning_expired():
+                                    # EXTRA EXPIRATION DATE IS DUE, account is disabled or marked as disabled if
+                                    # it wasn't so
+                                    data_dict['email_verification'] = 'expired'
+                                    EmailAddress.objects.check_confirmation(email_address)
+                                    return Response(data_dict, status=status.HTTP_401_UNAUTHORIZED)
+                                else:
+                                    # FIRST EXPIRATION DATE IS DUE and it has been already checked and warned, but the
+                                    # extra warning time has not expired,
+                                    # we are in the middle of the extra expiration time
+                                    login(request, user)
+                                    data_dict['email_verification'] = 'warned'
+                                    if needs_public_name:
+                                        data_dict['public_name'] = user.chprofile.public_name
+                                    data_dict['expiration_date'] = \
+                                        user_email_confirmation.warned_day + datetime.timedelta(
+                                            days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                    return Response(data_dict, status=status.HTTP_200_OK)
                             else:
-                                login(request, user)
-                                data_dict['email_verification'] = 'warned'
-                                if needs_public_name:
-                                    data_dict['public_name'] = user.chprofile.public_name
-                                return Response(data_dict, status=status.HTTP_200_OK)
+                                # THE USER HAS NOT BEEN ALREADY WARNED
+                                if user_email_confirmation.key_expired():
+                                    # FIRST EXPIRATION DATE IS DUE and its the first time its been checked
+                                    EmailAddress.objects.warn(email_address)
+                                    # With login method we persist the authentication, so the client won't have to
+                                    # re-authenticate with each request.
+                                    login(request, user)
+                                    if needs_public_name:
+                                        data_dict['public_name'] = user.chprofile.public_name
+                                    data_dict['email_verification'] = 'warn'
+                                    data_dict['expiration_date'] = \
+                                        user_email_confirmation.warned_day + datetime.timedelta(
+                                        days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                    return Response(data_dict, status=status.HTTP_200_OK)
+                                else:
+                                    # FIRST EXPIRATION DATE IS NOT DUE
+                                    login(request, user)
+                                    if needs_public_name:
+                                        data_dict['public_name'] = user.chprofile.public_name
+                                    data_dict['email_verification'] = 'unverified'
+                                    data_dict['expiration_date'] = user_email_confirmation.sent + datetime.timedelta(
+                                        days=email_info.EMAIL_CONFIRMATION_DAYS)
+                                    return Response(data_dict, status=status.HTTP_200_OK)
+                        except EmailConfirmation.DoesNotExist:
+                            print("email confirmation object does not exist for user ", user.chprofile.public_name)
                     else:
+                        # ACCOUNT IS VERIFIED AND ACTIVE
                         login(request, user)
                         if needs_public_name:
                             data_dict['public_name'] = user.chprofile.public_name
