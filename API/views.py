@@ -304,31 +304,6 @@ class ChProfileDetail(APIView):
         return Response(serializer.data)
 
 
-
-# # @csrf_exempt
-# def login(request, user):
-#     """
-#     :param request:
-#     :param user: username for the login request
-#     :return: JSON with status, csrf and session_id
-#     """
-#     if request.method == 'GET':
-#         # print("if")  # PRINT
-#         request.session['user'] = user
-#         request.session['active'] = True
-#         request.session.set_expiry(300)
-#         session_id = request.session.session_key
-#         csrf = django.middleware.csrf.get_token(request)
-#         status = "LOGGED"
-#         # print(status)  # PRINT
-#         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
-#                             content_type="application/json")
-#     else:
-#         status = "ERROR"
-#         # print(status)  # PRINT
-#         return HttpResponse(json.dumps({"status": status}), content_type="application/json")
-#
-#
 # # @csrf_exempt
 # def chat(request):
 #     """
@@ -369,67 +344,6 @@ class ChProfileDetail(APIView):
 # ================================== #
 #             0.2 Version            #
 # ================================== #
-
-
-
-def login_v2(request):
-    if request.method == 'POST':
-        # user = request.POST.get("user")
-        # passw = request.POST.get("pass")
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        user = data['user']
-        passw = data['pass']
-        logs = {"user": user, "pass": passw}
-        print(logs)  # PRINT
-
-        user_auth = authenticate(username=user, password=passw)
-        if user_auth is not None:
-                if user_auth.is_active:
-                    login(request, user)
-                    status = "OK"
-
-                    chuser = ChUser.objects.get(username=user)
-
-                    profile = ChProfile.objects.get(user=chuser)
-
-                    # Trying to get all the subscriptions of this profile
-                    try:
-                        subscriptions = ChChatSubscription.objects.filter(profile=profile)
-                        hives = []
-                        for subscription in subscriptions:
-                            # Excluding duplicated hives
-                            hive_appeared = False
-                            for hive in hives:
-                                if subscription.hive == hive:
-                                    hive_appeared = True
-                            if not hive_appeared:
-                                # Adding the hive to the home view
-                                hives.append(subscription.hive.toJSON())
-                    except ChChatSubscription.DoesNotExist:
-                        return HttpResponse("Subscription not found")
-
-                    print(profile.toJSON())  # PRINT
-                    for hive in hives:
-                        print(hive)  # PRINT
-                    answer = json.dumps({'status': status, 'profile': profile.toJSON(),
-                                         'hives_subscribed': hives}, cls=DjangoJSONEncoder)
-
-                    return HttpResponse(answer, content_type="application/json")
-                    # return HttpResponseRedirect("/home/")
-                else:
-                    status = 'ERROR'
-                    return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                        cls=DjangoJSONEncoder), content_type="application/json")
-        else:
-            status = 'ERROR'
-            return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                           cls=DjangoJSONEncoder), content_type="application/json")
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
-        # raise Http404
-
 
 def explore(request):
     if request.method == 'GET':
