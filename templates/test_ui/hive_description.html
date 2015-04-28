@@ -13,7 +13,7 @@
     </div>
     <a href="/test-ui/home/">Home</a><br />
     <br />
-    {% if subscribed == True %}
+    {% if subscribed %}
         <div>:{{ hive.name }} -- <a href="/test-ui/leave/{{ hive.slug }}">leave</a></div>
     {% else %}
         <div>:{{ hive.name }} -- <a href="/test-ui/join/{{ hive.slug }}">join</a></div>
@@ -25,8 +25,9 @@
              {{ tag }},
         {% endfor %}
     </div>
-    {% if owner == True %}
+    {% if owner or admin %}
         <div><a href="/test-ui/create_public_chat/{{ hive.slug }}">New public chat</a></div>
+{#         TODO: crear enlace para eliminar la comunidad#}
     {% endif %}
 
 </body>

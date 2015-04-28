@@ -188,7 +188,7 @@ class EmailConfirmationManager(models.Manager):
         email_to_warn.warned = True
         email_to_warn.save()
         print("WARNING SENT")
-        return HttpResponseRedirect("/email_warning/")
+        return
     
     def delete_expired_confirmations(self):
         for confirmation in self.all():

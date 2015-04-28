@@ -4,6 +4,8 @@ from django.db import IntegrityError
 __author__ = 'lorenzo'
 
 from django.contrib import admin
+from import_export import resources
+from import_export.admin import ImportExportModelAdmin
 from django import forms
 from core.models import *
 
@@ -21,6 +23,17 @@ class LanguagesAdmin(admin.ModelAdmin):
     create_language_default_models.short_description = "create default language models"
 
 
+class ChHiveSubscriptionResource(resources.ModelResource):
+
+    class Meta:
+        model = ChHiveSubscription
+
+
+class ChHiveSubscriptionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    resource_class = ChHiveSubscriptionResource
+    list_display = ('creation_date', 'deleted', 'expelled', 'hive', 'profile')
+    pass
+
 # Include all models in Admin site
 admin.site.register(ChUser)
 admin.site.register(Device)
@@ -33,4 +46,5 @@ admin.site.register(ChMessage)
 admin.site.register(ChChat)
 admin.site.register(ChCommunityChat)
 admin.site.register(ChChatSubscription)
+admin.site.register(ChHiveSubscription)
 admin.site.register(LanguageModel, LanguagesAdmin)

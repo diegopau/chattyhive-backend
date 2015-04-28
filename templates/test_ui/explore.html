@@ -16,9 +16,11 @@
     Hives
     <br />
     {% for hive in hives %}
-      <li>
-        <a href="/test-ui/hive_description/{{ hive.slug }}">{{ hive.name }}</a> -- <a href="/join/{{ hive.slug }}">join</a>
-      </li>
+        {% if user.profile not in hive.chprofile_set.all %}
+            <li>
+              <a href="/test-ui/hive_description/{{ hive.slug }}">{{ hive.name }}</a> -- <a href="/test-ui/join/{{ hive.slug }}">join</a>
+            </li>
+        {% endif %}
     {% endfor %}
 </body>
 </html>

@@ -10,18 +10,193 @@ from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, Ch
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
 import pusher
+from email_confirmation.models import EmailAddress, EmailConfirmation
+from API import serializers
+from email_confirmation import email_info
+import datetime
 
-
-    ### ============================================================ ###
-    ###                     Django Rest Framework                    ###
-    ### ============================================================ ###
+# =================================================================== #
+#                     Django Rest Framework imports                   #
+# =================================================================== #
 
 from rest_framework import viewsets
-from API.serializers import ChUserSerializer, ChProfileLevel1Serializer, ChHiveLevel1Serializer, ChHiveSerializer
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
+from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, BasePermission
+from rest_framework.exceptions import APIException
+
+
+# ================================================================== #
+#                     Object-level permissions                       #
+# ================================================================== #
+
+class CanGetHiveList(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        print("object permission is returning: ", obj.user == request.user)
+        return obj.user == request.user
+
+
+# ============================================================ #
+#                     Sessions & sync                          #
+# ============================================================ #
+
+# TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
+# También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
+# móviles sino también para navegadores web.
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def start_session(request, format=None):
+    """Returns a csrf cookie
+    """
+    if request.method == 'GET':
+        csrf = django.middleware.csrf.get_token(request)
+        data_dict = {'csrf': csrf}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@parser_classes((JSONParser,))
+def login(request, format=None):
+    """POST sessions/login/
+
+    Returns 200 OK if credentials are ok
+    """
+
+    if request.method == 'POST':
+        data_dict = {}  # This will contain the data to be sent as JSON
+        needs_public_name = False
+        if 'email' in request.data and 'public_name' in request.data:
+            print("email and public_name should not be together in the JSON of the same request")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        elif 'email' in request.data:
+            fields = ('email', 'password')
+            needs_public_name = True
+        elif 'public_name' in request.data:
+            fields = ('public_name', 'password')
+        else:
+            print("at least email or public_name should be in the JSON")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # fields specifies the fields to be considered by the serializer
+        serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields)
+
+        if serializer.is_valid():
+            user = authenticate(username=serializer.validated_data['username'],
+                                password=serializer.validated_data['password'])
+            if user is not None:
+                # the password verified for the user
+                if user.is_active:
+                    print("User is valid, active and authenticated")
+                    email_address = EmailAddress.objects.get(email=user.email)
+                    if not email_address.verified:
+                        try:
+                            user_email_confirmation = EmailConfirmation.objects.get(
+                                email_address=EmailAddress.objects.get(email=user.email))
+                            if email_address.warned:
+                                # THE USER HAS BEEN ALREADY WARNED
+                                if user_email_confirmation.warning_expired():
+                                    # EXTRA EXPIRATION DATE IS DUE, account is disabled or marked as disabled if
+                                    # it wasn't so
+                                    data_dict['email_verification'] = 'expired'
+                                    EmailAddress.objects.check_confirmation(email_address)
+                                    return Response(data_dict, status=status.HTTP_401_UNAUTHORIZED)
+                                else:
+                                    # FIRST EXPIRATION DATE IS DUE and it has been already checked and warned, but the
+                                    # extra warning time has not expired,
+                                    # we are in the middle of the extra expiration time
+                                    login(request, user)
+                                    data_dict['email_verification'] = 'warned'
+                                    if needs_public_name:
+                                        data_dict['public_name'] = user.chprofile.public_name
+                                    data_dict['expiration_date'] = \
+                                        user_email_confirmation.warned_day + datetime.timedelta(
+                                            days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                    return Response(data_dict, status=status.HTTP_200_OK)
+                            else:
+                                # THE USER HAS NOT BEEN ALREADY WARNED
+                                if user_email_confirmation.key_expired():
+                                    # FIRST EXPIRATION DATE IS DUE and its the first time its been checked
+                                    EmailAddress.objects.warn(email_address)
+                                    # With login method we persist the authentication, so the client won't have to
+                                    # re-authenticate with each request.
+                                    login(request, user)
+                                    if needs_public_name:
+                                        data_dict['public_name'] = user.chprofile.public_name
+                                    data_dict['email_verification'] = 'warn'
+                                    data_dict['expiration_date'] = \
+                                        user_email_confirmation.warned_day + datetime.timedelta(
+                                        days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                    return Response(data_dict, status=status.HTTP_200_OK)
+                                else:
+                                    # FIRST EXPIRATION DATE IS NOT DUE
+                                    login(request, user)
+                                    if needs_public_name:
+                                        data_dict['public_name'] = user.chprofile.public_name
+                                    data_dict['email_verification'] = 'unverified'
+                                    data_dict['expiration_date'] = user_email_confirmation.sent + datetime.timedelta(
+                                        days=email_info.EMAIL_CONFIRMATION_DAYS)
+                                    return Response(data_dict, status=status.HTTP_200_OK)
+                        except EmailConfirmation.DoesNotExist:
+                            print("email confirmation object does not exist for user ", user.chprofile.public_name)
+                    else:
+                        # ACCOUNT IS VERIFIED AND ACTIVE
+                        login(request, user)
+                        if needs_public_name:
+                            data_dict['public_name'] = user.chprofile.public_name
+                            return Response(data_dict, status=status.HTTP_200_OK)
+                        else:
+                            return Response(status=status.HTTP_200_OK)
+                else:
+                    print("The password is valid, but the account has been disabled!")
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                # the authentication system was unable to verify the username and password
+                print("The username and password were incorrect.")
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            print("serializer errors: ", serializer.errors)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+# ============================================================ #
+#                          Explore                             #
+# ============================================================ #
+
+class ChHiveList(APIView):
+    """Lists hives in Explora or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        """prueba
+        """
+        hives = ChHive.objects.all()
+        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+        serializer = serializers.ChHiveSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ============================================================ #
+#                         Users & Profiles                             #
+# ============================================================ #
 
 
 class ChUserList(APIView):
@@ -34,13 +209,13 @@ class ChUserList(APIView):
         """prueba
         """
         users = ChUser.objects.all()
-        serializer = ChUserSerializer(users, many=True)
+        serializer = serializers.ChUserSerializer(users, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
         """post prueba
         """
-        serializer = ChUserSerializer(data=request.data)
+        serializer = serializers.ChUserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -53,6 +228,9 @@ class ChUserDetail(APIView):
     User detail is just avaliable from the browsable API, the endpoint is only exposed for a PUT with a new user
     (user registration)
     """
+
+    permission_classes = (IsAuthenticated,)
+
     def get_object(self, username):
         try:
             return ChUser.objects.get(username=username)
@@ -61,12 +239,12 @@ class ChUserDetail(APIView):
 
     def get(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = ChUserSerializer(user)
+        serializer = serializers.ChUserSerializer(user)
         return Response(serializer.data)
 
     def put(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = ChUserSerializer(user, data=request.data)
+        serializer = serializers.ChUserSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -81,34 +259,39 @@ class ChUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ChHiveList(APIView):
-    """Lists hives in Explora or creates new hive
+class ChProfileHiveList(APIView):
 
-    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
-    (user registration)
-    """
-    def get(self, request, format=None):
-        """prueba
-        """
-        hives = ChHive.objects.all()
-        serializer = ChHiveLevel1Serializer(hives, many=True)
+    permission_classes = (IsAuthenticated, CanGetHiveList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+        try:
+            self.check_object_permissions(self.request, profile)
+        except APIException:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        hives = profile.hive_subscriptions
+        # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
+        # del contexto
+        # En fields se le pasa el campo a eliminar del serializador
+        serializer = serializers.ChHiveLevel1Serializer(hives, fields='priority', many=True)
+
         return Response(serializer.data)
-
-    def post(self, request, format=None):
-        """post prueba
-        """
-        serializer = ChHiveSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChProfileDetail(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
     def get_object(self, public_name):
         try:
             return ChProfile.objects.get(public_name=public_name)
-        except ChUser.DoesNotExist:
+        except ChProfile.DoesNotExist:
             raise Http404
 
     def get(self, request, public_name, format=None):
@@ -116,61 +299,11 @@ class ChProfileDetail(APIView):
 
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
-        serializer = ChProfileLevel1Serializer(profile, context={'request': request})
+        serializer = serializers.ChProfileLevel1Serializer(profile, context={'request': request})
 
         return Response(serializer.data)
 
 
-
-# TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
-# También hay que comprobar si el uso de Tokens en autenticación invalida la necesidad de csrf, no sólo para apps
-# móviles sino también para navegadores web.
-# TODO: esto no está con la forma que una vista de Django REST debería tener... revisar y corregir.
-@api_view(['GET'])
-def start_session(request):
-    """Returns a csrf cookie
-    """
-    if request.method == 'GET':
-        csrf = django.middleware.csrf.get_token(request)
-        return HttpResponse(json.dumps({'csrf': csrf}),
-                            content_type="application/json")
-    else:
-        raise Http404
-
-# # ViewSets define the view behavior.
-# class UserViewSet(viewsets.ModelViewSet):
-#     queryset = ChUser.objects.all()
-#     serializer_class = UserSerializer
-
-
-
-    ### ======================================================== ###
-
-
-# # @csrf_exempt
-# def login(request, user):
-#     """
-#     :param request:
-#     :param user: username for the login request
-#     :return: JSON with status, csrf and session_id
-#     """
-#     if request.method == 'GET':
-#         # print("if")  # PRINT
-#         request.session['user'] = user
-#         request.session['active'] = True
-#         request.session.set_expiry(300)
-#         session_id = request.session.session_key
-#         csrf = django.middleware.csrf.get_token(request)
-#         status = "LOGGED"
-#         # print(status)  # PRINT
-#         return HttpResponse(json.dumps({'status': status, 'csrf': csrf, 'session_id': session_id}),
-#                             content_type="application/json")
-#     else:
-#         status = "ERROR"
-#         # print(status)  # PRINT
-#         return HttpResponse(json.dumps({"status": status}), content_type="application/json")
-#
-#
 # # @csrf_exempt
 # def chat(request):
 #     """
@@ -211,67 +344,6 @@ def start_session(request):
 # ================================== #
 #             0.2 Version            #
 # ================================== #
-
-
-
-def login_v2(request):
-    if request.method == 'POST':
-        # user = request.POST.get("user")
-        # passw = request.POST.get("pass")
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        user = data['user']
-        passw = data['pass']
-        logs = {"user": user, "pass": passw}
-        print(logs)  # PRINT
-
-        user_auth = authenticate(username=user, password=passw)
-        if user_auth is not None:
-                if user_auth.is_active:
-                    login(request, user)
-                    status = "OK"
-
-                    chuser = ChUser.objects.get(username=user)
-
-                    profile = ChProfile.objects.get(user=chuser)
-
-                    # Trying to get all the subscriptions of this profile
-                    try:
-                        subscriptions = ChChatSubscription.objects.filter(profile=profile)
-                        hives = []
-                        for subscription in subscriptions:
-                            # Excluding duplicated hives
-                            hive_appeared = False
-                            for hive in hives:
-                                if subscription.hive == hive:
-                                    hive_appeared = True
-                            if not hive_appeared:
-                                # Adding the hive to the home view
-                                hives.append(subscription.hive.toJSON())
-                    except ChChatSubscription.DoesNotExist:
-                        return HttpResponse("Subscription not found")
-
-                    print(profile.toJSON())  # PRINT
-                    for hive in hives:
-                        print(hive)  # PRINT
-                    answer = json.dumps({'status': status, 'profile': profile.toJSON(),
-                                         'hives_subscribed': hives}, cls=DjangoJSONEncoder)
-
-                    return HttpResponse(answer, content_type="application/json")
-                    # return HttpResponseRedirect("/home/")
-                else:
-                    status = 'ERROR'
-                    return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                        cls=DjangoJSONEncoder), content_type="application/json")
-        else:
-            status = 'ERROR'
-            return HttpResponse(json.dumps({'status': status, "logs": logs},
-                                           cls=DjangoJSONEncoder), content_type="application/json")
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
-        # raise Http404
-
 
 def explore(request):
     if request.method == 'GET':

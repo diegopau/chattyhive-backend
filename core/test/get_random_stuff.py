@@ -151,7 +151,7 @@ def get_random_public_name():
 
 
 def get_random_username():
-    return uuid4().hex[:30]
+    return uuid4().hex
 
 
 def get_random_category_code():

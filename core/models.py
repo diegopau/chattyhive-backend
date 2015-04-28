@@ -10,7 +10,6 @@ from django.conf.global_settings import LANGUAGES
 from django.core.validators import RegexValidator
 from uuid import uuid4
 from django.utils.translation import ugettext_lazy as _
-from django.core import validators
 from django.utils import timezone
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
@@ -38,13 +37,13 @@ class ChUserManager(UserManager):
         """
 
         """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
-        hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
+        hex_username = uuid4().hex    # 16^30 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex[:30]    # 16^30 values low collision probabilities
+                hex_username = uuid4().hex    # 16^30 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
@@ -76,11 +75,12 @@ class ChUserManager(UserManager):
 class ChUser(AbstractBaseUser, PermissionsMixin):
     """Provides the fields and attributes of the ChUser model
     """
-    username = models.CharField(_('username'), max_length=30, unique=True,
-                                help_text=_('Required. 30 characters or fewer. Letters, numbers and '
+    username = models.CharField(_('username'), max_length=32, unique=True,
+                                help_text=_('Required. 32 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
-                                validators=[validators.RegexValidator(re.compile('^[\w.@+-]+$'),
-                                                                      _('Enter a valid username.'), 'invalid')])
+                                validators=[RegexValidator(
+                                    re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I),
+                                    _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin '
@@ -606,7 +606,7 @@ class ChChat(models.Model):
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
     type = models.CharField(max_length=32, choices=TYPE, default='private')
-    hive = models.ForeignKey(ChHive, related_name="hive", null=True, blank=True)
+    hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
 
     # Attributes of the Chat
@@ -759,7 +759,7 @@ class ChAnswer(ChMessage):
 
 
 class ChChatSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives/Chats
+    # Subscription object which relates Profiles with Chats
     profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
@@ -772,7 +772,7 @@ class ChChatSubscription(models.Model):
 
 
 class ChHiveSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives/Chats
+    # Subscription object which relates Profiles with Hives
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)

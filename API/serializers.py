@@ -1,6 +1,82 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.response import Response
 from core.models import ChUser, ChProfile, LanguageModel, TagModel, ChHive, ChChat, City, Region, Country
+from django.utils.translation import ugettext_lazy as _
+from django.core.validators import RegexValidator, ValidationError
+import re
 
+
+# ============================================================ #
+#                      Support Classes                         #
+# ============================================================ #
+
+class URLParamsError(Exception):
+    def __init__(self, message, errors):
+
+        # Call the base class constructor with the parameters it needs
+        super(ValidationError, self).__init__(message)
+
+        # Now for your custom code...
+        self.errors = errors
+
+
+# ============================================================= #
+#                     Session serializers                       #
+# ============================================================= #
+
+class LoginCredentialsSerializer(serializers.Serializer):
+    """Serializer class used validate a public_name or email and a password
+
+    """
+    email = serializers.EmailField()
+    public_name = serializers.CharField(max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]*$', 'Only alphanumeric characters and "_" are allowed.')])
+    password = serializers.CharField(write_only=True)
+
+    # In the init we will check which fields the view is telling the serializer to consider (this is because the
+    # serializer can't know which of the files email or public_name will be present
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
+
+        # Instantiate the superclass normally
+        super(LoginCredentialsSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+    def validate(self, data):
+        if 'email' in data:
+            # We set to an empty string the param that is not inside the request body
+            try:
+                user = ChUser.objects.get(email=data['email'])
+                # For security reasons we return a 401 instead of a 404 (we don't want to give clues of who is or who
+                # is not registered in the service
+            except ChUser.DoesNotExist:
+                raise ValidationError("The ChUser object does not exist", code="401")
+            data['username'] = user.username
+        elif 'public_name' in data:
+            try:
+                profile = ChProfile.objects.select_related().get(public_name=data['public_name'])
+            except ChProfile.DoesNotExist:
+                raise ValidationError("The ChUser object, obtained from the profile, does not exist", code="401")
+            data['username'] = profile.username
+        else:
+            raise serializers.ValidationError("No email or public_name specified")
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        username = self.validated_data['username']
+        password = self.validated_data['password']
+
+
+# ============================================================ #
+#                     Model Serializers                        #
+# ============================================================ #
 
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,36 +104,108 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'channel_unicode')
 
 
-class ChProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChProfile
-        fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
-                  '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-                  'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
-                  'public_show_sex')
+# ============================================================ #
+#                       Users & Profiles                          #
+# ============================================================ #
 
-
-class ChProfileLevel1Serializer(serializers.ModelSerializer):
-
-    user = serializers.SlugRelatedField(read_only=True, slug_field='username', allow_null=False)
-    city = serializers.SlugRelatedField(read_only=True, slug_field='name', )  # TODO: read only??
-    region = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
-    country = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
-    languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')  # TODO: read only??
-
-    # Hive subscriptions (and not only hive of which he is the creator)
-#    hives = serializers.SlugRelatedField(many=True, slug_field='slug')
-
-    class Meta:
-        model = ChProfile
-        fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
-                  'languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-                  'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
-                  'public_show_sex')
+# This support class will allow the other related ModelSerializers to use only the needed fields (depending on the
+# url path params and query params
+# class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
+#     """
+#     A ModelSerializer that takes an additional `fields` argument that
+#     controls which fields should be displayed.
+#     """
+#
+#     def __init__(self, *args, **kwargs):
+#         # Don't pass the 'fields' arg up to the superclass
+#         profile_type = kwargs.pop('type', None)
+#         profile_package = kwargs.pop('package', None)
+#
+#         # Instantiate the superclass normally
+#         super(SelectProfileFieldsModelSerializer, self).__init__(*args, **kwargs)
+#
+#         # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
+#         # drop some of these fields depending on the url path params and the query params of the client request
+#         existing_fields = set(self.fiedls.keys())  # This will be all the fields that are set in the ModelSerializer
+#
+#         if profile_type is not None:
+#             if profile_type == 'public':
+#                 if profile_package is not None:
+#                     if profile_package == 'basic'
+#                         allowed_fields = set("username", "public_name", )
+#                     elif profile_package == 'info'
+#
+#                     elif profile_package == 'hives'
+#
+#                     elif profile_package == 'complete'
+#
+#                     else:
+#                         raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+#                 else:
+#                     raise URLParamsError("No profile package specified", errors={})
+#             elif profile_type == 'private':
+#                 if profile_package is not None:
+#                     if profile_package == 'basic'
+#
+#                     elif profile_package == 'info'
+#
+#                     elif profile_package == 'hives'
+#
+#                     elif profile_package == 'complete'
+#
+#                     else:
+#                         raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+#                 else:
+#                     raise URLParamsError("No profile package specified", errors={})
+#             else:
+#                 allowed_fields = set("", "")
+#
+#         if allowed_fields is not None:
+#             # Drop any fields that are not specified in the `fields` argument.
+#             allowed = set(allowed_fields)
+#             existing = set(self.fields.keys())
+#             for field_name in existing - allowed:
+#                 self.fields.pop(field_name)
+#
+#
+# class ChProfileSerializer(SelectProfileFieldsModelSerializer):
+#     class Meta:
+#         model = ChProfile
+#         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
+#                   '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
+#                   'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
+#                   'public_show_sex')
+#
+#
+# class ChProfileLevel0Serializer(SelectProfileFieldsModelSerializer):
+#
+#     class Meta:
+#         model = ChProfile
+#         fields = ('user', 'public_name', 'avatar', 'personal_color', 'first_name', 'last_name', 'photo', )
+#
+#
+#
+# class ChProfileLevel1Serializer(SelectProfileFieldsModelSerializer):
+#
+#     user = serializers.SlugRelatedField(read_only=True, slug_field='username', allow_null=False)
+#     city = serializers.SlugRelatedField(read_only=True, slug_field='name', )  # TODO: read only??
+#     region = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
+#     country = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
+#     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')  # TODO: read only??
+#
+#     # Hive subscriptions (and not only hive of which he is the creator)
+# #    hives = serializers.SlugRelatedField(many=True, slug_field='slug')
+#
+#     class Meta:
+#         model = ChProfile
+#         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
+#                   'languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
+#                   'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
+#                   'public_show_sex')
 
 
 class ChHiveSerializer(serializers.ModelSerializer):
-    # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados yl o que se
+    # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados y lo que se
     # hace es relacionarlos únicamente
 
     category = serializers.SlugRelatedField(read_only=True, slug_field='code')
@@ -72,7 +220,9 @@ class ChHiveSerializer(serializers.ModelSerializer):
 
 
 class ChHiveLevel1Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive list,
 
+    """
     category = serializers.SlugRelatedField(read_only=True, slug_field='code')
     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')
 
@@ -80,6 +230,19 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     # set read_only to True
     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
     tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='tag')
+
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
+
+        # Instantiate the superclass normally
+        super(ChHiveLevel1Serializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields:
+                self.fields.pop(field_name)
 
     class Meta:
         model = ChHive

@@ -19,7 +19,6 @@ def create_hive(request):
         if formHive.is_valid() and formTags.is_valid():
             user = request.user
             profile = ChProfile.objects.get(user=user)
-
             hive_name = formHive.cleaned_data['name']
             hive = formHive.save(commit=False)
             hive.creator = profile
@@ -33,8 +32,8 @@ def create_hive(request):
 
             # Adding tags
             tagsText = formTags.cleaned_data['tags']
-            tagsArray = tagsText.split(" ")
-            hive.set_tags(tagsArray)
+            tagsList = re.split(r'[, ]+', tagsText)
+            hive.set_tags(tagsList)
             hive.save()
 
             # Creating public chat of hive
@@ -82,6 +81,7 @@ def create_community(request):
             hive = formCommunity.save(commit=False)
             hive.creator = profile
             hive.slug = hive_name.replace(" ", "_")
+            # TODO: se está metiendo como slug el hive_name, esto hay que corregirlo.
             hive.slug = replace_unicode(hive.slug)
             hive.type = 'Community'
 
@@ -99,7 +99,7 @@ def create_community(request):
             hive.save()
 
             # Creating community from hive
-            community = ChCommunity(hive=hive, admin=profile)
+            community = ChCommunity(hive=hive, owner=profile)
             community.save()
 
             # Creating subscription
@@ -113,6 +113,8 @@ def create_community(request):
             # transaction.set_autocommit(True)
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
         else:
+            print("errores formulario community:", formCommunity.errors)
+            print(formCommunityTags.errors)
             return HttpResponse("ERROR, invalid form")
     else:
         formHive = CreateHiveForm(prefix="formHive")
@@ -133,7 +135,7 @@ def create_chat(request, hive_slug, public_name):
         user = request.user
         profile = ChProfile.objects.get(user=user)
         invited = ChProfile.objects.get(public_name=public_name)
-        hive = ChHive.objects.get(slug=slug)
+        hive = ChHive.objects.get(slug=hive_slug)
         if profile == invited:
             raise Http404
 
@@ -178,7 +180,7 @@ def create_public_chat(request, hive_slug):
     if request.method == 'POST':
         form = CreateCommunityChatForm(request.POST)
         if form.is_valid():
-            hive = ChHive.objects.get(slug=slug)
+            hive = ChHive.objects.get(slug=hive_slug)
             community = ChCommunity.objects.get(hive=hive)
             community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'])
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
@@ -186,7 +188,7 @@ def create_public_chat(request, hive_slug):
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateCommunityChatForm
-        hive = ChHive.objects.get(slug=slug)
+        hive = ChHive.objects.get(slug=hive_slug)
         return render(request, "{app_name}/create_public_chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'form': form,
             'hive': hive
@@ -204,7 +206,7 @@ def join(request, hive_slug):
         # Getting needed information
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        hive_joining = ChHive.objects.get(slug=slug)
+        hive_joining = ChHive.objects.get(slug=hive_slug)
 
         hive_joining.join(profile)
 
@@ -225,7 +227,7 @@ def leave(request, hive_slug):
         username = request.user
         # user = ChUser.objects.get(username=username)
         profile = ChProfile.objects.get(user=username)
-        hive_leaving = ChHive.objects.get(slug=slug)
+        hive_leaving = ChHive.objects.get(slug=hive_slug)
 
         hive_leaving.leave(profile)
 
@@ -284,6 +286,9 @@ def explore(request):
         # Returns all the hives (subscribed and not subscribed)
         try:
             hives = ChHive.objects.all()
+            print("Hive suscribers: ")
+            for suscriber in hives[1].chprofile_set.all():
+                print("hive suscriber: ", suscriber.public_name)
         except ChHive.DoesNotExist:
             hives = None
         return render(request, "{app_name}/explore.html".format(app_name=settings.TEST_UI_APP_NAME), {
@@ -455,23 +460,31 @@ def hive_description(request, hive_slug):
     if request.method == 'GET':
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        hive = ChHive.objects.get(slug=slug)
+        hive = ChHive.objects.get(slug=hive_slug)
+        subscribed = False
+        owner = False
+        admin = False
         try:
             ChHiveSubscription.objects.get(hive=hive, profile=profile)
             subscribed = True
-            ChCommunity.objects.get(hive=hive, admin=profile)
-            owner = True
+
+            try:
+                community = ChCommunity.objects.get(hive=hive)
+                if community.owner == profile:
+                    owner = True
+                elif profile in community.admins:
+                    admin = True
+            except ChCommunity.DoesNotExist:
+                pass
+
         except ChHiveSubscription.DoesNotExist:
-            subscribed = False
-            owner = False
-        except ChCommunity.DoesNotExist:
-            subscribed = True
-            owner = False
+            pass
 
         return render(request, "{app_name}/hive_description.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'hive': hive,
             'subscribed': subscribed,
             'owner': owner,
+            'admin': admin,
         })
 
     else:
@@ -488,7 +501,7 @@ def get_hive_users(request, hive_slug, init, interval):
     :return: *interval* users from *init*
     """
     if request.method == 'GET':
-        hive = ChHive.objects.get(slug=slug)
+        hive = ChHive.objects.get(slug=hive_slug)
         profile = request.user.profile
         try:
             profiles = []
