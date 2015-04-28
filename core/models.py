@@ -690,14 +690,15 @@ class ChChat(models.Model):
 
 class ChFriendsGroupChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='friends_group_chat_extra_info')
-
+    hive = models.ForeignKey(ChHive, related_name="friends_group_chats", null=True, blank=True)
 
 class ChHivematesGroupChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='hivemates_group_chat_extra_info')
-
+    hive = models.ForeignKey(ChHive, related_name="hivemates_group_chats", null=True, blank=True)
 
 class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
+    hive = models.OneToOneField(ChHive, related_name="public_chat", null=True, blank=True)
 
 
 class ChCommunityPublicChat(models.Model):
@@ -706,6 +707,7 @@ class ChCommunityPublicChat(models.Model):
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
     photo = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
+    hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
