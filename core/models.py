@@ -597,15 +597,10 @@ class ChCommunity(models.Model):
 
 
 class ChChat(models.Model):
-    # Chat TYPE definitions
-    TYPE = (
-        ('public', 'public'),
-        ('private', 'private'),
-    )
 
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
-    type = models.CharField(max_length=32, choices=TYPE, default='private')
+    # type = models.CharField(max_length=32, choices=TYPE, default='private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
 
@@ -693,20 +688,37 @@ class ChChat(models.Model):
         return self.hive.name + '(' + self.type + ')'
 
 
-class ChCommunityChat(models.Model):
+class ChFriendsGroupChat(models.Model):
+    chat = models.OneToOneField(ChChat, related_name='friends_group_chat_extra_info')
+
+
+class ChHivematesGroupChat(models.Model):
+    chat = models.OneToOneField(ChChat, related_name='hivemates_group_chat_extra_info')
+
+
+class ChPublicChat(models.Model):
+    chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
+
+
+class ChCommunityPublicChat(models.Model):
     moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
-    chat = models.OneToOneField(ChChat, related_name='community_extra_info')
-    name = models.CharField(max_length=80)  # todo unique for each community, basic regex
+    chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
+    name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
     photo = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
 
     def save(self, *args, **kwargs):
-        extensions = ChCommunityChat.objects.filter(name=self.name).values('chat')
+        # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
+        # IMPORTANT: if there is another ChCommunityPublicChat this is OK as long as it belongs to another community...
+        extensions = ChCommunityPublicChat.objects.filter(name=self.name).values('chat')
+        # ... and that is why we check here if this ChChat object belongs to the same community (hive) than the ChChat
+        # we are trying to create now.
         chats = ChChat.objects.filter(id__in=extensions, hive=self.chat.hive)
+        # If it has the same name and belongs to the same hive (community) then the public chat already existed!!
         if chats:
             raise IntegrityError("ChChat already exists")
         else:
-            super(ChCommunityChat, self).save(*args, **kwargs)
+            super(ChCommunityPublicChat, self).save(*args, **kwargs)
 
 
 class ChMessage(models.Model):
