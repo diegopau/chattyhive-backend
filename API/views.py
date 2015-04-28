@@ -165,8 +165,39 @@ def login(request, format=None):
 
 
 # ============================================================ #
-#                            Users                             #
+#                          Explore                             #
 # ============================================================ #
+
+class ChHiveList(APIView):
+    """Lists hives in Explora or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        """prueba
+        """
+        hives = ChHive.objects.all()
+        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+        serializer = serializers.ChHiveSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ============================================================ #
+#                         Users & Profiles                             #
+# ============================================================ #
+
 
 class ChUserList(APIView):
     """Lists all users or creates new user
@@ -228,40 +259,6 @@ class ChUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# ============================================================ #
-#                          Explore                             #
-# ============================================================ #
-
-class ChHiveList(APIView):
-    """Lists hives in Explora or creates new hive
-
-    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
-    (user registration)
-    """
-
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request, format=None):
-        """prueba
-        """
-        hives = ChHive.objects.all()
-        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
-        return Response(serializer.data)
-
-    def post(self, request, format=None):
-        """post prueba
-        """
-        serializer = serializers.ChHiveSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# ============================================================ #
-#                         Profiles                             #
-# ============================================================ #
-
 class ChProfileHiveList(APIView):
 
     permission_classes = (IsAuthenticated, CanGetHiveList)
@@ -281,7 +278,8 @@ class ChProfileHiveList(APIView):
         hives = profile.hive_subscriptions
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
-        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
+        # En fields se le pasa el campo a eliminar del serializador
+        serializer = serializers.ChHiveLevel1Serializer(hives, fields='priority', many=True)
 
         return Response(serializer.data)
 

@@ -105,7 +105,7 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
 
 
 # ============================================================ #
-#                       User profiles                          #
+#                       Users & Profiles                          #
 # ============================================================ #
 
 # This support class will allow the other related ModelSerializers to use only the needed fields (depending on the
@@ -124,8 +124,8 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
 #         # Instantiate the superclass normally
 #         super(SelectProfileFieldsModelSerializer, self).__init__(*args, **kwargs)
 #
-#         # In the related ModelSerializers we will set all possible fields, with this code we will dinamically drop some
-#         # of these fields depending on the url path params and the query params of the client request
+#         # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
+#         # drop some of these fields depending on the url path params and the query params of the client request
 #         existing_fields = set(self.fiedls.keys())  # This will be all the fields that are set in the ModelSerializer
 #
 #         if profile_type is not None:
@@ -230,6 +230,18 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     # set read_only to True
     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
     tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='tag')
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
+
+        # Instantiate the superclass normally
+        super(ChHiveLevel1Serializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields:
+                self.fields.pop(field_name)
 
     class Meta:
         model = ChHive
