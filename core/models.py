@@ -796,7 +796,7 @@ class ChChatSubscription(models.Model):
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     deleted = models.BooleanField(default=False)
-    expelled = models.BooleanField(default=False)
+    expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):
         return self.profile.first_name + " links with"
@@ -809,7 +809,7 @@ class ChHiveSubscription(models.Model):
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     deleted = models.BooleanField(default=False)
-    expelled = models.BooleanField(default=False)
+    expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):
         return self.profile.first_name + " links with"
