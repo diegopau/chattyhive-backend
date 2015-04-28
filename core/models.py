@@ -494,8 +494,9 @@ class ChHive(models.Model):
             elif hive_subscription.deleted:
                 hive_subscription.deleted = False
                 hive_subscription.save()
-                chats = ChChat.objects.filter(hive=self, type='public')
-                for chat in chats:  # todo, more efficient?
+                public_chats = ChPublicChat.objects.filter(hive=self)
+                for public_chat in public_chats:  # todo, more efficient?
+                    chat = public_chat.chat
                     try:
                         chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
                         if not chat_subscription.expelled:
@@ -509,8 +510,9 @@ class ChHive(models.Model):
         except ChHiveSubscription.DoesNotExist:
             hive_subscription = ChHiveSubscription(hive=self, profile=profile)
             hive_subscription.save()
-            chats = ChChat.objects.filter(hive=self, type='public')
-            for chat in chats:
+            public_chats = ChPublicChat.objects.filter(hive=self)
+            for public_chat in public_chats:
+                chat = public_chat.chat
                 chat_subscription = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription.save()
 
@@ -534,7 +536,10 @@ class ChHive(models.Model):
                 if not others_subscriptions:
                     # If there was no more subscriptions to this chat or if all subscriptions were marked as deleted,
                     # we delete all this subscriptions first and then we also delete the chat itself
-                    #TODO: ¿Qué pasa si se trata de un chat público. Puede que no todos los usuarios que estén en el hive tengan una subscripción en su lista de chats (esto ocurre si simplemente no lo tienen en su lista de chats, o si en algún momento se marcó como deleted) Se eliminaría también ese chat público?? un chat público nunca debería eliminarse...
+                    # TODO: ¿Qué pasa si se trata de un chat público. Puede que no todos los usuarios que estén en el
+                    # hive tengan una subscripción en su lista de chats (esto ocurre si simplemente no lo tienen en su
+                    # lista de chats, o si en algún momento se marcó como deleted)
+                    # Se eliminaría también ese chat público?? un chat público nunca debería eliminarse...
                     ChChatSubscription.objects.filter(chat=chat).delete()
                     chat.delete()
                 else:
@@ -587,8 +592,9 @@ class ChCommunity(models.Model):
         chat = ChChat(hive=self.hive, type='public')
         chat.channel = replace_unicode(name)
         chat.save()
-        chat_extension = ChCommunityChat(chat=chat, name=name, description=description)
+        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
+        # We need to subscribe all users in this hive to the new public chat
         subscriptions = ChHiveSubscription.objects.filter(hive=self.hive, deleted=False, expelled=False)
         for subscription in subscriptions:
             new = ChChatSubscription(chat=chat, profile=subscription.profile)
@@ -597,10 +603,19 @@ class ChCommunity(models.Model):
 
 
 class ChChat(models.Model):
+    # Chat TYPE definitions
+    TYPE = (
+        ('public', 'public'),
+        ('private', 'private'),
+        ('group', 'group')
+    )
+
 
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
-    # type = models.CharField(max_length=32, choices=TYPE, default='private')
+    # Even though we now have a ChPublicChat model, we leave the field type because sometimes it is more convenient
+    # for database queries to use this type field
+    type = models.CharField(max_length=32, choices=TYPE, default='private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
 
@@ -692,9 +707,11 @@ class ChFriendsGroupChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='friends_group_chat_extra_info')
     hive = models.ForeignKey(ChHive, related_name="friends_group_chats", null=True, blank=True)
 
+
 class ChHivematesGroupChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='hivemates_group_chat_extra_info')
     hive = models.ForeignKey(ChHive, related_name="hivemates_group_chats", null=True, blank=True)
+
 
 class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
@@ -835,9 +852,9 @@ class CreateHiveForm(forms.ModelForm):
         fields = ('name', 'category', '_languages', 'description')
 
 
-class CreateCommunityChatForm(forms.ModelForm):
+class CreateCommunityPublicChatForm(forms.ModelForm):
     class Meta:
-        model = ChCommunityChat
+        model = ChCommunityPublicChat
         fields = ('name', 'description')
 
 
