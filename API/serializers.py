@@ -231,6 +231,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
     tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='tag')
 
+
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
         fields = kwargs.pop('fields', None)

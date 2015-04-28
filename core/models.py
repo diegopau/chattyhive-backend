@@ -606,7 +606,7 @@ class ChChat(models.Model):
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
     type = models.CharField(max_length=32, choices=TYPE, default='private')
-    hive = models.ForeignKey(ChHive, related_name="hive", null=True, blank=True)
+    hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
 
     # Attributes of the Chat
