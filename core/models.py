@@ -91,7 +91,9 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
 
     is_authenticated = models.BooleanField(default=False)
-    expiration_date = models.DateTimeField(_('date the account will be deleted'), null=True)
+    last_activity = models.DateTimeField(_('date the account will be deleted'), null=True)
+
+    warned = models.BooleanField(_('warned for long period of inactivity or disabled account'), default=False)
     objects = ChUserManager()
 
     # TODO: por qué se define esto aquí? parece relacionado con formularios...
@@ -194,7 +196,7 @@ class TagModel(models.Model):
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
-    last_login = models.DateTimeField(default=timezone.now())
+    last_activity = models.DateTimeField(default=timezone.now())
 
     # Here are the choices definitions
     SEX = (
@@ -465,7 +467,7 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive in the country specified
         """
-        return self.users.order_by('-last_login')
+        return self.users.order_by('-last_activity')
 
     def get_users_recommended(self, profile):
         """
@@ -592,6 +594,7 @@ class ChCommunity(models.Model):
     # TODO: not sure if null=True and black=True necesary
     admins = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='administrates')
     # todo: administrative info?
+    deleted = models.BooleanField(_('The owner has deleted it'), default=False)
 
     def new_public_chat(self, name, description):
         chat = ChChat(hive=self.hive, type='public')
@@ -721,6 +724,7 @@ class ChHivematesGroupChat(models.Model):
 class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
     hive = models.OneToOneField(ChHive, related_name="public_chat", null=True, blank=True)
+    deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
 
 
 class ChCommunityPublicChat(models.Model):
