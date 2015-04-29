@@ -91,6 +91,7 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
 
     is_authenticated = models.BooleanField(default=False)
+    expiration_date = models.DateTimeField(_('date the account will be deleted'), null=True)
     objects = ChUserManager()
 
     # TODO: por qué se define esto aquí? parece relacionado con formularios...
@@ -348,7 +349,7 @@ class ChProfile(models.Model):
     def hives(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChHiveSubscription.objects.filter(profile=self, deleted=False, expelled=False)
+            subscriptions = ChHiveSubscription.objects.filter(profile=self, deleted=False)
             hives = []
             for subscription in subscriptions:
                 if subscription.hive:
@@ -361,7 +362,7 @@ class ChProfile(models.Model):
     def chats(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChChatSubscription.objects.filter(profile=self, deleted=False, expelled=False)
+            subscriptions = ChChatSubscription.objects.filter(profile=self, deleted=False)
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
@@ -471,14 +472,14 @@ class ChHive(models.Model):
         :param profile: profile for the users are recommended for
         :return: profiles of users joining the hive in the country specified
         """
-        subscriptions = ChHiveSubscription.objects.select_related('profile')\
-                        .filter(hive=self, deleted=False, expelled=False, profile__country=profile.country)
-        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile'))\
-                        .order_by('-hive_subscription__creation_date')
-        subscriptions = ChHiveSubscription.objects.select_related('profile')\
-                        .filter(hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country)
-        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile'))\
-                        .order_by('-hive_subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False, profile__country=profile.country)
+        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by(
+            '-hive_subscription__creation_date')
+        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country)
+        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by(
+            '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
 
@@ -489,7 +490,9 @@ class ChHive(models.Model):
         """
         try:
             hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
+            # If he has been previously subscribed to the hive...
             if hive_subscription.expelled:
+                # TODO: check if expulsion_due_date > timezone.now, in this case remove expulsion and let the user join
                 raise UnauthorizedException("The user was expelled")
             elif hive_subscription.deleted:
                 hive_subscription.deleted = False
@@ -508,6 +511,7 @@ class ChHive(models.Model):
             else:
                 raise IntegrityError("ChHiveSubscription already exists")
         except ChHiveSubscription.DoesNotExist:
+            # If he has never been subscribed to the hive
             hive_subscription = ChHiveSubscription(hive=self, profile=profile)
             hive_subscription.save()
             public_chats = ChPublicChat.objects.filter(hive=self)
@@ -519,6 +523,7 @@ class ChHive(models.Model):
     def leave(self, profile):
         """Marks the Hive Subscription as deleted, then takes every chat subscription of the user
            related with this hive and will mark it as deleted too
+
         :param profile:  profile leaving the hive
         :return: void
         """
@@ -796,6 +801,7 @@ class ChChatSubscription(models.Model):
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
     expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):
@@ -809,6 +815,7 @@ class ChHiveSubscription(models.Model):
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
     expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):

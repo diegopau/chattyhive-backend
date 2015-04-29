@@ -31,7 +31,7 @@ class ChHiveSubscriptionResource(resources.ModelResource):
 
 class ChHiveSubscriptionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     resource_class = ChHiveSubscriptionResource
-    list_display = ('creation_date', 'deleted', 'expelled', 'hive', 'profile')
+    list_display = ('creation_date', 'deleted', 'expulsion_due_date', 'hive', 'profile')
     pass
 
 # Include all models in Admin site
