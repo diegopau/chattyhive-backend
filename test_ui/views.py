@@ -36,16 +36,18 @@ def create_hive(request):
             hive.set_tags(tagsList)
             hive.save()
 
-            # Creating public chat of hive
+            # Creating public chat of hive, step 1: ChChat object
             chat = ChChat()
             chat.hive = hive
             chat.type = 'public'
             chat.channel = hive.slug
             chat.save()
 
+            # Creating public chat of hive, step 2: ChPublicChat object
+            public_chat = ChPublicChat(chat=chat, hive=hive)
+            public_chat.save()
+
             # Creating subscription
-            chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-            chat_subscription.save()
             hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
             hive_subscription.save()
 
@@ -127,6 +129,7 @@ def create_community(request):
 
 @login_required
 def create_chat(request, hive_slug, public_name):
+    # TODO: no tengo claro que es lo que hace este código... entender, documentar, enmendar
     """
     :param request:
     :return: Web page with the form for creating a hive
@@ -178,7 +181,7 @@ def create_public_chat(request, hive_slug):
     :return: Web page with the form for creating a new public chat
     """
     if request.method == 'POST':
-        form = CreateCommunityChatForm(request.POST)
+        form = CreateCommunityPublicChatForm(request.POST)
         if form.is_valid():
             hive = ChHive.objects.get(slug=hive_slug)
             community = ChCommunity.objects.get(hive=hive)
@@ -187,7 +190,7 @@ def create_public_chat(request, hive_slug):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        form = CreateCommunityChatForm
+        form = CreateCommunityPublicChatForm
         hive = ChHive.objects.get(slug=hive_slug)
         return render(request, "{app_name}/create_public_chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'form': form,

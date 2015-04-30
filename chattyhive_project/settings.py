@@ -11,6 +11,9 @@ TEST_UI_BASE_URL = 'test-ui'
 # and this is the name of the app for the test user interface
 TEST_UI_APP_NAME = 'test_ui'
 
+DISABLED_ACCOUNT_PERIOD = 365
+MAX_INACTIVITY_PERIOD = 90
+AFTER_WARNING_PERIOD = 3
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
