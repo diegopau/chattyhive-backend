@@ -521,36 +521,49 @@ class ChHive(models.Model):
         try:
             hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self)
             hive_subscription.deleted = True
-            private_chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self,
-                                                                           public_chat_extra_info__isnull=True)
-            for subscription in private_chat_subscriptions:
+            hive_subscription.save()
+            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
+            for subscription in chat_subscriptions:
                 subscription.deleted = True
-                chat = subscription.chat
-                # This is just to know if there is any other subscriptions to this chat (we won't count the subscription
-                # that the user is using and we won't count the subscriptions that are marked as deleted either)
-                others_subscriptions = ChChatSubscription.objects.filter(
-                    chat=chat).exclude(profile=profile).exclude(deleted=True)
-                if not others_subscriptions:
-                    # If there was no more subscriptions to this chat or if all subscriptions were marked as deleted,
-                    # we delete all this subscriptions first and then we also delete the chat itself
-                    # TODO: ¿Qué pasa si se trata de un chat público. Puede que no todos los usuarios que estén en el
-                    # hive tengan una subscripción en su lista de chats (esto ocurre si simplemente no lo tienen en su
-                    # lista de chats, o si en algún momento se marcó como deleted)
-                    # Se eliminaría también ese chat público?? un chat público nunca debería eliminarse...
-                    ChChatSubscription.objects.filter(chat=chat).delete()
-                    chat.delete()
+                subscription.save()
+                if subscription.chat.public_chat_extra_info is None:
+                    chat = subscription.chat
+                    # This is just to know if there is any other subscriptions to this chat
+                    # (we won't count the subscription that the user is using and we won't count the
+                    # subscriptions that are marked as deleted either)
+                    others_subscriptions = ChChatSubscription.objects.filter(
+                        chat=chat).exclude(profile=profile).exclude(deleted=True)
+                    if not others_subscriptions:
+                        chat.deleted = True
+                        chat.save()
                 else:
                     subscription.save()
-            # Now we check if there are more users subscribed to this hive
+            # Now we check if there are more users subscribed to this hive or community
             # (hive subscriptions marked as deleted don't count)
             others_hive_subscriptions = ChHiveSubscription.objects.filter(
                 hive=self).exclude(profile=profile).exclude(deleted=True)
             if not others_hive_subscriptions:
-                # and again, if not more users are subscribed we delete all hive subscriptions and the hive itself.
-                ChHiveSubscription.objects.filter(hive=self).delete()
-                self.delete()
-            else:
-                hive_subscription.save()
+                # If not other users are subscribed to the hive, we mark as deleted the public chats, the hive and
+                # the community (if its a community)
+                if self.type == 'Community':
+                    self.community.deleted = True
+                    self.community.save()
+                    if self.community_public_chats is not None:
+                        for community_public_chat in self.community_public_chats.all():
+                            community_public_chat.deleted = True
+                            community_public_chat.save()
+                            community_public_chat.chat.deleted = True
+                            community_public_chat.chat.save()
+                        else:
+                            raise IntegrityError("This community does not have any public chats")
+                else:
+                    self.public_chat.deleted = True
+                    self.public_chat.save()
+                    self.public_chat.chat.deleted = True
+                    self.public_chat.chat.save()
+                self.deleted = True
+                self.save()
+
         except ChHiveSubscription.DoesNotExist:
             raise IntegrityError("User have not joined the hive")
 
@@ -592,11 +605,6 @@ class ChCommunity(models.Model):
         chat.save()
         chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
-        # We need to subscribe all users in this hive to the new public chat
-        subscriptions = ChHiveSubscription.objects.filter(hive=self.hive, deleted=False, expelled=False)
-        for subscription in subscriptions:
-            new = ChChatSubscription(chat=chat, profile=subscription.profile)
-            new.save()
         # transaction.commit()
 
 
@@ -616,6 +624,7 @@ class ChChat(models.Model):
     type = models.CharField(max_length=32, choices=TYPE, default='private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
+    deleted = models.BooleanField(default=False)
 
     # Attributes of the Chat
     date = models.DateTimeField(auto_now=True)
@@ -714,7 +723,7 @@ class ChHivematesGroupChat(models.Model):
 class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
     hive = models.OneToOneField(ChHive, related_name="public_chat", null=True, blank=True)
-    deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
+    deleted = models.BooleanField(default=False)
 
 
 class ChCommunityPublicChat(models.Model):
@@ -724,6 +733,7 @@ class ChCommunityPublicChat(models.Model):
     photo = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
+    deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
 
     def save(self, *args, **kwargs):
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
@@ -781,11 +791,6 @@ class ChMessage(models.Model):
 
     def __str__(self):
         return self.profile.public_name + " said: " + self.content
-
-
-class ChAnswer(ChMessage):
-    # Relation to the message.
-    message = models.ForeignKey(ChMessage, related_name='response')
 
 
 class ChChatSubscription(models.Model):

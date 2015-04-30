@@ -48,8 +48,6 @@ def create_hive(request):
             public_chat.save()
 
             # Creating subscription
-            chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-            chat_subscription.save()
             hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
             hive_subscription.save()
 
@@ -131,6 +129,7 @@ def create_community(request):
 
 @login_required
 def create_chat(request, hive_slug, public_name):
+    # TODO: no tengo claro que es lo que hace este código... entender, documentar, enmendar
     """
     :param request:
     :return: Web page with the form for creating a hive
