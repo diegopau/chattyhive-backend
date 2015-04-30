@@ -446,6 +446,8 @@ class ChHive(models.Model):
     priority = models.IntegerField(default=50)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
 
+    deleted = models.BooleanField(default=False)
+
     def set_tags(self, tags_array):
         for stag in tags_array:
             tag = get_or_new_tag(stag)
@@ -493,37 +495,24 @@ class ChHive(models.Model):
         try:
             hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
             # If he has been previously subscribed to the hive...
-            if hive_subscription.expelled:
-                # TODO: check if expulsion_due_date > timezone.now, in this case remove expulsion and let the user join
-                raise UnauthorizedException("The user was expelled")
-            elif hive_subscription.deleted:
+            if hive_subscription.deleted:
                 hive_subscription.deleted = False
+                hive_subscription.creation_date = timezone.now()
                 hive_subscription.save()
-                public_chats = ChPublicChat.objects.filter(hive=self)
-                for public_chat in public_chats:  # todo, more efficient?
-                    chat = public_chat.chat
-                    try:
-                        chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
-                        if not chat_subscription.expelled:
-                            chat_subscription.deleted = False
-                            chat_subscription.save()
-                    except ChChatSubscription.DoesNotExist:
-                        chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-                        chat_subscription.save()
+                if hive_subscription.expelled:
+                    if hive_subscription.expulsion_due_date < timezone.now():
+                        hive_subscription.expelled = False
+                    else:
+                        raise UnauthorizedException("The user was expelled, he Join the hive but won't be able to chat")
             else:
                 raise IntegrityError("ChHiveSubscription already exists")
         except ChHiveSubscription.DoesNotExist:
-            # If he has never been subscribed to the hive
+            # If he has never been subscribed to the hive...
             hive_subscription = ChHiveSubscription(hive=self, profile=profile)
             hive_subscription.save()
-            public_chats = ChPublicChat.objects.filter(hive=self)
-            for public_chat in public_chats:
-                chat = public_chat.chat
-                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-                chat_subscription.save()
 
     def leave(self, profile):
-        """Marks the Hive Subscription as deleted, then takes every chat subscription of the user
+        """Marks the Hive Subscription as deleted, then takes every private chat subscription of the user
            related with this hive and will mark it as deleted too
 
         :param profile:  profile leaving the hive
@@ -532,8 +521,9 @@ class ChHive(models.Model):
         try:
             hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self)
             hive_subscription.deleted = True
-            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
-            for subscription in chat_subscriptions:
+            private_chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self,
+                                                                           public_chat_extra_info__isnull=True)
+            for subscription in private_chat_subscriptions:
                 subscription.deleted = True
                 chat = subscription.chat
                 # This is just to know if there is any other subscriptions to this chat (we won't count the subscription
