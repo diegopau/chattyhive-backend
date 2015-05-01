@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '0001_initial'),
-        ('cities_light', '0004_auto_20150416_2320'),
+        ('cities_light', '0003_auto_20141120_0342'),
     ]
 
     operations = [
