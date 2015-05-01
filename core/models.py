@@ -438,7 +438,7 @@ class ChHive(models.Model):
     description = models.TextField(max_length=2048)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
-    creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
+    creator = models.ForeignKey(ChProfile, null=True)
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
 

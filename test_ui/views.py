@@ -288,10 +288,8 @@ def explore(request):
     if request.method == 'GET':
         # Returns all the hives (subscribed and not subscribed)
         try:
-            hives = ChHive.objects.all()
-            print("Hive suscribers: ")
-            for suscriber in hives[1].chprofile_set.all():
-                print("hive suscriber: ", suscriber.public_name)
+            hives = ChHive.objects.all().exclude(deleted=True)
+
         except ChHive.DoesNotExist:
             hives = None
         return render(request, "{app_name}/explore.html".format(app_name=settings.TEST_UI_APP_NAME), {

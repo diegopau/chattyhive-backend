@@ -279,7 +279,7 @@ class ChProfileHiveList(APIView):
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
         # En fields se le pasa el campo a eliminar del serializador
-        serializer = serializers.ChHiveLevel1Serializer(hives, fields='priority', many=True)
+        serializer = serializers.ChHiveLevel1Serializer(hives, fields=('priority',), many=True)
 
         return Response(serializer.data)
 

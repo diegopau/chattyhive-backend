@@ -74,9 +74,17 @@ class LoginCredentialsSerializer(serializers.Serializer):
         password = self.validated_data['password']
 
 
-# ============================================================ #
-#                     Model Serializers                        #
-# ============================================================ #
+# =================================================================== #
+#                     Simple Model Serializers                        #
+# =================================================================== #
+
+class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
+    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_url')
+
+    class Meta:
+        model = ChChat
+        fields = ('chat')
+
 
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -230,6 +238,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     # set read_only to True
     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
     tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='tag')
+    public_chat = ChPublicChatLevel1Serializer(many=False, read_only=True)
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
@@ -246,4 +255,4 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
-                  'priority', 'type')
+                  'priority', 'type', 'public_chat', 'community_public_chats')
