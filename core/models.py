@@ -75,11 +75,17 @@ class ChUserManager(UserManager):
 class ChUser(AbstractBaseUser, PermissionsMixin):
     """Provides the fields and attributes of the ChUser model
     """
+
+    # We use a simple RegexValidator for now even if the right validator would have the
+    # following regex: re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I)
+    # This is because with this precise regex we wouldn't be able to register superusers with a "human-readable"
+    # username using the python manage.py createsuperuser command (it wouldn't pass the validation).
+    # This could be fixed in the future.
     username = models.CharField(_('username'), max_length=32, unique=True,
                                 help_text=_('Required. 32 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
                                 validators=[RegexValidator(
-                                    re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I),
+                                    re.compile('^[\w-]+$'),
                                     _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
