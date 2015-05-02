@@ -403,24 +403,39 @@ def chat(request, chat_url):
     # GET
     else:
         try:
-            ChChatSubscription.objects.get(chat=chat, profile=profile)
-
-            form = MsgForm()
-            return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
-                'user': user.username,
-                'hive': chat.hive,
-                'app_key': app_key,
-                'key': key,
-                'url': chat_url,
-                'channel': chat.channel_unicode,
-                'event': event,
-                'form': form,
-            })
+            # TODO: If this is a public chat we should check the user is not expelled
+            ChChatSubscription.objects.get(chat=chat, profile=profile, deleted=False)
 
         except ChChatSubscription.DoesNotExist:
-            response = HttpResponse("Unauthorized")
-            response.status_code = 401
-            return response
+            # If the subscription was not found might be one of two things:
+            # 1. The user can chat but its the first time the user chats with this other user, or in the public chat,
+            #    so we must create a ChChatSubscription for him.
+            # 2. The client is trying to access to a chat he is not allowed to. In this case he is not authorized.
+            # TODO: If in the future we have restricted public chats, we have to make additional checkings here
+
+            try:
+                ChHiveSubscription.objects.get(hive=chat.hive, profile=profile, deleted=False)
+                # If the user is subscribed to the hive but he didn't have a ChChatSubscription for this chat, then the
+                # user is just opening this chat for the first time. We add it to his chat list.
+                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+                chat_subscription.save()
+
+            except ChHiveSubscription.DoesNotExist:
+                response = HttpResponse("Unauthorized")
+                response.status_code = 401
+                return response
+
+        form = MsgForm()
+        return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+            'user': user.username,
+            'hive': chat.hive,
+            'app_key': app_key,
+            'key': key,
+            'url': chat_url,
+            'channel': chat.channel_unicode,
+            'event': event,
+            'form': form,
+        })
 
 
 @login_required
