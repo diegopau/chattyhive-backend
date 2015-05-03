@@ -465,6 +465,12 @@ class ChHive(models.Model):
         """
         return self.tags.all
 
+    def get_subscribed_users_count(self):
+        """
+        :return: hive's subscribers total number
+        """
+        return self.hive_subscribers.count()
+
     def get_users_by_country(self, country):
         """
         :return: profiles of users joining the hive in the country specified

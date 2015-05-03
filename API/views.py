@@ -277,7 +277,8 @@ class ChProfileHiveList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         hives = profile.hive_subscriptions
         # En fields se le pasa el campo a eliminar del serializador
-        serializer = serializers.ChHiveLevel1Serializer(hives, removfields=('priority',), many=True)
+        fields = ('priority', )
+        serializer = serializers.ChHiveLevel1Serializer(hives, fields=fields, many=True)
         return Response(serializer.data)
 
 

@@ -82,9 +82,8 @@ def create_community(request):
             hive_name = formCommunity.cleaned_data['name']
             hive = formCommunity.save(commit=False)
             hive.creator = profile
-            hive.slug = hive_name.replace(" ", "_")
-            # TODO: se está metiendo como slug el hive_name, esto hay que corregirlo.
-            hive.slug = replace_unicode(hive.slug)
+            hive.slug = hive_name.replace(" ", "-")
+            # TODO: se está metiendo como slug el hive_name mal tuneado, esto hay que corregirlo.
             hive.type = 'Community'
 
             try:
@@ -96,8 +95,8 @@ def create_community(request):
 
             # Adding tags
             tagsText = formCommunityTags.cleaned_data['tags']
-            tagsArray = tagsText.split(" ")
-            hive.set_tags(tagsArray)
+            tagsList = re.split(r'[, ]+', tagsText)
+            hive.set_tags(tagsList)
             hive.save()
 
             # Creating community from hive
