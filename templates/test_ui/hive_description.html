@@ -25,6 +25,11 @@
              {{ tag }},
         {% endfor %}
     </div>
+    <div>Languages:
+        {% for language in hive.languages %}
+             {{ language }},
+        {% endfor %}
+    </div>
     {% if owner or admin %}
         <div><a href="/test-ui/create_public_chat/{{ hive.slug }}">New public chat</a></div>
 {#         TODO: crear enlace para eliminar la comunidad#}

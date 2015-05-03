@@ -325,8 +325,9 @@ def profile(request, public_name, private):
                         "surname": profile_view.last_name,
                         "sex": profile_view.sex,
                         "username": profile.username,
+                        "location": profile.display_location(),
                         "allowed": allowed
-                }
+                        }
                 languages = profile.languages
                 return render(request, "{app_name}/private_profile.html".format(app_name=settings.TEST_UI_APP_NAME), {
                     "profile": data,
@@ -334,10 +335,10 @@ def profile(request, public_name, private):
                 })
             elif private == "public":
                 data = {"public_name": profile_view.public_name,
-                        "location": profile_view.location,
+                        "location": profile_view.display_location(),
                         "show_age": profile_view.public_show_age,
                         "allowed": allowed
-                }
+                        }
                 languages = profile.languages
                 return render(request, "{app_name}/public_profile.html".format(app_name=settings.TEST_UI_APP_NAME), {
                     "profile": data,
@@ -390,7 +391,7 @@ def chat(request, chat_url):
                 return HttpResponse("Not delivered")
 
             # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",
-            #                           "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
+            # "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
             # ChChat.confirm_messages(json_chats, profile)
 
             return HttpResponse("Server Ok")
@@ -408,7 +409,7 @@ def chat(request, chat_url):
         except ChChatSubscription.DoesNotExist:
             # If the subscription was not found might be one of two things:
             # 1. The user can chat but its the first time the user chats with this other user, or in the public chat,
-            #    so we must create a ChChatSubscription for him.
+            # so we must create a ChChatSubscription for him.
             # 2. The client is trying to access to a chat he is not allowed to. In this case he is not authorized.
             # TODO: If in the future we have restricted public chats, we have to make additional checkings here
 
@@ -566,7 +567,7 @@ def get_messages(request, chat_name, init, interval):
                                      "timestamp": message.client_datetime,
                                      "server_time": message.datetime.astimezone(),
                                      "id": message.id
-                })
+                                     })
             return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
         except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")

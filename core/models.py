@@ -330,6 +330,34 @@ class ChProfile(models.Model):
         self.photo = None
         self.avatar = None
 
+    def display_location(self):
+        """
+        :return: string representation of an user location
+        """
+        if self.city:
+            location = self.city.name
+            if self.region:
+                location = location + ', ' + self.region.name
+                if self.country:
+                    location = location + ', ' + self.country.name
+                else:
+                    location = 'No location set'
+            elif self.country:
+                location = self.country.name
+            else:
+                location = 'No location set'
+        elif self.region:
+            location = self.region.name
+            if self.country:
+                location = location + ', ' + self.country.name
+            else:
+                location = 'No location set'
+        elif self.country:
+            location = self.country.name
+        else:
+            location = 'No location set'
+
+        return location
 
     # properties (fake fields)
     @property
@@ -588,7 +616,8 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive
         """
-        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False, expelled=False)
+        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False,
+                                                                                    expelled=False)
         users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
         return users_list
 
