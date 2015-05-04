@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from slugify import slugify
-
+from django.db import transaction
 
 @login_required
 def create_hive(request):
@@ -17,39 +17,45 @@ def create_hive(request):
         formHive = CreateHiveForm(request.POST, prefix='formHive')
         formTags = TagForm(request.POST, prefix='formTags')
         if formHive.is_valid() and formTags.is_valid():
-            user = request.user
-            profile = ChProfile.objects.get(user=user)
-            hive_name = formHive.cleaned_data['name']
-            hive = formHive.save(commit=False)
-            hive.creator = profile
-            hive.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=250)
-            try:
-                ChHive.objects.get(slug=hive.slug)
-                return HttpResponse("The hive slug already exists")
-            except ChHive.DoesNotExist:
-                # hive.slug = replace_unicode(hive_name)
+            with transaction.atomic():
+                user = request.user
+                profile = ChProfile.objects.get(user=user)
+                hive_name = formHive.cleaned_data['name']
+                hive = formHive.save(commit=False)
+                hive.creator = profile
+                hive.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=250)
+                try:
+                    with transaction.atomic():
+                        ChHive.objects.get(slug=hive.slug)
+                        return HttpResponse("The hive slug already exists")
+                except ChHive.DoesNotExist:
+                    # hive.slug = replace_unicode(hive_name)
+                    hive.save()
+
+                # Adding tags
+                tagsText = formTags.cleaned_data['tags']
+                tagsList = re.split(r'[, ]+', tagsText)
+                hive.set_tags(tagsList)
                 hive.save()
 
-            # Adding tags
-            tagsText = formTags.cleaned_data['tags']
-            tagsList = re.split(r'[, ]+', tagsText)
-            hive.set_tags(tagsList)
-            hive.save()
+                # Adding languages
+                hive.languages = formHive.cleaned_data['_languages']
+                hive.save()
 
-            # Creating public chat of hive, step 1: ChChat object
-            chat = ChChat()
-            chat.hive = hive
-            chat.type = 'public'
-            chat.channel = hive.slug
-            chat.save()
+                # Creating public chat of hive, step 1: ChChat object
+                chat = ChChat()
+                chat.hive = hive
+                chat.type = 'public'
+                chat.channel = hive.slug
+                chat.save()
 
-            # Creating public chat of hive, step 2: ChPublicChat object
-            public_chat = ChPublicChat(chat=chat, hive=hive)
-            public_chat.save()
+                # Creating public chat of hive, step 2: ChPublicChat object
+                public_chat = ChPublicChat(chat=chat, hive=hive)
+                public_chat.save()
 
-            # Creating subscription
-            hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
-            hive_subscription.save()
+                # Creating subscription
+                hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
+                hive_subscription.save()
 
             # return HttpResponseRedirect("/create_hive/create/")
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))

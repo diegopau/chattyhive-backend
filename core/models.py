@@ -482,6 +482,31 @@ class ChHive(models.Model):
 
     deleted = models.BooleanField(default=False)
 
+    @property
+    def users(self):
+        """
+        :return: profiles of users joining the hive
+        """
+        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False,
+                                                                                    expelled=False)
+        users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
+        return users_list
+
+    @property
+    def languages(self):
+        """
+        :return: profile's languages QuerySet
+        """
+        return self._languages.all
+
+    @languages.setter
+    def languages(self, languages):
+        """
+        :return: profile's languages QuerySet
+        """
+        for language in languages:
+            self._languages.add(language)
+
     def set_tags(self, tags_array):
         for stag in tags_array:
             tag = get_or_new_tag(stag)
@@ -610,23 +635,6 @@ class ChHive(models.Model):
     def toJSON(self):
         return u'{"name": "%s", "slug": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
                % (self.name, self.slug, self.description, self.category, self.creation_date)
-
-    @property
-    def users(self):
-        """
-        :return: profiles of users joining the hive
-        """
-        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False,
-                                                                                    expelled=False)
-        users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
-        return users_list
-
-    @property
-    def languages(self):
-        """
-        :return: profile's languages QuerySet
-        """
-        return self._languages.all
 
     def __str__(self):
         return self.name
