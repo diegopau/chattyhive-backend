@@ -152,7 +152,7 @@ def create_chat(request, hive_slug, public_name):
         if profile_subscriptions:
             for profile_subscription in profile_subscriptions:
                 try:
-                    if profile_subscription.chat and profile_subscription.chat.type == 'private':
+                    if profile_subscription.chat and profile_subscription.chat.type == 'mate_private':
                         invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
                 except profile_subscription.DoesNotExist:
                     continue
@@ -161,7 +161,7 @@ def create_chat(request, hive_slug, public_name):
             # Creating private chat
             chat = ChChat()
             chat.hive = hive
-            chat.type = 'private'
+            chat.type = 'mate_private'
             # chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_slug)
             chat.save()
 

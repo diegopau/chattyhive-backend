@@ -65,7 +65,7 @@ urlpatterns = patterns('',
     # ###                  Cities_light - URLS                     ###
     # ### ======================================================== ###
 
-    url(r'^location/', include('cities_light.contrib.restframework3')),
+    url(r'^locations/', include('cities_light.contrib.restframework3')),
 
     #
     # ### ======================================================== ###

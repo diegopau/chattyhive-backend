@@ -661,8 +661,10 @@ class ChChat(models.Model):
     # Chat TYPE definitions
     TYPE = (
         ('public', 'public'),
-        ('private', 'private'),
-        ('group', 'group')
+        ('mate_private', 'mate_private'),
+        ('friend_private', 'friend_private'),
+        ('mates_group', 'mates_group'),
+        ('friends_group', 'friends_group')
     )
 
 
@@ -670,7 +672,7 @@ class ChChat(models.Model):
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
     # Even though we now have a ChPublicChat model, we leave the field type because sometimes it is more convenient
     # for database queries to use this type field
-    type = models.CharField(max_length=32, choices=TYPE, default='private')
+    type = models.CharField(max_length=32, choices=TYPE, default='mate_private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     channel_unicode = models.CharField(max_length=60, unique=True)
     deleted = models.BooleanField(default=False)
@@ -714,7 +716,7 @@ class ChChat(models.Model):
     def send_message(self, profile, json_message):
 
         self.check_permissions(profile)
-        if self.type == 'private':
+        if self.type.endswith('private'):
             subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=profile).select_related()[0]
             device = subscription.profile.user.device
             device.send_message(msg=json_message, collapse_key='')
@@ -771,7 +773,7 @@ class ChHivematesGroupChat(models.Model):
 
 class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
-    hive = models.OneToOneField(ChHive, related_name="public_chat", null=True, blank=True)
+    hive = models.OneToOneField(ChHive, related_name='public_chat', null=True, blank=True)
     deleted = models.BooleanField(default=False)
 
 

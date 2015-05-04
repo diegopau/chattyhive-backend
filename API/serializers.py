@@ -79,7 +79,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
 # =================================================================== #
 
 class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
-    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_unicode')
+    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_unicode', allow_null=True)
 
     class Meta:
         model = ChPublicChat
@@ -87,7 +87,7 @@ class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
 
 
 class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
-    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_unicode')
+    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_unicode', allow_null=True)
 
     class Meta:
         model = ChCommunityPublicChat
@@ -120,8 +120,15 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'channel_unicode')
 
 
+class ChMateMessageLevel0Serializer(serializers.ModelSerializer):
+    profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
+    class Meta:
+        model = ChMessage
+        fields = ('content_type', 'received', 'content', 'profile')
+
+
 # ============================================================ #
-#                       Users & Profiles                          #
+#                       Users & Profiles                       #
 # ============================================================ #
 
 # This support class will allow the other related ModelSerializers to use only the needed fields (depending on the
@@ -268,3 +275,14 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
         model = ChHive
         fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
                   'priority', 'type', 'public_chat', 'community_public_chats', 'subscribed_users_count')
+
+
+class ChChatLevel2Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET chat list,
+
+    """
+    last_message =
+
+    class Meta:
+        model = ChHive
+        fields = ('channel_unicode', 'last_message')
