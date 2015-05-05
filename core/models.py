@@ -694,6 +694,16 @@ class ChChat(models.Model):
         """
         self.channel_unicode = 'presence-' + channel_unicode
 
+    def last_message(self):
+        """
+        :return: The most recent ChMessage related to the chat or None if there isn't any
+        """
+        try:
+            last = self.messages.latest('datetime')
+            return last
+        except ChMessage.DoesNotExist:
+            return None
+
     def check_permissions(self, profile):
 
         try:
@@ -817,7 +827,7 @@ class ChMessage(models.Model):
 
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
-    chat = models.ForeignKey(ChChat, null=True, blank=True)
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name="messages")
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)

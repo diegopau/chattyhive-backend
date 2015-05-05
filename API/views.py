@@ -12,6 +12,7 @@ from django.http import HttpResponse, Http404
 import pusher
 from email_confirmation.models import EmailAddress, EmailConfirmation
 from API import serializers
+from API import permissions
 from email_confirmation import email_info
 import datetime
 
@@ -26,19 +27,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, BasePermission
 from rest_framework.exceptions import APIException
-
-
-# ================================================================== #
-#                     Object-level permissions                       #
-# ================================================================== #
-
-class CanGetHiveList(BasePermission):
-
-    def has_object_permission(self, request, view, obj):
-        print("object permission is returning: ", obj.user == request.user)
-        return obj.user == request.user
 
 
 # ============================================================ #
@@ -175,7 +164,7 @@ class ChHiveList(APIView):
     (user registration)
     """
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, format=None):
         """prueba
@@ -229,7 +218,7 @@ class ChUserDetail(APIView):
     (user registration)
     """
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_object(self, username):
         try:
@@ -261,7 +250,7 @@ class ChUserDetail(APIView):
 
 class ChProfileHiveList(APIView):
 
-    permission_classes = (IsAuthenticated, CanGetHiveList)
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
 
     def get_object(self, public_name):
         try:
@@ -272,6 +261,7 @@ class ChProfileHiveList(APIView):
     def get(self, request, public_name, format=None):
         profile = self.get_object(public_name)
         try:
+            # If the user is requesting his/her own subscriptions we go on
             self.check_object_permissions(self.request, profile)
         except APIException:
             return Response(status=status.HTTP_403_FORBIDDEN)
@@ -282,9 +272,32 @@ class ChProfileHiveList(APIView):
         return Response(serializer.data)
 
 
+class ChProfileChatList(APIView):
+
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, profile)
+        except APIException:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        chats = profile.chat_subscriptions
+        # En fields se le pasa el campo a eliminar del serializador
+        serializer = serializers.ChChatLevel2Serializer(chats, many=True)
+        return Response(serializer.data)
+
+
 class ChProfileDetail(APIView):
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_object(self, public_name):
         try:

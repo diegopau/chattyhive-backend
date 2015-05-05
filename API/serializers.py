@@ -120,8 +120,9 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'channel_unicode')
 
 
-class ChMateMessageLevel0Serializer(serializers.ModelSerializer):
+class ChMessageLevel1Serializer(serializers.ModelSerializer):
     profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
+
     class Meta:
         model = ChMessage
         fields = ('content_type', 'received', 'content', 'profile')
@@ -260,6 +261,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
+
         fields = kwargs.pop('fields', None)
 
         # Instantiate the superclass normally
@@ -269,7 +271,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
             # Drop fields that are specified in the `fields` argument.
             for field_name in fields:
                 self.fields.pop(field_name)
-                print("campos a incluir en el serializador: ", self.fields)
+                print("fields to be included: ", self.fields)
 
     class Meta:
         model = ChHive
@@ -281,8 +283,8 @@ class ChChatLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat list,
 
     """
-    last_message =
+    last_message = ChMessageLevel1Serializer(many=False, read_only=True)
 
     class Meta:
-        model = ChHive
-        fields = ('channel_unicode', 'last_message')
+        model = ChChat
+        fields = ('channel_unicode', 'type', 'last_message')

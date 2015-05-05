@@ -21,6 +21,8 @@ urlpatterns = patterns('',
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/hives/$', views.ChProfileHiveList.as_view(),
         name="profile_hive_list"),
 
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/chats/$', views.ChProfileChatList.as_view(),
+        name="profile_chat_list"),
 
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>(public|private)?)/$', views.ChProfileDetail.as_view(),
         name="profile_detail"),
