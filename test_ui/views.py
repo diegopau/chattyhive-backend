@@ -137,44 +137,44 @@ def create_chat(request, hive_slug, public_name):
     # TODO: no tengo claro que es lo que hace este código... entender, documentar, enmendar
     """
     :param request:
-    :return: Web page with the form for creating a hive
+    :return:
     """
     if request.method == 'GET':
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        invited = ChProfile.objects.get(public_name=public_name)
+        other_profile = ChProfile.objects.get(public_name=public_name)
         hive = ChHive.objects.get(slug=hive_slug)
-        if profile == invited:
+        if profile == other_profile:
             raise Http404
 
-        profile_subscriptions = ChChatSubscription.objects.select_related().filter(profile=profile)
-        invited_subscription = ChChatSubscription.objects.none()
+        profile_subscriptions = ChChatSubscription.objects.select_related('profile').filter(profile=profile)
+        other_profile_subscription = ChChatSubscription.objects.none()
         if profile_subscriptions:
             for profile_subscription in profile_subscriptions:
                 try:
                     if profile_subscription.chat and profile_subscription.chat.type == 'mate_private':
-                        invited_subscription = profile_subscription.chat.chat_subscription.get(profile=invited)
+                        other_profile_subscription = profile_subscription.chat.chat_subscribers.get(
+                            profile=other_profile)
                 except profile_subscription.DoesNotExist:
                     continue
 
-        if not invited_subscription:
+        if not other_profile_subscription:
             # Creating private chat
             chat = ChChat()
             chat.hive = hive
             chat.type = 'mate_private'
-            # chat.channel = replace_unicode(profile.public_name + "_" + invited.public_name + "_" + hive_slug)
             chat.save()
 
-            subscription1 = ChChatSubscription(chat=chat, profile=profile)
-            subscription1.save()
-            subscription2 = ChChatSubscription(chat=chat, profile=invited)
-            subscription2.save()
+            subscription_user = ChChatSubscription(chat=chat, profile=profile)
+            subscription_user.save()
+            subscription_other_user = ChChatSubscription(chat=chat, profile=other_profile)
+            subscription_other_user.save()
 
             return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
                                         + chat.channel_unicode)
         else:
             return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-                                        + invited_subscription.chat.channel_unicode)
+                                        + other_profile_subscription.chat.channel_unicode)
     else:
         raise Http404
 
@@ -527,8 +527,11 @@ def get_hive_users(request, hive_slug, init, interval):
         profile = request.user.profile
         try:
             profiles = []
+            print("Perfiles a mostrar: ")
             for hive_user in hive.get_users_recommended(profile):
+                print(hive_user.public_name)
                 profiles.append({"public_name": hive_user.public_name})
+
             return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
 
         except ChHiveSubscription.DoesNotExist:

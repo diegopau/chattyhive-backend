@@ -541,13 +541,13 @@ class ChHive(models.Model):
         :param profile: profile for the users are recommended for
         :return: profiles of users joining the hive in the country specified
         """
-        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False, profile__country=profile.country)
-        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by(
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False, profile__country=profile.country).exclude(profile=profile)
+        users_list_near = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
-        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country)
-        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by(
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country).exclude(profile=profile)
+        users_list_far = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
@@ -865,7 +865,7 @@ class ChChatSubscription(models.Model):
     expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):
-        return self.profile.first_name + " links with"
+        return "links " + self.profile.public_name + " with chat " + self.chat.channel_unicode
 
 
 class ChHiveSubscription(models.Model):
@@ -879,7 +879,7 @@ class ChHiveSubscription(models.Model):
     expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):
-        return self.profile.first_name + " links with"
+        return "links " + self.profile.public_name + " with hive " + self.hive.name
 
 
 class UserReports(models.Model):
