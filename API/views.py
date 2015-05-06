@@ -184,7 +184,7 @@ class ChHiveList(APIView):
 
 
 # ============================================================ #
-#                         Users & Profiles                             #
+#                     Users & Profiles                         #
 # ============================================================ #
 
 
@@ -291,7 +291,7 @@ class ChProfileChatList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         chats = profile.chat_subscriptions
         # En fields se le pasa el campo a eliminar del serializador
-        serializer = serializers.ChChatLevel2Serializer(chats, many=True)
+        serializer = serializers.ChChatListLevel2Serializer(chats, many=True)
         return Response(serializer.data)
 
 
@@ -313,6 +313,33 @@ class ChProfileDetail(APIView):
         serializer = serializers.ChProfileLevel1Serializer(profile, context={'request': request})
 
         return Response(serializer.data)
+
+
+# ============================================================ #
+#                       Hives & Chats                          #
+# ============================================================ #
+
+class ChChatDetail(APIView):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+        chat = self.get_object(chat_id)
+
+        # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
+        # del contexto
+        serializer = serializers.ChChatLevel1Serializer(chat)
+
+        return Response(serializer.data)
+
+
+
 
 
 # # @csrf_exempt

@@ -454,7 +454,7 @@ def chat(request, chat_url):
 
         form = MsgForm()
         return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
-            'user': user.username,
+            'user': user.profile.public_name,
             'hive': chat.hive,
             'app_key': app_key,
             'key': key,

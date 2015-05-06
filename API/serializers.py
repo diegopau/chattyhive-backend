@@ -87,6 +87,21 @@ class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
 
 
 class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET chat info,
+
+    """
+
+    moderators = serializers.SlugRelatedField(many=True, slug_field='public_name')
+
+    class Meta:
+        model = ChCommunityPublicChat
+        fields = ('name', 'description', 'slug', 'moderators', 'picture')
+
+
+class ChCommunityPublicChatListLevel1Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive list,
+
+    """
     chat = serializers.SlugRelatedField(read_only=True, slug_field='chat_id', allow_null=True)
 
     class Meta:
@@ -197,7 +212,7 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 #         model = ChProfile
 #         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
 #                   '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-#                   'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
+#                   'personal_color', 'picture', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
 #                   'public_show_sex')
 #
 #
@@ -205,7 +220,7 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 #
 #     class Meta:
 #         model = ChProfile
-#         fields = ('user', 'public_name', 'avatar', 'personal_color', 'first_name', 'last_name', 'photo', )
+#         fields = ('user', 'public_name', 'avatar', 'personal_color', 'first_name', 'last_name', 'picture', )
 #
 #
 #
@@ -224,9 +239,13 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 #         model = ChProfile
 #         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
 #                   'languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-#                   'personal_color', 'photo', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
+#                   'personal_color', 'picture', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
 #                   'public_show_sex')
 
+
+# ============================================================ #
+#                        Hives & Chats                         #
+# ============================================================ #
 
 class ChHiveSerializer(serializers.ModelSerializer):
     # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados y lo que se
@@ -255,7 +274,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
     tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='tag')
     public_chat = ChPublicChatLevel1Serializer(many=False, read_only=True)
-    community_public_chats = ChCommunityPublicChatLevel1Serializer(many=True, read_only=True)
+    community_public_chats = ChCommunityPublicChatListLevel1Serializer(many=True, read_only=True)
 
     subscribed_users_count = serializers.IntegerField(source='get_subscribed_users_count', read_only=True)
 
@@ -279,7 +298,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
                   'priority', 'type', 'public_chat', 'community_public_chats', 'subscribed_users_count')
 
 
-class ChChatLevel2Serializer(serializers.ModelSerializer):
+class ChChatListLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat list,
 
     """
@@ -288,3 +307,14 @@ class ChChatLevel2Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChChat
         fields = ('chat_id', 'type', 'last_message')
+
+
+class ChChatLevel2Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET chat info,
+
+    """
+    community =
+
+    class Meta:
+        model = ChChat
+        fields = ('chat_id', 'community',  'count', 'date', 'type')

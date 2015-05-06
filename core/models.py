@@ -37,13 +37,13 @@ class ChUserManager(UserManager):
         """
 
         """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
-        hex_username = uuid4().hex    # 16^30 values low collision probabilities
+        hex_username = uuid4().hex    # 16^32 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex    # 16^30 values low collision probabilities
+                hex_username = uuid4().hex    # 16^32 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
@@ -232,7 +232,7 @@ class ChProfile(models.Model):
     public_status = models.CharField(max_length=140, blank=True, null=True)
     personal_color = RGBColorField()
     # image fields
-    photo = models.URLField(null=True)
+    picture = models.URLField(null=True)
     avatar = models.URLField(null=True)
 
     private_show_age = models.BooleanField(default=False)
@@ -327,7 +327,7 @@ class ChProfile(models.Model):
         self.public_show_age = None
         self.public_show_location = False
         self.public_show_sex = False
-        self.photo = None
+        self.picture = None
         self.avatar = None
 
     def display_location(self):
@@ -673,7 +673,7 @@ class ChChat(models.Model):
     # for database queries to use this type field
     type = models.CharField(max_length=32, choices=TYPE, default='mate_private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
-    chat_id = models.CharField(max_length=60, unique=True)
+    chat_id = models.CharField(max_length=32, unique=True)
     deleted = models.BooleanField(default=False)
 
     # Attributes of the Chat
@@ -691,12 +691,12 @@ class ChChat(models.Model):
 
     @classmethod
     def get_chat_id(cls):
-        hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+        hex_channel_unicode = uuid4().hex   # 16^32 values low collision probabilities
         while True:
             try:
                 # if the email is already used
                 ChChat.objects.get(chat_id=hex_channel_unicode)
-                hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+                hex_channel_unicode = uuid4().hex    # 16^32 values low collision probabilities
             except ChChat.DoesNotExist:
                 break
         return hex_channel_unicode
@@ -787,7 +787,7 @@ class ChCommunityPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
     slug = models.CharField(max_length=250, unique=True, default='')
-    photo = models.CharField(max_length=200)
+    picture = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
@@ -869,6 +869,7 @@ class ChHiveSubscription(models.Model):
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+    picture = models.CharField(max_length=200)
 
     deleted = models.BooleanField(default=False)
     expelled = models.BooleanField(default=False)

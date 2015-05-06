@@ -15,7 +15,7 @@ urlpatterns = patterns('',
 
     #    views.ChUserDetail.as_view(), name="user_detail"),
 
-    url(r'^users/(?P<username>[\w.@+-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),
+    url(r'^users/(?P<username>[\w-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),
 
 
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/hives/$', views.ChProfileHiveList.as_view(),
@@ -27,7 +27,8 @@ urlpatterns = patterns('',
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>(public|private)?)/$', views.ChProfileDetail.as_view(),
         name="profile_detail"),
 
-    url(r'^chats/(?P<chat_id>[])')
+    url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z)/info/$', views.ChChatDetail.as_view(),
+        name="chat_info"),
 
 
     url(r'^hives/$', views.ChHiveList.as_view(), name="hive_list"),
