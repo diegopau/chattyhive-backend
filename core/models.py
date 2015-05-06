@@ -651,7 +651,6 @@ class ChCommunity(models.Model):
     def new_public_chat(self, name, description):
         chat = ChChat(hive=self.hive, type='public')
         chat.chat_id = ChChat.get_chat_id()
-        chat.convert_to_pusher_channel_id(chat.chat_id)
         chat.save()
         chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
@@ -685,13 +684,10 @@ class ChChat(models.Model):
         """
         :return: Pusher id for this chat
         """
-        return self.chat_id
-
-    def convert_to_pusher_channel_id(self, chat_id):
-        """
-        :param chat_id: Pusher id for this chat
-        """
-        self.chat_id = 'presence-' + chat_id
+        if self.type == 'public':
+            return 'presence-' + self.chat_id
+        else:
+            return self.chat_id
 
     @classmethod
     def get_chat_id(cls):

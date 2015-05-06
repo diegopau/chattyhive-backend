@@ -583,11 +583,11 @@ def chat_v2(request):
         message.content = msg
 
         p[chat2.chat_id].trigger(event, {"username": user.username,
-                                                 "public_name": profile.public_name,
-                                                 "message": msg,
-                                                 "timestamp": timestamp,
-                                                 "server_time": message.date.astimezone(),
-                                                 })
+                                         "public_name": profile.public_name,
+                                         "message": msg,
+                                         "timestamp": timestamp,
+                                         "server_time": message.date.astimezone(),
+                                         })
 
         message.save()
 

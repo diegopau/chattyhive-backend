@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='chcommunitypublicchat',
             name='slug',
-            field=models.CharField(unique=True, max_length=250, default=''),
+            field=models.CharField(unique=True, default='', max_length=250),
             preserve_default=True,
         ),
     ]

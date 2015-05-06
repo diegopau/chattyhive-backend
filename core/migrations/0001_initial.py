@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('count', models.PositiveIntegerField(default=0)),
                 ('type', models.CharField(default='private', choices=[('public', 'public'), ('private', 'private'), ('group', 'group')], max_length=32)),
-                ('chat_id', models.CharField(unique=True, max_length=60)),
+                ('channel_unicode', models.CharField(unique=True, max_length=60)),
                 ('deleted', models.BooleanField(default=False)),
                 ('date', models.DateTimeField(auto_now=True)),
             ],
