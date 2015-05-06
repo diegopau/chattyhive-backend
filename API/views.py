@@ -334,7 +334,7 @@ class ChChatDetail(APIView):
 
         # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
         # del contexto
-        serializer = serializers.ChChatLevel1Serializer(chat)
+        serializer = serializers.ChChatLevel3Serializer(chat)
 
         return Response(serializer.data)
 

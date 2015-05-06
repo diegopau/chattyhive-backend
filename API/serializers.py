@@ -91,7 +91,7 @@ class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
 
     """
 
-    moderators = serializers.SlugRelatedField(many=True, slug_field='public_name')
+    moderators = serializers.SlugRelatedField(many=True, slug_field='public_name', read_only=True)
 
     class Meta:
         model = ChCommunityPublicChat
@@ -309,11 +309,11 @@ class ChChatListLevel2Serializer(serializers.ModelSerializer):
         fields = ('chat_id', 'type', 'last_message')
 
 
-class ChChatLevel2Serializer(serializers.ModelSerializer):
+class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,
 
     """
-    community =
+    community = ChCommunityPublicChatLevel1Serializer(read_only=True)
 
     class Meta:
         model = ChChat
