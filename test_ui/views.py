@@ -6,6 +6,7 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from slugify import slugify
 from django.db import transaction
+from django.db.models import Q
 
 @login_required
 def create_hive(request):
@@ -134,7 +135,7 @@ def create_community(request):
 
 
 @login_required
-def open_hive_private_chat(request, hive_slug, public_name):
+def open_private_hive_chat(request, hive_slug, public_name):
     """
     :param request:
     :return: if the chat was already created it just redirects, if not it provides a new chat_id and redirects.
@@ -148,55 +149,64 @@ def open_hive_private_chat(request, hive_slug, public_name):
             raise Http404
 
         # We try to get the chat object that involves both users
-        # try:
-        #     chat = ChChat.objects.get(chat_subscribers__in=[profile, other_profile])
-        #
-        # # We get every private chat subscription of the user for this hive/community
-        # profile_subscriptions = ChChatSubscription.objects.select_related('chat').filter(profile=profile,
-        #                                                                                  chat__hive=hive,
-        #                                                                                  chat__type='mate_private')
+        try:
+            chat = ChChat.objects.get(Q(chchatsubscription_set__profile__in=[profile, other_profile]) & Q(hive=hive))
+        except ChChat.DoesNotExist:
+            # If the chat doesn't exist we give a provisional chat_id and redirect:
+            chat_id = ChChat.get_chat_id()
+            return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
+                                        + hive.slug + "/" + chat_id)
 
-        # other_profile_subscription = ChChatSubscription.objects.none()
-        #
-        # if profile_subscriptions:
-        #     for subscription in profile_subscriptions:
-        #         try:
-        #             # We check, for every chat subscription of the user if the other user is also subscribed
-        #             other_profile_subscription = subscription.chat.chat_subscribers.get(profile=other_profile)
-        #
-        # else:
-        #
-        # if profile_subscriptions:
-        #     for profile_subscription in profile_subscriptions:
-        #         try:
-        #             # For each private chat subscription of the user
-        #             if profile_subscription.chat:
-        #                 # we check if the other user is also
-        #                 other_profile_subscription = profile_subscription.chat.chat_subscribers.get(
-        #                     profile=other_profile)
-        #         except profile_subscription.DoesNotExist:
-        #             continue
-        #
-        # if not other_profile_subscription:
-        #     # Creating private chat
-        #     chat = ChChat()
-        #     chat.hive = hive
-        #     chat.type = 'mate_private'
-        #     chat.chat_id = ChChat.get_chat_id()
-        #     chat.save()
-        #
-        #     subscription_user = ChChatSubscription(chat=chat, profile=profile)
-        #     subscription_user.save()
-        #     subscription_other_user = ChChatSubscription(chat=chat, profile=other_profile)
-        #     subscription_other_user.save()
-        #
-        #     return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-        #                                 + ct_idunicode)
-        # else:
-        #     return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-        #                                 + other_profile_subscription.ct_idunicode)
-    else:
-        raise Http404
+        # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
+        return HttpResponseRedirect("/{base_url}/chat/".format(
+            base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id)
+
+    #     # We get every private chat subscription of the user for this hive/community
+    #     profile_subscriptions = ChChatSubscription.objects.select_related('chat').filter(profile=profile,
+    #                                                                                      chat__hive=hive,
+    #                                                                                      chat__type='mate_private')
+    #
+    #     other_profile_subscription = ChChatSubscription.objects.none()
+    #
+    #     if profile_subscriptions:
+    #         for subscription in profile_subscriptions:
+    #             try:
+    #                 # We check, for every chat subscription of the user if the other user is also subscribed
+    #                 other_profile_subscription = subscription.chat.chat_subscribers.get(profile=other_profile)
+    #
+    #     else:
+    #
+    #     if profile_subscriptions:
+    #         for profile_subscription in profile_subscriptions:
+    #             try:
+    #                 # For each private chat subscription of the user
+    #                 if profile_subscription.chat:
+    #                     # we check if the other user is also
+    #                     other_profile_subscription = profile_subscription.chat.chat_subscribers.get(
+    #                         profile=other_profile)
+    #             except profile_subscription.DoesNotExist:
+    #                 continue
+    #
+    #     if not other_profile_subscription:
+    #         # Creating private chat
+    #         chat = ChChat()
+    #         chat.hive = hive
+    #         chat.type = 'mate_private'
+    #         chat.chat_id = ChChat.get_chat_id()
+    #         chat.save()
+    #
+    #         subscription_user = ChChatSubscription(chat=chat, profile=profile)
+    #         subscription_user.save()
+    #         subscription_other_user = ChChatSubscription(chat=chat, profile=other_profile)
+    #         subscription_other_user.save()
+    #
+    #         return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
+    #                                     + chat.chat_id)
+    #     else:
+    #         return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
+    #                                     + other_profile_subscription.chat_id)
+    # else:
+    #     raise Http404
 
 
 @login_required
@@ -379,22 +389,22 @@ def profile(request, public_name, private):
 
 
 @login_required
-def chat(request, chat_url):
+def hive_chat(request, hive_slug, chat_id):
     """
     :param request:
-    :param chat_url: Url of the chat
+    :param chat_id: id of the chat
     :return: Chat web page which allows to chat with users who joined the same channel
     """
     # info retrieval
     user = request.user
+    hive = ChHive.objects.get(slug=hive_slug)
     profile = ChProfile.objects.get(user=user)
-    chat = ChChat.objects.get(chat_id=chat_url)
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
     event = 'msg'
 
-    # GET vs POST
+    # POST: User send a new message inside the chat
     if request.method == 'POST':
         try:
             ChChatSubscription.objects.get(profile=profile, chat=chat)
@@ -428,41 +438,68 @@ def chat(request, chat_url):
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
-    # GET
+    # GET: User retrieve the chat messages
     else:
+
+        # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
         try:
-            ChChatSubscription.objects.get(chat=chat, profile=profile, deleted=False)
+            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
+        except ChHiveSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
 
-        except ChChatSubscription.DoesNotExist:
-            # If the subscription was not found might be one of two things:
-            # 1. The user can chat but its the first time the user chats with this other user, or in the public chat,
-            # so we must create a ChChatSubscription for him.
-            # 2. The client is trying to access to a chat he is not allowed to. In this case he is not authorized.
-            # TODO: If in the future we have restricted public chats, we have to make additional checkings here
+        # We try now to get the chat object
+        try:
+            chat = ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            # The chat is not yet created, there are not messages, we send all the info we can to the html
+            form = MsgForm()
+            return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+                'user': user.profile.public_name,
+                'hive': chat.hive,
+                'app_key': app_key,
+                'key': key,
+                'url': chat_id,
+                'channel': chat.chat_id,
+                'event': event,
+                'form': form,
+            })
 
-            try:
-                ChHiveSubscription.objects.get(hive=chat.hive, profile=profile, deleted=False)
-                # If the user is subscribed to the hive but he didn't have a ChChatSubscription for this chat, then the
-                # user is just opening this chat for the first time. We add it to his chat list.
-                chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-                chat_subscription.save()
-
-            except ChHiveSubscription.DoesNotExist:
-                response = HttpResponse("Unauthorized")
-                response.status_code = 401
-                return response
-
-        form = MsgForm()
-        return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
-            'user': user.profile.public_name,
-            'hive': chat.hive,
-            'app_key': app_key,
-            'key': key,
-            'url': chat_url,
-            'channel': chat.chat_id,
-            'event': event,
-            'form': form,
-        })
+        # try:
+        #     ChChatSubscription.objects.get(chat=chat, profile=profile, deleted=False)
+        #
+        #
+        # except ChChatSubscription.DoesNotExist:
+        #     # If the subscription was not found might be one of two things:
+        #     # 1. The user can chat but its the first time the user chats with this other user, or in the public chat,
+        #     # so we must create a ChChatSubscription for him.
+        #     # 2. The client is trying to access to a chat he is not allowed to. In this case he is not authorized.
+        #     # TODO: If in the future we have restricted public chats, we have to make additional checkings here
+        #
+        #     try:
+        #         ChHiveSubscription.objects.get(hive=chat.hive, profile=profile, deleted=False)
+        #         # If the user is subscribed to the hive but he didn't have a ChChatSubscription for this chat, then the
+        #         # user is just opening this chat for the first time. We add it to his chat list.
+        #         # chat_subscription = ChChatSubscription(chat=chat, profile=profile)
+        #         # chat_subscription.save()
+        #
+        #     except ChHiveSubscription.DoesNotExist:
+        #         response = HttpResponse("Unauthorized")
+        #         response.status_code = 401
+        #         return response
+        #
+        # form = MsgForm()
+        # return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        #     'user': user.profile.public_name,
+        #     'hive': chat.hive,
+        #     'app_key': app_key,
+        #     'key': key,
+        #     'url': chat_id,
+        #     'channel': chat.chat_id,
+        #     'event': event,
+        #     'form': form,
+        # })
 
 @login_required
 def hive(request, hive_slug):
