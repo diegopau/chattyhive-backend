@@ -79,7 +79,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
 # =================================================================== #
 
 class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
-    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_unicode', allow_null=True)
+    chat = serializers.SlugRelatedField(read_only=True, slug_field='chat_id', allow_null=True)
 
     class Meta:
         model = ChPublicChat
@@ -87,7 +87,7 @@ class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
 
 
 class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
-    chat = serializers.SlugRelatedField(read_only=True, slug_field='channel_unicode', allow_null=True)
+    chat = serializers.SlugRelatedField(read_only=True, slug_field='chat_id', allow_null=True)
 
     class Meta:
         model = ChCommunityPublicChat
@@ -117,7 +117,7 @@ class ChUserSerializer(serializers.ModelSerializer):
 class ChChatLevel0Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChChat
-        fields = ('count', 'type', 'hive', 'channel_unicode')
+        fields = ('count', 'type', 'hive', 'chat_id')
 
 
 class ChMessageLevel1Serializer(serializers.ModelSerializer):
@@ -287,4 +287,4 @@ class ChChatLevel2Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChChat
-        fields = ('channel_unicode', 'type', 'last_message')
+        fields = ('chat_id', 'type', 'last_message')

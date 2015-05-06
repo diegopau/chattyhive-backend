@@ -46,11 +46,12 @@ def create_hive(request):
                 chat = ChChat()
                 chat.hive = hive
                 chat.type = 'public'
-                chat.channel = hive.slug
+                chat.chat_id = ChChat.get_chat_id()
                 chat.save()
 
                 # Creating public chat of hive, step 2: ChPublicChat object
                 public_chat = ChPublicChat(chat=chat, hive=hive)
+                public_chat.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=250)
                 public_chat.save()
 
                 # Creating subscription
@@ -133,11 +134,10 @@ def create_community(request):
 
 
 @login_required
-def create_chat(request, hive_slug, public_name):
-    # TODO: no tengo claro que es lo que hace este código... entender, documentar, enmendar
+def open_hive_private_chat(request, hive_slug, public_name):
     """
     :param request:
-    :return:
+    :return: if the chat was already created it just redirects, if not it provides a new chat_id and redirects.
     """
     if request.method == 'GET':
         user = request.user
@@ -147,34 +147,54 @@ def create_chat(request, hive_slug, public_name):
         if profile == other_profile:
             raise Http404
 
-        profile_subscriptions = ChChatSubscription.objects.select_related('profile').filter(profile=profile)
-        other_profile_subscription = ChChatSubscription.objects.none()
-        if profile_subscriptions:
-            for profile_subscription in profile_subscriptions:
-                try:
-                    if profile_subscription.chat and profile_subscription.chat.type == 'mate_private':
-                        other_profile_subscription = profile_subscription.chat.chat_subscribers.get(
-                            profile=other_profile)
-                except profile_subscription.DoesNotExist:
-                    continue
+        # We try to get the chat object that involves both users
+        # try:
+        #     chat = ChChat.objects.get(chat_subscribers__in=[profile, other_profile])
+        #
+        # # We get every private chat subscription of the user for this hive/community
+        # profile_subscriptions = ChChatSubscription.objects.select_related('chat').filter(profile=profile,
+        #                                                                                  chat__hive=hive,
+        #                                                                                  chat__type='mate_private')
 
-        if not other_profile_subscription:
-            # Creating private chat
-            chat = ChChat()
-            chat.hive = hive
-            chat.type = 'mate_private'
-            chat.save()
-
-            subscription_user = ChChatSubscription(chat=chat, profile=profile)
-            subscription_user.save()
-            subscription_other_user = ChChatSubscription(chat=chat, profile=other_profile)
-            subscription_other_user.save()
-
-            return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-                                        + chat.channel_unicode)
-        else:
-            return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-                                        + other_profile_subscription.chat.channel_unicode)
+        # other_profile_subscription = ChChatSubscription.objects.none()
+        #
+        # if profile_subscriptions:
+        #     for subscription in profile_subscriptions:
+        #         try:
+        #             # We check, for every chat subscription of the user if the other user is also subscribed
+        #             other_profile_subscription = subscription.chat.chat_subscribers.get(profile=other_profile)
+        #
+        # else:
+        #
+        # if profile_subscriptions:
+        #     for profile_subscription in profile_subscriptions:
+        #         try:
+        #             # For each private chat subscription of the user
+        #             if profile_subscription.chat:
+        #                 # we check if the other user is also
+        #                 other_profile_subscription = profile_subscription.chat.chat_subscribers.get(
+        #                     profile=other_profile)
+        #         except profile_subscription.DoesNotExist:
+        #             continue
+        #
+        # if not other_profile_subscription:
+        #     # Creating private chat
+        #     chat = ChChat()
+        #     chat.hive = hive
+        #     chat.type = 'mate_private'
+        #     chat.chat_id = ChChat.get_chat_id()
+        #     chat.save()
+        #
+        #     subscription_user = ChChatSubscription(chat=chat, profile=profile)
+        #     subscription_user.save()
+        #     subscription_other_user = ChChatSubscription(chat=chat, profile=other_profile)
+        #     subscription_other_user.save()
+        #
+        #     return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
+        #                                 + ct_idunicode)
+        # else:
+        #     return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
+        #                                 + other_profile_subscription.ct_idunicode)
     else:
         raise Http404
 
@@ -190,7 +210,9 @@ def create_public_chat(request, hive_slug):
         if form.is_valid():
             hive = ChHive.objects.get(slug=hive_slug)
             community = ChCommunity.objects.get(hive=hive)
-            community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'])
+            public_chat_slug = slugify(hive.name, to_lower=True, separator='-', capitalize=False, max_length=250)
+            community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'],
+                                      slug=public_chat_slug)
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
@@ -366,7 +388,7 @@ def chat(request, chat_url):
     # info retrieval
     user = request.user
     profile = ChProfile.objects.get(user=user)
-    chat = ChChat.objects.get(channel_unicode=chat_url)
+    chat = ChChat.objects.get(chat_id=chat_url)
     app_key = "55129"
     key = 'f073ebb6f5d1b918e59e'
     secret = '360b346d88ee47d4c230'
@@ -409,7 +431,6 @@ def chat(request, chat_url):
     # GET
     else:
         try:
-            # TODO: If this is a public chat we should check the user is not expelled
             ChChatSubscription.objects.get(chat=chat, profile=profile, deleted=False)
 
         except ChChatSubscription.DoesNotExist:
@@ -438,11 +459,10 @@ def chat(request, chat_url):
             'app_key': app_key,
             'key': key,
             'url': chat_url,
-            'channel': chat.channel_unicode,
+            'channel': chat.chat_id,
             'event': event,
             'form': form,
         })
-
 
 @login_required
 def hive(request, hive_slug):
@@ -558,7 +578,7 @@ def get_messages(request, chat_name, init, interval):
         # info retrieval
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        chat = ChChat.objects.get(channel_unicode=chat_name)
+        chat = ChChat.objects.get(chat_id=chat_name)
 
         try:
             ChChatSubscription.objects.get(profile=profile, chat=chat)

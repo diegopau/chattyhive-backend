@@ -21,9 +21,9 @@
     {% for chat in chats %}
       <li>
         {% if chat.type == 'mate_private' %}
-            <a href="/test-ui/chat/{{ chat.channel_unicode }}">private chat in {{ chat.hive }}</a>
+            <a href="/test-ui/chat/{{ chat.chat_id }}">private chat in {{ chat.hive }}</a>
         {% else %}
-            <a href="/test-ui/chat/{{ chat.channel_unicode }}">{{ chat.hive }}</a>
+            <a href="/test-ui/chat/{{ chat.chat_id }}">{{ chat.hive }}</a>
         {% endif %}
       </li>
     {% endfor %}

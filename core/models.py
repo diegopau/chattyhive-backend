@@ -650,7 +650,8 @@ class ChCommunity(models.Model):
 
     def new_public_chat(self, name, description):
         chat = ChChat(hive=self.hive, type='public')
-        chat.channel = replace_unicode(name)
+        chat.chat_id = ChChat.get_chat_id()
+        chat.convert_to_pusher_channel_id(chat.chat_id)
         chat.save()
         chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
@@ -667,14 +668,13 @@ class ChChat(models.Model):
         ('friends_group', 'friends_group')
     )
 
-
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
     # Even though we now have a ChPublicChat model, we leave the field type because sometimes it is more convenient
     # for database queries to use this type field
     type = models.CharField(max_length=32, choices=TYPE, default='mate_private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
-    channel_unicode = models.CharField(max_length=60, unique=True)
+    chat_id = models.CharField(max_length=60, unique=True)
     deleted = models.BooleanField(default=False)
 
     # Attributes of the Chat
@@ -685,14 +685,25 @@ class ChChat(models.Model):
         """
         :return: Pusher id for this chat
         """
-        return self.channel_unicode
+        return self.chat_id
 
-    @channel.setter
-    def channel(self, channel_unicode):
+    def convert_to_pusher_channel_id(self, chat_id):
         """
-        :param channel_unicode: Pusher id for this chat
+        :param chat_id: Pusher id for this chat
         """
-        self.channel_unicode = 'presence-' + channel_unicode
+        self.chat_id = 'presence-' + chat_id
+
+    @classmethod
+    def get_chat_id(cls):
+        hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+        while True:
+            try:
+                # if the email is already used
+                ChChat.objects.get(chat_id=hex_channel_unicode)
+                hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
+            except ChChat.DoesNotExist:
+                break
+        return hex_channel_unicode
 
     def last_message(self):
         """
@@ -736,14 +747,14 @@ class ChChat(models.Model):
                                           secret=getattr(settings, 'PUSHER_SECRET', None),
                                           encoder=DjangoJSONEncoder)
             event = 'msg'
-            pusher_object[self.channel_unicode].trigger(event, json.loads(json_message))
+            pusher_object[self.chat_id].trigger(event, json.loads(json_message))
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):
 
         for chat in json.loads(json_chats_array):
             try:
-                chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
+                chat_object = ChChat.objects.get(chat_id=chat['CHANNEL'])
                 ChChatSubscription.objects.get(chat=chat_object, profile=profile, deleted=False, expelled=False)
             except ChChat.DoesNotExist:
                 raise
@@ -754,18 +765,6 @@ class ChChat(models.Model):
                 ChMessage.objects.filter(_count__in=id_list).select_for_update().update(received=True)
             except ChMessage.DoesNotExist:
                 raise
-
-    def save(self, *args, **kwargs):
-
-        hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
-        while True:
-            try:
-                # if the email is already used
-                ChChat.objects.get(channel_unicode=hex_channel_unicode)
-                hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
-            except ChChat.DoesNotExist:
-                break
-        super(ChChat, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
@@ -791,6 +790,7 @@ class ChCommunityPublicChat(models.Model):
     moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
     chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
+    slug = models.CharField(max_length=250, unique=True, default='')
     photo = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
@@ -865,7 +865,7 @@ class ChChatSubscription(models.Model):
     expulsion_due_date = models.DateTimeField(null=True)
 
     def __str__(self):
-        return "links " + self.profile.public_name + " with chat " + self.chat.channel_unicode
+        return "links " + self.profile.public_name + " with chat " + self.chat.chat_id
 
 
 class ChHiveSubscription(models.Model):

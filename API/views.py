@@ -582,7 +582,7 @@ def chat_v2(request):
         message.content_type = 'text'
         message.content = msg
 
-        p[chat2.channel_unicode].trigger(event, {"username": user.username,
+        p[chat2.chat_id].trigger(event, {"username": user.username,
                                                  "public_name": profile.public_name,
                                                  "message": msg,
                                                  "timestamp": timestamp,

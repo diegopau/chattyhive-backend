@@ -17,8 +17,8 @@ urlpatterns = patterns('',
 
     # TODO: Para todo parámetro de tipo hive_slug se ha puesto un regex básico que valida cualquier cosa, este debe ser
     # reemplazado en función de lo que se decida finalmente
-    url(r'^create_chat/(?P<hive_slug>.+)/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
-        'test_ui.views.create_chat', name='create_chat'),
+    url(r'^open_hive_private_chat/(?P<hive_slug>.+)/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
+        'test_ui.views.open_hive_private_chat', name='open_hive_private_chat'),
     url(r'^create_public_chat/(?P<hive_slug>.+)/',
         'test_ui.views.create_public_chat', name='create_public_chat'),
 

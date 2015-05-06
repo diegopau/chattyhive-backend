@@ -16,7 +16,7 @@
     <div>
         :{{ hive.name }} -- <a href="/test-ui/hive_description/{{ hive.slug }}">Description</a> <br />
         {% for chat in chats %}
-            <a href="/test-ui/chat/{{ chat.channel_unicode }}"> public chat</a><br />
+            <a href="/test-ui/chat/{{ chat.chat_id }}"> public chat</a><br />
         {% endfor %}
     </div>
     <br />
@@ -48,13 +48,13 @@
             // AJAX method to reload users on screen
             function reload(users) {
                 var profile = users[0];
-                $('#profiles_list').html('<a href="/test-ui/create_chat/' + hive_slug + '/' + profile.public_name + '">@' +
+                $('#profiles_list').html('<a href="/test-ui/open_hive_private_chat/' + hive_slug + '/' + profile.public_name + '">@' +
                                           profile.public_name + '</a>  (<a href="/test-ui/profile/' + profile.public_name +
                                           '/public">profile</a>)<br />');
                 for(i = 1; i < users.length; i++){
                     profile = users[i]
                     $('#profiles_list').html($('#profiles_list').html() +
-                        '<a href="/test-ui/create_chat/' + hive_slug + '/' + profile.public_name + '">@' + profile.public_name +
+                        '<a href="/test-ui/open_hive_private_chat/' + hive_slug + '/' + profile.public_name + '">@' + profile.public_name +
                         '</a>  (<a href="/test-ui/profile/' + profile.public_name + '/public">profile</a>)<br />'
                     );
                 }

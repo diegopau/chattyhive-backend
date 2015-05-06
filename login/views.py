@@ -271,7 +271,7 @@ def chat_auth(request):
     user = request.user
     if request.method == 'POST':
         chat_channel = request.POST['channel_name']
-        chat = ChChat.objects.get(channel_unicode=chat_channel)
+        chat = ChChat.objects.get(chat_id=chat_channel)
         socket_id = request.POST['socket_id']
 
         profile = ChProfile.objects.get(user=user)
