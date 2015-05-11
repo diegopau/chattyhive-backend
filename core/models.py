@@ -652,7 +652,8 @@ class ChCommunity(models.Model):
         chat = ChChat(hive=self.hive, type='public')
         chat.chat_id = ChChat.get_chat_id()
         chat.save()
-        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
+        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive,
+                                               slug=self.hive.slug)
         chat_extension.save()
         # transaction.commit()
 

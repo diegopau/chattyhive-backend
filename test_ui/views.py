@@ -24,7 +24,7 @@ def create_hive(request):
                 hive_name = formHive.cleaned_data['name']
                 hive = formHive.save(commit=False)
                 hive.creator = profile
-                hive.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=250)
+                hive.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False, max_length=250)
                 try:
                     with transaction.atomic():
                         ChHive.objects.get(slug=hive.slug)
@@ -52,7 +52,8 @@ def create_hive(request):
 
                 # Creating public chat of hive, step 2: ChPublicChat object
                 public_chat = ChPublicChat(chat=chat, hive=hive)
-                public_chat.slug = slugify(hive_name, to_lower=True, separator='-', capitalize=False, max_length=250)
+                public_chat.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False,
+                                           max_length=250)
                 public_chat.save()
 
                 # Creating subscription
@@ -90,8 +91,8 @@ def create_community(request):
             hive_name = formCommunity.cleaned_data['name']
             hive = formCommunity.save(commit=False)
             hive.creator = profile
-            hive.slug = hive_name.replace(" ", "-")
-            # TODO: se está metiendo como slug el hive_name mal tuneado, esto hay que corregirlo.
+            hive.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False,
+                                max_length=250)
             hive.type = 'Community'
 
             try:
@@ -105,6 +106,10 @@ def create_community(request):
             tagsText = formCommunityTags.cleaned_data['tags']
             tagsList = re.split(r'[, ]+', tagsText)
             hive.set_tags(tagsList)
+            hive.save()
+
+            # Adding languages
+            hive.languages = formCommunity.cleaned_data['_languages']
             hive.save()
 
             # Creating community from hive
@@ -220,7 +225,8 @@ def create_public_chat(request, hive_slug):
         if form.is_valid():
             hive = ChHive.objects.get(slug=hive_slug)
             community = ChCommunity.objects.get(hive=hive)
-            public_chat_slug = slugify(hive.name, to_lower=True, separator='-', capitalize=False, max_length=250)
+            public_chat_slug = slugify(hive.name, translate=None, to_lower=True, separator='-', capitalize=False,
+                                       max_length=250)
             community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'],
                                       slug=public_chat_slug)
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))

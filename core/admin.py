@@ -24,6 +24,9 @@ class LanguagesAdmin(admin.ModelAdmin):
 class ChHiveSubscriptionAdmin(admin.ModelAdmin):
     list_display = ('profile', 'hive', 'creation_date', 'deleted', 'expelled', 'expulsion_due_date')
 
+@admin.register(ChCommunity)
+class ChCommunityAdmin(admin.ModelAdmin):
+    list_display = ('hive', 'owner', 'deleted')
 
 @admin.register(ChChatSubscription)
 class ChChatSubscriptionAdmin(admin.ModelAdmin):
@@ -37,7 +40,6 @@ admin.site.register(ChProfile)
 admin.site.register(ChCategory)
 admin.site.register(TagModel)
 admin.site.register(ChHive)
-admin.site.register(ChCommunity)
 admin.site.register(ChMessage)
 admin.site.register(ChChat)
 admin.site.register(ChFriendsGroupChat)
