@@ -67,6 +67,13 @@ urlpatterns = patterns('',
 
     url(r'^locations/', include('cities_light.contrib.restframework3')),
 
+
+    # ### ======================================================== ###
+    # ###                    Silk profiling app                    ###
+    # ### ======================================================== ###
+
+    url(r'^silk/', include('silk.urls', namespace='silk')),
+
     #
     # ### ======================================================== ###
     # ###                     Android - URLS                       ###

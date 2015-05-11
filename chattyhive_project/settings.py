@@ -117,6 +117,7 @@ TEMPLATE_LOADERS = (
 MIDDLEWARE_CLASSES = (
     # 'django.middleware.cache.UpdateCacheMiddleware',    # Cache, must first
     'django.middleware.common.CommonMiddleware',
+    'silk.middleware.SilkyMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -158,6 +159,7 @@ INSTALLED_APPS = (
     'test_ui',
     'datetimewidget',
     'django_extensions',
+    'silk',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
@@ -326,9 +328,9 @@ ANDROID_STATUS = {
 
 }
 
-    ### ======================================================== ###
-    ###       Django Rest Framework & Django Rest Swagger        ###
-    ### ======================================================== ###
+# ## ======================================================== ###
+# ##       Django Rest Framework & Django Rest Swagger        ###
+# ## ======================================================== ###
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -339,3 +341,9 @@ REST_FRAMEWORK = {
 SWAGGER_SETTINGS = {
     'api_path': '/',
 }
+
+# ## ======================================================== ###
+# ##       Django Rest Framework & Django Rest Swagger        ###
+# ## ======================================================== ###
+
+SILKY_PYTHON_PROFILER = True

@@ -247,19 +247,19 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 #                        Hives & Chats                         #
 # ============================================================ #
 
-class ChHiveSerializer(serializers.ModelSerializer):
-    # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados y lo que se
-    # hace es relacionarlos únicamente
-
-    category = serializers.SlugRelatedField(read_only=True, slug_field='code')
-    languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')
-    creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
-    tags = TagSerializer(many=True)
-
-    class Meta:
-        model = ChHive
-        fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
-                  'priority', 'type')
+# class ChHiveSerializer(serializers.ModelSerializer):
+#     # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados y lo que se
+#     # hace es relacionarlos únicamente
+#
+#     category = serializers.SlugRelatedField(read_only=True, slug_field='code')
+#     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')
+#     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
+#     tags = TagSerializer(many=True)
+#
+#     class Meta:
+#         model = ChHive
+#         fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
+#                   'priority', 'type')
 
 
 class ChHiveLevel1Serializer(serializers.ModelSerializer):
