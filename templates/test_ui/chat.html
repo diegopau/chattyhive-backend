@@ -33,6 +33,7 @@
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
         var chat="{{ chat_field }}";
+        var new_chat={{ new_chat }};
         var csrftoken = $.cookie('csrftoken');
 
         // Connecting to pusher
@@ -111,7 +112,7 @@
                     type: "POST",
                     url: "/test-ui/chat/" + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
+                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);

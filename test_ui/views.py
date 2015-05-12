@@ -167,17 +167,17 @@ def open_private_chat(request, target_public_name):
             slug_ends_with = '-mates-' + public_names[0] + '-' + public_names[1]
 
             try:
-                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with, deleted=False)
             except ChChat.DoesNotExist:
                 # If the chat doesn't exist we give a provisional chat_id and redirect:
                 chat_id = ChChat.get_chat_id()
                 chat_id += slug_ends_with
                 return HttpResponseRedirect("/{base_url}/hive_chat/".format(base_url=settings.TEST_UI_BASE_URL)
-                                            + hive.slug + "/" + chat_id)
+                                            + hive.slug + "/" + chat_id + "?new_chat=True")
 
             # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
             return HttpResponseRedirect("/{base_url}/hive_chat/".format(
-                base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id)
+                base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id + "?new_chat=False")
 
 
 
@@ -388,6 +388,7 @@ def hive_chat(request, hive_slug, chat_id):
             response.status_code = 401
             return response
 
+        if request.POST[]
         # # We now have to check if the chat exist (this could be the first message sent to the chat)
         # try:
         #     ChChat.objects.get(chat_id=chat_id)
@@ -427,7 +428,6 @@ def hive_chat(request, hive_slug, chat_id):
         #     return response
     # GET: User retrieve the chat messages
     else:
-
         # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
         try:
             ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
@@ -436,57 +436,32 @@ def hive_chat(request, hive_slug, chat_id):
             response.status_code = 401
             return response
 
-        # We try now to get the chat object
-        try:
-            chat = ChChat.objects.get(chat_id=chat_id)
-        except ChChat.DoesNotExist:
-            # The chat is not yet created, there are no messages, we send all the info we can to the html
-            form = MsgForm()
-            return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
-                'user': user.profile.public_name,
-                'hive': chat.hive,
-                'app_key': app_key,
-                'key': key,
-                'url': chat_id,
-                'channel': chat.chat_id,
-                'event': event,
-                'form': form,
-            })
+        new_chat = request.GET.get('new_chat', False)
 
-        # try:
-        #     ChChatSubscription.objects.get(chat=chat, profile=profile, deleted=False)
-        #
-        #
-        # except ChChatSubscription.DoesNotExist:
-        #     # If the subscription was not found might be one of two things:
-        #     # 1. The user can chat but its the first time the user chats with this other user, or in the public chat,
-        #     # so we must create a ChChatSubscription for him.
-        #     # 2. The client is trying to access to a chat he is not allowed to. In this case he is not authorized.
-        #     # TODO: If in the future we have restricted public chats, we have to make additional checkings here
-        #
-        #     try:
-        #         ChHiveSubscription.objects.get(hive=chat.hive, profile=profile, deleted=False)
-        #         # If the user is subscribed to the hive but he didn't have a ChChatSubscription for this chat, then the
-        #         # user is just opening this chat for the first time. We add it to his chat list.
-        #         # chat_subscription = ChChatSubscription(chat=chat, profile=profile)
-        #         # chat_subscription.save()
-        #
-        #     except ChHiveSubscription.DoesNotExist:
-        #         response = HttpResponse("Unauthorized")
-        #         response.status_code = 401
-        #         return response
-        #
-        # form = MsgForm()
-        # return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
-        #     'user': user.profile.public_name,
-        #     'hive': chat.hive,
-        #     'app_key': app_key,
-        #     'key': key,
-        #     'url': chat_id,
-        #     'channel': chat.chat_id,
-        #     'event': event,
-        #     'form': form,
-        # })
+        if not new_chat:
+            # We try now to get the chat object, if new_chat==True we don't need to check this
+            try:
+                chat = ChChat.objects.get(chat_id=chat_id)
+            except ChChat.DoesNotExist:
+                # The client expected the chat to exist with this chat_id, but it doesn't exist.
+                response = HttpResponse("Unauthorized")
+                response.status_code = 401
+                return response
+
+        form = MsgForm()
+        return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+            'user': user.profile.public_name,
+            'hive': hive,
+            'app_key': app_key,
+            'key': key,
+            'url': chat_id,
+            'channel': chat_id,
+            'event': event,
+            'form': form,
+            'new_chat': new_chat,
+        })
+
+
 
 @login_required
 def hive(request, hive_slug):
