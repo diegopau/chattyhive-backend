@@ -24,13 +24,26 @@ class LanguagesAdmin(admin.ModelAdmin):
 class ChHiveSubscriptionAdmin(admin.ModelAdmin):
     list_display = ('profile', 'hive', 'creation_date', 'deleted', 'expelled', 'expulsion_due_date')
 
+
 @admin.register(ChCommunity)
 class ChCommunityAdmin(admin.ModelAdmin):
     list_display = ('hive', 'owner', 'deleted')
 
+
 @admin.register(ChChatSubscription)
 class ChChatSubscriptionAdmin(admin.ModelAdmin):
     list_display = ('profile', 'chat', 'creation_date', 'deleted', 'expelled', 'expulsion_due_date')
+
+
+@admin.register(ChChat)
+class ChChatAdmin(admin.ModelAdmin):
+    list_display = ('type', 'hive', 'slug', 'chat_id',  'count', 'date', 'deleted')
+
+
+@admin.register(ChHive)
+class ChHiveAdmin(admin.ModelAdmin):
+    list_display = ('name', 'type', 'slug', 'category', 'description', 'priority', 'creation_date', 'creator',
+                    'deleted')
 
 
 # Include all models in Admin site
@@ -39,9 +52,7 @@ admin.site.register(Device)
 admin.site.register(ChProfile)
 admin.site.register(ChCategory)
 admin.site.register(TagModel)
-admin.site.register(ChHive)
 admin.site.register(ChMessage)
-admin.site.register(ChChat)
 admin.site.register(ChFriendsGroupChat)
 admin.site.register(ChHivematesGroupChat)
 admin.site.register(ChPublicChat)

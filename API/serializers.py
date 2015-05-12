@@ -95,7 +95,7 @@ class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChCommunityPublicChat
-        fields = ('name', 'description', 'slug', 'moderators', 'picture')
+        fields = ('name', 'description', 'moderators', 'picture')
 
 
 class ChCommunityPublicChatListLevel1Serializer(serializers.ModelSerializer):

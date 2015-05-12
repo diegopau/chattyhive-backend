@@ -17,8 +17,8 @@ urlpatterns = patterns('',
 
     # TODO: Para todo parámetro de tipo hive_slug se ha puesto un regex básico que valida cualquier cosa, este debe ser
     # reemplazado en función de lo que se decida finalmente
-    url(r'^open_private_hive_chat/(?P<hive_slug>.+)/(?P<public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
-        'test_ui.views.open_private_hive_chat', name='open_private_hive_chat'),
+    url(r'^open_private_chat/(?P<target_public_name>[-a-zA-ZñÑ0-9áéíóú¿¡!?_ ]+)/',
+        'test_ui.views.open_private_chat', name='open_private_chat'),
     url(r'^create_public_chat/(?P<hive_slug>.+)/',
         'test_ui.views.create_public_chat', name='create_public_chat'),
 
@@ -34,7 +34,7 @@ urlpatterns = patterns('',
     url(r'^hive_users/(?P<hive_slug>.+)/(?P<init>[0-9first]+)-(?P<interval>[0-9]+)/',
         'test_ui.views.get_hive_users', name='get_hive_users'),
 
-    url(r'^chat/(?P<hive_slug>.+)/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15})/', 'test_ui.views.hive_chat',
+    url(r'^hive_chat/(?P<hive_slug>.+)/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15})/', 'test_ui.views.hive_chat',
         name='chat'),
     url(r'^messages/(?P<chat_name>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15})/(?P<init>[0-9last]+)-(?P<interval>[0-9]+)/',
         'test_ui.views.get_messages', name='get_messages'),

@@ -48,6 +48,7 @@ def create_hive(request):
                 chat.hive = hive
                 chat.type = 'public'
                 chat.chat_id = ChChat.get_chat_id()
+                chat.slug = hive.slug
                 chat.save()
 
                 # Creating public chat of hive, step 2: ChPublicChat object
@@ -140,78 +141,44 @@ def create_community(request):
 
 
 @login_required
-def open_private_hive_chat(request, hive_slug, public_name):
+def open_private_chat(request, target_public_name):
     """
     :param request:
     :return: if the chat was already created it just redirects, if not it provides a new chat_id and redirects.
     """
     if request.method == 'GET':
+        hive_slug = request.GET.get('hive_slug', '')
         user = request.user
         profile = ChProfile.objects.get(user=user)
-        other_profile = ChProfile.objects.get(public_name=public_name)
-        hive = ChHive.objects.get(slug=hive_slug)
+        other_profile = ChProfile.objects.get(public_name=target_public_name)
         if profile == other_profile:
             raise Http404
 
         # We try to get the chat object that involves both users
-        try:
-            chat = ChChat.objects.get(Q(chchatsubscription_set__profile__in=[profile, other_profile]) & Q(hive=hive))
-        except ChChat.DoesNotExist:
-            # If the chat doesn't exist we give a provisional chat_id and redirect:
-            chat_id = ChChat.get_chat_id()
-            return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-                                        + hive.slug + "/" + chat_id)
+        # for this we use the last part of the slug in the ChChat objects
 
-        # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
-        return HttpResponseRedirect("/{base_url}/chat/".format(
-            base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id)
+        if hive_slug == '':
+            # TODO: for private chats between friends
+            pass
+        else:
+            # Its a private chat inside a hive
+            hive = ChHive.objects.get(slug=hive_slug)
+            public_names = sorted([profile.public_name, other_profile.public_name], key=str.lower)
+            slug_ends_with = '-mates-' + public_names[0] + '-' + public_names[1]
 
-    #     # We get every private chat subscription of the user for this hive/community
-    #     profile_subscriptions = ChChatSubscription.objects.select_related('chat').filter(profile=profile,
-    #                                                                                      chat__hive=hive,
-    #                                                                                      chat__type='mate_private')
-    #
-    #     other_profile_subscription = ChChatSubscription.objects.none()
-    #
-    #     if profile_subscriptions:
-    #         for subscription in profile_subscriptions:
-    #             try:
-    #                 # We check, for every chat subscription of the user if the other user is also subscribed
-    #                 other_profile_subscription = subscription.chat.chat_subscribers.get(profile=other_profile)
-    #
-    #     else:
-    #
-    #     if profile_subscriptions:
-    #         for profile_subscription in profile_subscriptions:
-    #             try:
-    #                 # For each private chat subscription of the user
-    #                 if profile_subscription.chat:
-    #                     # we check if the other user is also
-    #                     other_profile_subscription = profile_subscription.chat.chat_subscribers.get(
-    #                         profile=other_profile)
-    #             except profile_subscription.DoesNotExist:
-    #                 continue
-    #
-    #     if not other_profile_subscription:
-    #         # Creating private chat
-    #         chat = ChChat()
-    #         chat.hive = hive
-    #         chat.type = 'mate_private'
-    #         chat.chat_id = ChChat.get_chat_id()
-    #         chat.save()
-    #
-    #         subscription_user = ChChatSubscription(chat=chat, profile=profile)
-    #         subscription_user.save()
-    #         subscription_other_user = ChChatSubscription(chat=chat, profile=other_profile)
-    #         subscription_other_user.save()
-    #
-    #         return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-    #                                     + chat.chat_id)
-    #     else:
-    #         return HttpResponseRedirect("/{base_url}/chat/".format(base_url=settings.TEST_UI_BASE_URL)
-    #                                     + other_profile_subscription.chat_id)
-    # else:
-    #     raise Http404
+            try:
+                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+            except ChChat.DoesNotExist:
+                # If the chat doesn't exist we give a provisional chat_id and redirect:
+                chat_id = ChChat.get_chat_id()
+                chat_id += slug_ends_with
+                return HttpResponseRedirect("/{base_url}/hive_chat/".format(base_url=settings.TEST_UI_BASE_URL)
+                                            + hive.slug + "/" + chat_id)
+
+            # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
+            return HttpResponseRedirect("/{base_url}/hive_chat/".format(
+                base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id)
+
 
 
 @login_required
@@ -412,38 +379,52 @@ def hive_chat(request, hive_slug, chat_id):
 
     # POST: User send a new message inside the chat
     if request.method == 'POST':
+
+        # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
         try:
-            ChChatSubscription.objects.get(profile=profile, chat=chat)
-            msg = request.POST.get("message")
-            timestamp = request.POST.get("timestamp")
-            message = chat.new_message(profile=profile,
-                                       content_type='text',
-                                       content=msg,
-                                       timestamp=timestamp)
-            chat.save()
-
-            json_message = json.dumps({"username": user.username,
-                                       "public_name": profile.public_name,
-                                       "message": msg,
-                                       "timestamp": timestamp,
-                                       "server_time": message.datetime.astimezone()},
-                                      cls=DjangoJSONEncoder)
-
-            try:
-                chat.send_message(profile=profile, json_message=json_message)
-            except Device.DoesNotExist:
-                return HttpResponse("Not delivered")
-
-            # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",
-            # "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
-            # ChChat.confirm_messages(json_chats, profile)
-
-            return HttpResponse("Server Ok")
-
-        except ChChatSubscription.DoesNotExist:
+            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
+        except ChHiveSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
+
+        # # We now have to check if the chat exist (this could be the first message sent to the chat)
+        # try:
+        #     ChChat.objects.get(chat_id=chat_id)
+        # except ChChat.DoesNotExist:
+        #
+        # try:
+        #     ChChatSubscription.objects.get(profile=profile, chat=chat)
+        #     msg = request.POST.get("message")
+        #     timestamp = request.POST.get("timestamp")
+        #     message = chat.new_message(profile=profile,
+        #                                content_type='text',
+        #                                content=msg,
+        #                                timestamp=timestamp)
+        #     chat.save()
+        #
+        #     json_message = json.dumps({"username": user.username,
+        #                                "public_name": profile.public_name,
+        #                                "message": msg,
+        #                                "timestamp": timestamp,
+        #                                "server_time": message.datetime.astimezone()},
+        #                               cls=DjangoJSONEncoder)
+        #
+        #     try:
+        #         chat.send_message(profile=profile, json_message=json_message)
+        #     except Device.DoesNotExist:
+        #         return HttpResponse("Not delivered")
+        #
+        #     # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",
+        #     # "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
+        #     # ChChat.confirm_messages(json_chats, profile)
+        #
+        #     return HttpResponse("Server Ok")
+
+        # except ChChatSubscription.DoesNotExist:
+        #     response = HttpResponse("Unauthorized")
+        #     response.status_code = 401
+        #     return response
     # GET: User retrieve the chat messages
     else:
 
@@ -459,7 +440,7 @@ def hive_chat(request, hive_slug, chat_id):
         try:
             chat = ChChat.objects.get(chat_id=chat_id)
         except ChChat.DoesNotExist:
-            # The chat is not yet created, there are not messages, we send all the info we can to the html
+            # The chat is not yet created, there are no messages, we send all the info we can to the html
             form = MsgForm()
             return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
                 'user': user.profile.public_name,

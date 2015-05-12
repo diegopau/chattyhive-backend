@@ -651,9 +651,9 @@ class ChCommunity(models.Model):
     def new_public_chat(self, name, description):
         chat = ChChat(hive=self.hive, type='public')
         chat.chat_id = ChChat.get_chat_id()
+        chat.slug = self.hive.slug
         chat.save()
-        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive,
-                                               slug=self.hive.slug)
+        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
         # transaction.commit()
 
@@ -676,6 +676,10 @@ class ChChat(models.Model):
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
     chat_id = models.CharField(max_length=32, unique=True)
     deleted = models.BooleanField(default=False)
+
+    # In the case of the chat the slug won't be necessarely unique. That's because public chats in different communities
+    # could have the same name and slug.
+    slug = models.CharField(max_length=250, default='')
 
     # Attributes of the Chat
     date = models.DateTimeField(auto_now=True)
@@ -787,7 +791,7 @@ class ChCommunityPublicChat(models.Model):
     moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
     chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
-    slug = models.CharField(max_length=250, unique=True, default='')
+    # slug = models.CharField(max_length=250, unique=True, default='')
     picture = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
