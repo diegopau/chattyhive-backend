@@ -180,6 +180,129 @@ def open_private_chat(request, target_public_name):
                 base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id + "?new_chat=False")
 
 
+@login_required
+def hive_chat(request, hive_slug, chat_id):
+    """
+    :param request:
+    :param chat_id: id of the chat
+    :return: Chat web page which allows to chat with users who joined the same channel
+    """
+    # info retrieval
+    user = request.user
+    hive = ChHive.objects.get(slug=hive_slug)
+    profile = ChProfile.objects.get(user=user)
+    app_key = "55129"
+    key = 'f073ebb6f5d1b918e59e'
+    secret = '360b346d88ee47d4c230'
+    event = 'msg'
+
+    # POST: User send a new message inside the chat
+    if request.method == 'POST':
+
+        # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
+        try:
+            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
+        except ChHiveSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
+
+        new_chat = request.POST.get('new_chat', False)
+        if new_chat:
+            chat_slug = chat_id
+
+            # We remove the part that starts with '-mates' so we get a chat_id
+            slug_ends_with = chat_slug[chat_slug.find('-mates'):len(chat_slug)]
+            chat_id = chat_slug[0:chat_slug.find('-mates')]
+
+            # We search for any other ChChat object with the same ending. Just in case the other profile was also
+            # starting a new chat (he/she would have a different temporal chat_id assigned).
+            try:
+                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+            except ChChat.DoesNotExist:
+                chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
+                chat.save()
+        else:
+            try:
+                chat = ChChat.objects.get(chat_id=chat_id)
+            except ChChat.DoesNotExist:
+                response = HttpResponse("Unauthorized")
+                response.status_code = 401
+                return response
+
+        # If the chat exist, then we have to send the message to the existing chat
+        if chat.deleted:
+            chat.deleted = False
+            chat.date = timezone.now()
+
+        # We now get (or create) the subscriptions in both users
+        try:
+            chat_subscription_profile = ChChatSubscription.objects.get(chat=chat, profile=profile)
+        except ChChatSubscription.DoesNotExist:
+            chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
+            chat_subscription_profile.save()
+
+        slug_ends_with = chat.slug[chat.slug.find('-mates'):len(chat.slug)]
+        other_profile_public_name = slug_ends_with.replace(profile.public_name, '').replace('-', '')
+        try:
+            chat_subscription_other_profile = ChChatSubscription.objects.get(
+                chat=chat, profile__public_name=other_profile_public_name)
+        except ChChatSubscription.DoesNotExist:
+            other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
+            chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
+            chat_subscription_other_profile.save()
+
+            msg = request.POST.get("message")
+            timestamp = request.POST.get("timestamp")
+            message = chat.new_message(profile=profile,
+                                       content_type='text',
+                                       content=msg,
+                                       timestamp=timestamp)
+            chat.save()
+
+            json_message = json.dumps({"username": user.username,
+                                       "public_name": profile.public_name,
+                                       "message": msg,
+                                       "timestamp": timestamp,
+                                       "server_time": message.datetime.astimezone()},
+                                      cls=DjangoJSONEncoder)
+
+
+    # GET: User retrieve the chat messages
+    else:
+        # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
+        try:
+            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
+        except ChHiveSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
+
+        new_chat = request.GET.get('new_chat', False)
+
+        if not new_chat:
+            # We try now to get the chat object, if new_chat==True we don't need to check this
+            try:
+                chat = ChChat.objects.get(chat_id=chat_id)
+            except ChChat.DoesNotExist:
+                # The client expected the chat to exist with this chat_id, but it doesn't exist.
+                response = HttpResponse("Unauthorized")
+                response.status_code = 401
+                return response
+
+        form = MsgForm()
+        return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+            'user': user.profile.public_name,
+            'hive': hive,
+            'app_key': app_key,
+            'key': key,
+            'url': chat_id,
+            'channel': chat_id,
+            'event': event,
+            'form': form,
+            'new_chat': new_chat,
+        })
+
 
 @login_required
 def create_public_chat(request, hive_slug):
@@ -359,108 +482,6 @@ def profile(request, public_name, private):
                 return HttpResponse("Error")
     else:
         raise Http404
-
-
-@login_required
-def hive_chat(request, hive_slug, chat_id):
-    """
-    :param request:
-    :param chat_id: id of the chat
-    :return: Chat web page which allows to chat with users who joined the same channel
-    """
-    # info retrieval
-    user = request.user
-    hive = ChHive.objects.get(slug=hive_slug)
-    profile = ChProfile.objects.get(user=user)
-    app_key = "55129"
-    key = 'f073ebb6f5d1b918e59e'
-    secret = '360b346d88ee47d4c230'
-    event = 'msg'
-
-    # POST: User send a new message inside the chat
-    if request.method == 'POST':
-
-        # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
-        try:
-            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
-        except ChHiveSubscription.DoesNotExist:
-            response = HttpResponse("Unauthorized")
-            response.status_code = 401
-            return response
-
-        if request.POST[]
-        # # We now have to check if the chat exist (this could be the first message sent to the chat)
-        # try:
-        #     ChChat.objects.get(chat_id=chat_id)
-        # except ChChat.DoesNotExist:
-        #
-        # try:
-        #     ChChatSubscription.objects.get(profile=profile, chat=chat)
-        #     msg = request.POST.get("message")
-        #     timestamp = request.POST.get("timestamp")
-        #     message = chat.new_message(profile=profile,
-        #                                content_type='text',
-        #                                content=msg,
-        #                                timestamp=timestamp)
-        #     chat.save()
-        #
-        #     json_message = json.dumps({"username": user.username,
-        #                                "public_name": profile.public_name,
-        #                                "message": msg,
-        #                                "timestamp": timestamp,
-        #                                "server_time": message.datetime.astimezone()},
-        #                               cls=DjangoJSONEncoder)
-        #
-        #     try:
-        #         chat.send_message(profile=profile, json_message=json_message)
-        #     except Device.DoesNotExist:
-        #         return HttpResponse("Not delivered")
-        #
-        #     # json_chats = json.dumps([{"CHANNEL": "presence-3240aa0fe3ca15051680641a59e8d7b61c286b23",
-        #     # "MESSAGE_ID_LIST": [1, 2, 3, 4, 5]}])
-        #     # ChChat.confirm_messages(json_chats, profile)
-        #
-        #     return HttpResponse("Server Ok")
-
-        # except ChChatSubscription.DoesNotExist:
-        #     response = HttpResponse("Unauthorized")
-        #     response.status_code = 401
-        #     return response
-    # GET: User retrieve the chat messages
-    else:
-        # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
-        try:
-            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
-        except ChHiveSubscription.DoesNotExist:
-            response = HttpResponse("Unauthorized")
-            response.status_code = 401
-            return response
-
-        new_chat = request.GET.get('new_chat', False)
-
-        if not new_chat:
-            # We try now to get the chat object, if new_chat==True we don't need to check this
-            try:
-                chat = ChChat.objects.get(chat_id=chat_id)
-            except ChChat.DoesNotExist:
-                # The client expected the chat to exist with this chat_id, but it doesn't exist.
-                response = HttpResponse("Unauthorized")
-                response.status_code = 401
-                return response
-
-        form = MsgForm()
-        return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
-            'user': user.profile.public_name,
-            'hive': hive,
-            'app_key': app_key,
-            'key': key,
-            'url': chat_id,
-            'channel': chat_id,
-            'event': event,
-            'form': form,
-            'new_chat': new_chat,
-        })
-
 
 
 @login_required

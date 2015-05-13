@@ -185,20 +185,6 @@ class Device(models.Model):
         return self.dev_id
 
 
-class LanguageModel(models.Model):
-    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
-
-    def __str__(self):
-        return self.language
-
-
-class TagModel(models.Model):
-    tag = models.CharField(max_length=32, unique=True)
-
-    def __str__(self):
-        return self.tag
-
-
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
@@ -418,48 +404,6 @@ class ChProfile(models.Model):
         return '@' + self.public_name + ', Personal profile'
 
 
-class ChCategory(models.Model):
-    # Groups definitions
-    GROUPS = (
-        ('Art & Cultural events', 'Art & Cultural events'),
-        ('Books & Comics', 'Books & Comics'),
-        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
-        ('Education', 'Education'),
-        ('Family, Home & Pets', 'Family, Home & Pets'),
-        ('Free time', 'Free time'),
-        ('Health & Fitness', 'Health & Fitness'),
-        ('Internet', 'Internet'),
-        ('Lifestyle', 'Lifestyle'),
-        ('Love & Friendship', 'Love & Friendship'),
-        ('Meet new people', 'Meet new people'),
-        ('Movies & TV', 'Movies & TV'),
-        ('Music', 'Music'),
-        ('Natural sciences', 'Natural sciences'),
-        ('News & Current affairs', 'News & Current affairs'),
-        ('Places, Companies & Brands', 'Places, Companies & Brands'),
-        ('Politics & Activism', 'Politics & Activism'),
-        ('Shopping & Market', 'Shopping & Market'),
-        ('Social sciences', 'Social sciences'),
-        ('Sports', 'Sports'),
-        ('Technology & Computers', 'Technology & Computers'),
-        ('Trips & Places', 'Trips & Places'),
-        ('Video games', 'Video games'),
-        ('Work & Business', 'Work & Business'),
-    )
-
-    name = models.CharField(max_length=64, unique=True)
-    description = models.CharField(max_length=140)
-    code = models.CharField(max_length=8, unique=True)
-    group = models.CharField(max_length=32, choices=GROUPS)
-
-    @classmethod
-    def get_group_names(cls):
-        return cls.GROUPS
-
-    def __str__(self):
-        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
-
-
 class ChHive(models.Model):
     TYPES = (
         ('Hive', 'Hive'),
@@ -640,6 +584,21 @@ class ChHive(models.Model):
         return self.name
 
 
+class ChHiveSubscription(models.Model):
+    # Subscription object which relates Profiles with Hives
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+    picture = models.CharField(max_length=200)
+
+    deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
+    expulsion_due_date = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return "links " + self.profile.public_name + " with hive " + self.hive.name
+
+
 class ChCommunity(models.Model):
     hive = models.OneToOneField(ChHive, related_name='community')
     owner = models.ForeignKey(ChProfile, related_name='own')
@@ -724,7 +683,6 @@ class ChChat(models.Model):
             raise UnauthorizedException("User isn't part of this chat")
 
     def new_message(self, profile, content_type, content, timestamp):
-
         self.check_permissions(profile)
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
@@ -735,7 +693,7 @@ class ChChat(models.Model):
         message.save()
         return message
 
-    def send_message(self, profile, json_message):
+    def send_message(self, profile, other_profile, json_message):
 
         self.check_permissions(profile)
         if self.type.endswith('private'):
@@ -769,6 +727,20 @@ class ChChat(models.Model):
 
     def __str__(self):
         return self.hive.name + '(' + self.type + ')'
+
+
+class ChChatSubscription(models.Model):
+    # Subscription object which relates Profiles with Chats
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    deleted = models.BooleanField(default=False)
+    expelled = models.BooleanField(default=False)
+    expulsion_due_date = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return "links " + self.profile.public_name + " with chat " + self.chat.chat_id
 
 
 class ChFriendsGroupChat(models.Model):
@@ -855,39 +827,66 @@ class ChMessage(models.Model):
         return self.profile.public_name + " said: " + self.content
 
 
-class ChChatSubscription(models.Model):
-    # Subscription object which relates Profiles with Chats
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
-    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
-    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+class ChCategory(models.Model):
+    # Groups definitions
+    GROUPS = (
+        ('Art & Cultural events', 'Art & Cultural events'),
+        ('Books & Comics', 'Books & Comics'),
+        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
+        ('Education', 'Education'),
+        ('Family, Home & Pets', 'Family, Home & Pets'),
+        ('Free time', 'Free time'),
+        ('Health & Fitness', 'Health & Fitness'),
+        ('Internet', 'Internet'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Love & Friendship', 'Love & Friendship'),
+        ('Meet new people', 'Meet new people'),
+        ('Movies & TV', 'Movies & TV'),
+        ('Music', 'Music'),
+        ('Natural sciences', 'Natural sciences'),
+        ('News & Current affairs', 'News & Current affairs'),
+        ('Places, Companies & Brands', 'Places, Companies & Brands'),
+        ('Politics & Activism', 'Politics & Activism'),
+        ('Shopping & Market', 'Shopping & Market'),
+        ('Social sciences', 'Social sciences'),
+        ('Sports', 'Sports'),
+        ('Technology & Computers', 'Technology & Computers'),
+        ('Trips & Places', 'Trips & Places'),
+        ('Video games', 'Video games'),
+        ('Work & Business', 'Work & Business'),
+    )
 
-    deleted = models.BooleanField(default=False)
-    expelled = models.BooleanField(default=False)
-    expulsion_due_date = models.DateTimeField(null=True)
+    name = models.CharField(max_length=64, unique=True)
+    description = models.CharField(max_length=140)
+    code = models.CharField(max_length=8, unique=True)
+    group = models.CharField(max_length=32, choices=GROUPS)
+
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
 
     def __str__(self):
-        return "links " + self.profile.public_name + " with chat " + self.chat.chat_id
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
 
 
-class ChHiveSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
-    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
-    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
-    picture = models.CharField(max_length=200)
-
-    deleted = models.BooleanField(default=False)
-    expelled = models.BooleanField(default=False)
-    expulsion_due_date = models.DateTimeField(null=True)
+class LanguageModel(models.Model):
+    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
 
     def __str__(self):
-        return "links " + self.profile.public_name + " with hive " + self.hive.name
+        return self.language
+
+
+class TagModel(models.Model):
+    tag = models.CharField(max_length=32, unique=True)
+
+    def __str__(self):
+        return self.tag
 
 
 class UserReports(models.Model):
 
     REASONS = (
-#the first value of each pair is the value set on the model, the second value is a human-readable name.
+        # the first value of each pair is the value set on the model, the second value is a human-readable name.
         ('TROLL', 'TROLL'),
         ('SPAM', 'SPAM'),
         ('FLOOD', 'FLOOD'),
@@ -907,9 +906,9 @@ class UserReports(models.Model):
 
 
 # TODO: Forms should be moved to its own file (forms.py) and to test_ui app
-### ==========================================================
-###                          FORMS
-### ==========================================================
+# ==========================================================
+#                          FORMS
+# ==========================================================
 
 class TagForm(forms.Form):
     tags = forms.CharField(max_length=128)
@@ -937,9 +936,9 @@ class PrivateProfileForm(forms.Form):
         fields = ('first_name', 'surname', 'birth_date', 'language', 'sex')
 
 
-### ==========================================================
-###                          METHODS
-### ==========================================================
+# ==========================================================
+#                          METHODS
+# ==========================================================
 
 def replace_unicode(string):
     string = urlquote(string)
@@ -955,9 +954,9 @@ def get_or_new_tag(stag):
         tag.save()
     return tag
 
-### ==========================================================
-###                        EXCEPTIONS
-### ==========================================================
+# ==========================================================
+#                        EXCEPTIONS
+# ==========================================================
 
 
 class UnauthorizedException(Exception):
