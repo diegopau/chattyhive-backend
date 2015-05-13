@@ -36,41 +36,6 @@ class TagModel(models.Model):
         return self.tag
 
 
-class Device(models.Model):
-    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
-    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
-    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
-    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
-    reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
-    active = models.BooleanField(default=True)
-    last_login = models.DateTimeField(default=timezone.now())
-
-    def send_gcm_message(self, msg, collapse_key="message"):
-        json_response = send_gcm_message(regs_id=[self.reg_id],
-                                         data={'msg': msg},
-                                         collapse_key=collapse_key)
-
-        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
-            return 'Ok'
-        else:
-            for result in json_response['results']:
-                if result['message_id'] and result['registration_id']:
-                    self.reg_id = result['registration_id']
-                    return 'Reg Updated'
-                else:
-                    if result['error'] == 'Unavailable':
-                        return 'Not sent'
-                    elif result['error'] == 'NotRegistered':
-                        self.active = False
-                        return 'Unregistered'
-                    else:
-                        self.active = False
-                        return 'Unknown'
-
-    def __unicode__(self):
-        return self.dev_id
-
-
 class ChCategory(models.Model):
     # Groups definitions
     GROUPS = (
@@ -239,6 +204,41 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
             return '@' + ChProfile.objects.get(user=self).public_name + '[' + self.username + ']'
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
+
+
+class Device(models.Model):
+    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
+    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
+    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
+    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
+    reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
+    active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(default=timezone.now())
+
+    def send_gcm_message(self, msg, collapse_key="message"):
+        json_response = send_gcm_message(regs_id=[self.reg_id],
+                                         data={'msg': msg},
+                                         collapse_key=collapse_key)
+
+        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
+            return 'Ok'
+        else:
+            for result in json_response['results']:
+                if result['message_id'] and result['registration_id']:
+                    self.reg_id = result['registration_id']
+                    return 'Reg Updated'
+                else:
+                    if result['error'] == 'Unavailable':
+                        return 'Not sent'
+                    elif result['error'] == 'NotRegistered':
+                        self.active = False
+                        return 'Unregistered'
+                    else:
+                        self.active = False
+                        return 'Unknown'
+
+    def __unicode__(self):
+        return self.dev_id
 
 
 class ChProfile(models.Model):
