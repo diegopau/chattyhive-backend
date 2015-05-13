@@ -22,6 +22,97 @@ import hashlib
 import re
 
 
+class LanguageModel(models.Model):
+    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
+
+    def __str__(self):
+        return self.language
+
+
+class TagModel(models.Model):
+    tag = models.CharField(max_length=32, unique=True)
+
+    def __str__(self):
+        return self.tag
+
+
+class Device(models.Model):
+    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
+    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
+    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
+    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
+    reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
+    active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(default=timezone.now())
+
+    def send_gcm_message(self, msg, collapse_key="message"):
+        json_response = send_gcm_message(regs_id=[self.reg_id],
+                                         data={'msg': msg},
+                                         collapse_key=collapse_key)
+
+        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
+            return 'Ok'
+        else:
+            for result in json_response['results']:
+                if result['message_id'] and result['registration_id']:
+                    self.reg_id = result['registration_id']
+                    return 'Reg Updated'
+                else:
+                    if result['error'] == 'Unavailable':
+                        return 'Not sent'
+                    elif result['error'] == 'NotRegistered':
+                        self.active = False
+                        return 'Unregistered'
+                    else:
+                        self.active = False
+                        return 'Unknown'
+
+    def __unicode__(self):
+        return self.dev_id
+
+
+class ChCategory(models.Model):
+    # Groups definitions
+    GROUPS = (
+        ('Art & Cultural events', 'Art & Cultural events'),
+        ('Books & Comics', 'Books & Comics'),
+        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
+        ('Education', 'Education'),
+        ('Family, Home & Pets', 'Family, Home & Pets'),
+        ('Free time', 'Free time'),
+        ('Health & Fitness', 'Health & Fitness'),
+        ('Internet', 'Internet'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Love & Friendship', 'Love & Friendship'),
+        ('Meet new people', 'Meet new people'),
+        ('Movies & TV', 'Movies & TV'),
+        ('Music', 'Music'),
+        ('Natural sciences', 'Natural sciences'),
+        ('News & Current affairs', 'News & Current affairs'),
+        ('Places, Companies & Brands', 'Places, Companies & Brands'),
+        ('Politics & Activism', 'Politics & Activism'),
+        ('Shopping & Market', 'Shopping & Market'),
+        ('Social sciences', 'Social sciences'),
+        ('Sports', 'Sports'),
+        ('Technology & Computers', 'Technology & Computers'),
+        ('Trips & Places', 'Trips & Places'),
+        ('Video games', 'Video games'),
+        ('Work & Business', 'Work & Business'),
+    )
+
+    name = models.CharField(max_length=64, unique=True)
+    description = models.CharField(max_length=140)
+    code = models.CharField(max_length=8, unique=True)
+    group = models.CharField(max_length=32, choices=GROUPS)
+
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
+
+    def __str__(self):
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
+
+
 class ChUserManager(UserManager):
     """Creates a simple user with only email and password."""
 
@@ -140,49 +231,14 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
         return ChProfile.objects.get(user=self)
 
     @property
-    def device(self):
-        return Device.objects.get(user=self)
+    def devices(self):
+        return Device.objects.filter(user=self)
 
     def __str__(self):
         try:
             return '@' + ChProfile.objects.get(user=self).public_name + '[' + self.username + ']'
         except ChProfile.DoesNotExist:
             return self.username + '--NO PROFILE!'
-
-
-class Device(models.Model):
-    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
-    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
-    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
-    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
-    reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
-    active = models.BooleanField(default=True)
-    last_login = models.DateTimeField(default=timezone.now())
-
-    def send_message(self, msg, collapse_key="message"):
-        json_response = send_gcm_message(regs_id=[self.reg_id],
-                                         data={'msg': msg},
-                                         collapse_key=collapse_key)
-
-        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
-            return 'Ok'
-        else:
-            for result in json_response['results']:
-                if result['message_id'] and result['registration_id']:
-                    self.reg_id = result['registration_id']
-                    return 'Reg Updated'
-                else:
-                    if result['error'] == 'Unavailable':
-                        return 'Not sent'
-                    elif result['error'] == 'NotRegistered':
-                        self.active = False
-                        return 'Unregistered'
-                    else:
-                        self.active = False
-                        return 'Unknown'
-
-    def __unicode__(self):
-        return self.dev_id
 
 
 class ChProfile(models.Model):
@@ -694,12 +750,11 @@ class ChChat(models.Model):
         return message
 
     def send_message(self, profile, other_profile, json_message):
-
         self.check_permissions(profile)
         if self.type.endswith('private'):
-            subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=profile).select_related()[0]
-            device = subscription.profile.user.device
-            device.send_message(msg=json_message, collapse_key='')
+            devices = Device.objects.filter(user=other_profile.user)
+            for device in devices:
+                device.send_gcm_message(msg=json_message, collapse_key='')
         else:
             pusher_object = pusher.Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
                                           key=getattr(settings, 'PUSHER_KEY', None),
@@ -710,7 +765,6 @@ class ChChat(models.Model):
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):
-
         for chat in json.loads(json_chats_array):
             try:
                 chat_object = ChChat.objects.get(chat_id=chat['CHANNEL'])
@@ -825,62 +879,6 @@ class ChMessage(models.Model):
 
     def __str__(self):
         return self.profile.public_name + " said: " + self.content
-
-
-class ChCategory(models.Model):
-    # Groups definitions
-    GROUPS = (
-        ('Art & Cultural events', 'Art & Cultural events'),
-        ('Books & Comics', 'Books & Comics'),
-        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
-        ('Education', 'Education'),
-        ('Family, Home & Pets', 'Family, Home & Pets'),
-        ('Free time', 'Free time'),
-        ('Health & Fitness', 'Health & Fitness'),
-        ('Internet', 'Internet'),
-        ('Lifestyle', 'Lifestyle'),
-        ('Love & Friendship', 'Love & Friendship'),
-        ('Meet new people', 'Meet new people'),
-        ('Movies & TV', 'Movies & TV'),
-        ('Music', 'Music'),
-        ('Natural sciences', 'Natural sciences'),
-        ('News & Current affairs', 'News & Current affairs'),
-        ('Places, Companies & Brands', 'Places, Companies & Brands'),
-        ('Politics & Activism', 'Politics & Activism'),
-        ('Shopping & Market', 'Shopping & Market'),
-        ('Social sciences', 'Social sciences'),
-        ('Sports', 'Sports'),
-        ('Technology & Computers', 'Technology & Computers'),
-        ('Trips & Places', 'Trips & Places'),
-        ('Video games', 'Video games'),
-        ('Work & Business', 'Work & Business'),
-    )
-
-    name = models.CharField(max_length=64, unique=True)
-    description = models.CharField(max_length=140)
-    code = models.CharField(max_length=8, unique=True)
-    group = models.CharField(max_length=32, choices=GROUPS)
-
-    @classmethod
-    def get_group_names(cls):
-        return cls.GROUPS
-
-    def __str__(self):
-        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
-
-
-class LanguageModel(models.Model):
-    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
-
-    def __str__(self):
-        return self.language
-
-
-class TagModel(models.Model):
-    tag = models.CharField(max_length=32, unique=True)
-
-    def __str__(self):
-        return self.tag
 
 
 class UserReports(models.Model):

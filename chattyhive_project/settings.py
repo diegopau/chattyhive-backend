@@ -160,6 +160,7 @@ INSTALLED_APPS = (
     'datetimewidget',
     'django_extensions',
     'silk',
+    'debug_toolbar',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'

@@ -214,7 +214,7 @@ def hive_chat(request, hive_slug, chat_id):
             # We remove the part that starts with '-mates' so we get a chat_id
             slug_ends_with = chat_slug[chat_slug.find('-mates'):len(chat_slug)]
             chat_id = chat_slug[0:chat_slug.find('-mates')]
-
+            
             # We search for any other ChChat object with the same ending. Just in case the other profile was also
             # starting a new chat (he/she would have a different temporal chat_id assigned).
             try:
@@ -252,20 +252,26 @@ def hive_chat(request, hive_slug, chat_id):
             chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
             chat_subscription_other_profile.save()
 
-            msg = request.POST.get("message")
-            timestamp = request.POST.get("timestamp")
-            message = chat.new_message(profile=profile,
-                                       content_type='text',
-                                       content=msg,
-                                       timestamp=timestamp)
-            chat.save()
+        msg = request.POST.get("message")
+        timestamp = request.POST.get("timestamp")
+        message = chat.new_message(profile=profile,
+                                   content_type='text',
+                                   content=msg,
+                                   timestamp=timestamp)
+        chat.save()
 
-            json_message = json.dumps({"username": user.username,
-                                       "public_name": profile.public_name,
-                                       "message": msg,
-                                       "timestamp": timestamp,
-                                       "server_time": message.datetime.astimezone()},
-                                      cls=DjangoJSONEncoder)
+        json_message = json.dumps({"username": user.username,
+                                   "public_name": profile.public_name,
+                                   "message": msg,
+                                   "timestamp": timestamp,
+                                   "server_time": message.datetime.astimezone()},
+                                  cls=DjangoJSONEncoder)
+
+        try:
+            chat.send_message(profile=profile, other_profile=other_profile, json_message=json_message)
+        except Device.DoesNotExist:
+            return HttpResponse("Not delivered")
+        return HttpResponse("Server Ok")
 
 
     # GET: User retrieve the chat messages
