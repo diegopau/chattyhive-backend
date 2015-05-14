@@ -249,7 +249,9 @@ class ChUserDetail(APIView):
 
 
 class ChProfileHiveList(APIView):
+    """API method: Hive list
 
+    """
     permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
 
     def get_object(self, public_name):
@@ -267,8 +269,8 @@ class ChProfileHiveList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         hives = profile.hive_subscriptions
         # En fields se le pasa el campo a eliminar del serializador
-        fields = ('priority', )
-        serializer = serializers.ChHiveLevel1Serializer(hives, fields=fields, many=True)
+        fields_to_remove = ('priority', )
+        serializer = serializers.ChHiveLevel1Serializer(hives, fields_to_remove=fields_to_remove, many=True)
         return Response(serializer.data)
 
 
@@ -320,6 +322,9 @@ class ChProfileDetail(APIView):
 # ============================================================ #
 
 class ChChatDetail(APIView):
+    """API method:
+
+    """
 
     permission_classes = (permissions.IsAuthenticated,)
 

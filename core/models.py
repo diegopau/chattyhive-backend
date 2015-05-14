@@ -36,6 +36,19 @@ class TagModel(models.Model):
         return self.tag
 
 
+class GuidelinesModel(models.Model):
+    name = models.CharField(max_length=150, unique=True, default='')
+    text = models.TextField(max_length=2000, default='')
+    editors = models.ManyToManyField('ChUser', related_name='chrules')
+
+    def save(self):
+        # All superusers will be by default able to modify any rule
+        self.editors = ChUser.objects().filter(is_staff=True)
+
+    def __str__(self):
+        return self.name
+
+
 class ChCategory(models.Model):
     # Groups definitions
     GROUPS = (
@@ -475,6 +488,7 @@ class ChHive(models.Model):
     creator = models.ForeignKey(ChProfile, null=True)
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
 
     # TODO: Add validator to ensure that this field has a value from 1 to 100
     priority = models.IntegerField(default=50)
@@ -822,6 +836,7 @@ class ChCommunityPublicChat(models.Model):
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
+    rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object

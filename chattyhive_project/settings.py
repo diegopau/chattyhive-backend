@@ -123,7 +123,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'chattyhive_project.django-crossdomainxhr-middleware.XsSharing',
+    'chattyhive_project.admin-middleware.AdminLocaleMiddleware',
     # 'django.middleware.cache.FetchFromCacheMiddleware',  # Cache, must last
     # Uncomment the next line for simple click jacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -159,6 +159,7 @@ INSTALLED_APPS = (
     'test_ui',
     'datetimewidget',
     'django_extensions',
+    # Uncomment the next line to enable silk (performance monitoring, profiling)
     'silk',
     'debug_toolbar',
 )
@@ -344,7 +345,13 @@ SWAGGER_SETTINGS = {
 }
 
 # ## ======================================================== ###
-# ##       Django Rest Framework & Django Rest Swagger        ###
+# ##                           Silk                           ###
 # ## ======================================================== ###
 
-SILKY_PYTHON_PROFILER = True
+SILKY_PYTHON_PROFILER = False
+
+# ## ======================================================== ###
+# ##                      Admin settings                      ###
+# ## ======================================================== ###
+
+ADMIN_LANGUAGE_CODE = 'en-US'

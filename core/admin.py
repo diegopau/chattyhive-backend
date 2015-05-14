@@ -46,6 +46,11 @@ class ChHiveAdmin(admin.ModelAdmin):
                     'deleted')
 
 
+@admin.register(GuidelinesModel)
+class GuidelineModelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'text')
+
+
 # Include all models in Admin site
 admin.site.register(ChUser)
 admin.site.register(Device)

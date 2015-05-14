@@ -95,7 +95,7 @@ class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChCommunityPublicChat
-        fields = ('name', 'description', 'moderators', 'picture')
+        fields = ('name', 'description', 'moderators', 'rules', 'picture')
 
 
 class ChCommunityPublicChatListLevel1Serializer(serializers.ModelSerializer):
@@ -281,16 +281,15 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
 
-        fields = kwargs.pop('fields', None)
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
 
         # Instantiate the superclass normally
         super(ChHiveLevel1Serializer, self).__init__(*args, **kwargs)
 
-        if fields is not None:
+        if fields_to_remove is not None:
             # Drop fields that are specified in the `fields` argument.
-            for field_name in fields:
+            for field_name in fields_to_remove:
                 self.fields.pop(field_name)
-                print("fields to be included: ", self.fields)
 
     class Meta:
         model = ChHive
