@@ -50,6 +50,16 @@ class ChHiveAdmin(admin.ModelAdmin):
 class GuidelineModelAdmin(admin.ModelAdmin):
     list_display = ('name', 'text')
 
+    def save_model(self, request, obj, form, change):
+        # All superusers will be by default able to modify any rule
+        if not change:
+            obj.save()
+            saved_instance = GuidelinesModel.objects.get(name=obj.name)
+
+            #TODO: Esto no está funcionando, solucionarlo!
+            for superuser in ChUser.objects.filter(is_staff=True):
+                saved_instance.editors.add(superuser)
+
 
 # Include all models in Admin site
 admin.site.register(ChUser)

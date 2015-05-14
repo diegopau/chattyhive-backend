@@ -39,11 +39,7 @@ class TagModel(models.Model):
 class GuidelinesModel(models.Model):
     name = models.CharField(max_length=150, unique=True, default='')
     text = models.TextField(max_length=2000, default='')
-    editors = models.ManyToManyField('ChUser', related_name='chrules')
-
-    def save(self):
-        # All superusers will be by default able to modify any rule
-        self.editors = ChUser.objects().filter(is_staff=True)
+    editors = models.ManyToManyField('ChUser', related_name='chat_guidelines', null=True, blank=True)
 
     def __str__(self):
         return self.name
