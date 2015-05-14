@@ -90,5 +90,12 @@ urlpatterns = patterns('',
     ###                   Social_auth - URLS                     ###
     ### ======================================================== ###
 
-    url('', include('social.apps.django_app.urls', namespace='social'))
+    url('', include('social.apps.django_app.urls', namespace='social')),
+
+
+    # ### ======================================================== ###
+    # ###                    Silk profiling app                    ###
+    # ### ======================================================== ###
+
+    url(r'^silk/', include('silk.urls', namespace='silk')),
 )
