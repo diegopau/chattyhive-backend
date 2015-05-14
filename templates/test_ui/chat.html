@@ -13,7 +13,7 @@
     </div>
     <a href="/test-ui/home/chats/">Home</a>
     <br />
-    Welcome, {{ user }}!  Hive: {{ hive }}
+    Welcome, {{ user }}!  Hive: {{ hive.slug }}
     <br />
     <br /><br /><button type="button" id="btn_load" style="text-align: right">Load previous messages</button>
         <p id="chat_field">
@@ -29,11 +29,11 @@
         var num_rep=0;
         var user="{{ user }}";
         var key="{{ key }}";
-        var hive = "{{ hive }}";
+        var hive = "{{ hive.slug }}";
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
         var chat="{{ chat_field }}";
-        var new_chat={{ new_chat }};
+        var new_chat="{{ new_chat }}";
         var csrftoken = $.cookie('csrftoken');
 
         // Connecting to pusher
@@ -110,7 +110,7 @@
                 var timestamp_server = null;
                 $.ajax({
                     type: "POST",
-                    url: "/test-ui/chat/" + channel_name + "/",
+                    url: "/test-ui/hive_chat/" + hive + '/' + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
                     data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat},
                     success: function(newData){

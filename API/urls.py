@@ -27,7 +27,8 @@ urlpatterns = patterns('',
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]*)/(?P<type>(public|private)?)/$', views.ChProfileDetail.as_view(),
         name="profile_detail"),
 
-    url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15})/info/$', views.ChChatDetail.as_view(),
+    url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-(mates|friends)-[\w]+-[\w]+)?)/$',
+        views.ChChatDetail.as_view(),
         name="chat_info"),
 
 

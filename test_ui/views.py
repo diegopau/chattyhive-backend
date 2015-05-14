@@ -243,7 +243,7 @@ def hive_chat(request, hive_slug, chat_id):
             chat_subscription_profile.save()
 
         slug_ends_with = chat.slug[chat.slug.find('-mates'):len(chat.slug)]
-        other_profile_public_name = slug_ends_with.replace(profile.public_name, '').replace('-', '')
+        other_profile_public_name = slug_ends_with.replace(profile.public_name, '').replace('-', '').replace('mates', '')
         try:
             chat_subscription_other_profile = ChChatSubscription.objects.get(
                 chat=chat, profile__public_name=other_profile_public_name)
@@ -311,6 +311,60 @@ def hive_chat(request, hive_slug, chat_id):
 
 
 @login_required
+def get_messages(request, chat_name, init, interval):
+    """
+    :param request:
+    :param chat_name: Url of the chat, which will be used for the query
+    :param init: ID of the first message to return
+    :param interval: Number of messages to return
+    :return: *interval* messages from *init*
+    """
+
+    # GET vs POST
+    if request.method == 'GET':
+
+        # info retrieval
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        if chat_name.find('-') == -1:
+            chat = ChChat.objects.get(chat_id=chat_name)
+        else:
+            # This is for the case that this is a new private chat or the first message in a private chat
+            # has just been sent
+            chat_id = chat_name[0:chat_name.find('-')]
+            try:
+                chat = ChChat.objects.get(chat_id=chat_id)
+            except ChChat.DoesNotExist:
+                # If the chat doesn't exist we just return no messages
+                messages_row = []
+                return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
+        try:
+            ChChatSubscription.objects.get(profile=profile, chat=chat)
+            if init == 'last':
+                messages = ChMessage.objects.filter(chat=chat).order_by('-_id')[0:int(interval)]
+            elif init.isnumeric():
+                messages = ChMessage.objects.filter(chat=chat, _id__lte=int(init)).order_by('-_id')[0:int(interval)]
+            else:
+                raise Http404
+            messages_row = []
+            for message in messages:
+                messages_row.append({"username": message.profile.username,
+                                     "public_name": message.profile.public_name,
+                                     "message": message.content,
+                                     "timestamp": message.client_datetime,
+                                     "server_time": message.datetime.astimezone(),
+                                     "id": message.id
+                                     })
+            return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
+        except ChChatSubscription.DoesNotExist:
+            response = HttpResponse("Unauthorized")
+            response.status_code = 401
+            return response
+    else:
+        raise Http404
+
+
+@login_required
 def create_public_chat(request, hive_slug):
     """
     :param request:
@@ -323,8 +377,7 @@ def create_public_chat(request, hive_slug):
             community = ChCommunity.objects.get(hive=hive)
             public_chat_slug = slugify(hive.name, translate=None, to_lower=True, separator='-', capitalize=False,
                                        max_length=250)
-            community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'],
-                                      slug=public_chat_slug)
+            community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'])
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
@@ -581,50 +634,6 @@ def get_hive_users(request, hive_slug, init, interval):
             return HttpResponse(json.dumps(profiles, cls=DjangoJSONEncoder))
 
         except ChHiveSubscription.DoesNotExist:
-            response = HttpResponse("Unauthorized")
-            response.status_code = 401
-            return response
-    else:
-        raise Http404
-
-
-@login_required
-def get_messages(request, chat_name, init, interval):
-    """
-    :param request:
-    :param chat_name: Url of the chat, which will be used for the query
-    :param init: ID of the first message to return
-    :param interval: Number of messages to return
-    :return: *interval* messages from *init*
-    """
-
-    # GET vs POST
-    if request.method == 'GET':
-
-        # info retrieval
-        user = request.user
-        profile = ChProfile.objects.get(user=user)
-        chat = ChChat.objects.get(chat_id=chat_name)
-
-        try:
-            ChChatSubscription.objects.get(profile=profile, chat=chat)
-            if init == 'last':
-                messages = ChMessage.objects.filter(chat=chat).order_by('-_id')[0:int(interval)]
-            elif init.isnumeric():
-                messages = ChMessage.objects.filter(chat=chat, _id__lte=int(init)).order_by('-_id')[0:int(interval)]
-            else:
-                raise Http404
-            messages_row = []
-            for message in messages:
-                messages_row.append({"username": message.profile.username,
-                                     "public_name": message.profile.public_name,
-                                     "message": message.content,
-                                     "timestamp": message.client_datetime,
-                                     "server_time": message.datetime.astimezone(),
-                                     "id": message.id
-                                     })
-            return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))
-        except ChChatSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
             return response
