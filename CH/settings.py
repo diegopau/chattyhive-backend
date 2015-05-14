@@ -312,3 +312,5 @@ from .email_info import *
 ANDROID_STATUS = {
 
 }
+
+SILKY_PYTHON_PROFILER = True
