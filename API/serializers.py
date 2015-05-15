@@ -290,6 +290,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
             # Drop fields that are specified in the `fields` argument.
             for field_name in fields_to_remove:
                 self.fields.pop(field_name)
+                print("fields to be included: ", self.fields)
 
     class Meta:
         model = ChHive

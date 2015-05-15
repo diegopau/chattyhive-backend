@@ -18,7 +18,7 @@
     {% for hive in hives %}
         {% if user.profile not in hive.chprofile_set.all %}
             <li>
-              <a href="/test-ui/hive_description/{{ hive.slug }}">{{ hive.name }}</a> -- {{ hive.type }} -- <a href="/test-ui/join/{{ hive.slug }}">join</a>
+              <a href="/test-ui/hive_description/{{ hive.slug }}">{{ hive.name }} -- <i>{{ hive.type }}</i> --</a> <b><a href="/test-ui/join/{{ hive.slug }}">join</a></b>
             </li>
         {% endif %}
     {% endfor %}

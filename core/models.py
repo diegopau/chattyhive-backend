@@ -731,6 +731,18 @@ class ChChat(models.Model):
                 break
         return hex_channel_unicode
 
+    def get_other_public_name(self, profile):
+        public_name = profile.public_name
+        slug_ends_with = self.slug[self.slug.find('--') + 2:len(self.slug)]
+        other_public_name = slug_ends_with.replace(public_name, '').replace('-', '')
+        return other_public_name
+
+    def public_names(self):
+        slug_ends_with = self.slug[self.slug.find('--') + 2:len(self.slug)]
+        public_name_a = slug_ends_with[0:slug_ends_with.find('-')]
+        public_name_b = slug_ends_with[slug_ends_with.find('-') + 1:len(slug_ends_with)]
+        return public_name_a + ', ' + public_name_b
+
     def last_message(self):
         """
         :return: The most recent ChMessage related to the chat or None if there isn't any
@@ -759,19 +771,19 @@ class ChChat(models.Model):
         message.save()
         return message
 
-    def send_message(self, profile, other_profile, json_message):
-        self.check_permissions(profile)
+    def send_message(self, message_data):
+        self.check_permissions(message_data['profile'])
         if self.type.endswith('private'):
-            devices = Device.objects.filter(user=other_profile.user)
+            devices = Device.objects.filter(user=message_data['other_profile'].user)
             for device in devices:
-                device.send_gcm_message(msg=json_message, collapse_key='')
+                device.send_gcm_message(msg=message_data['json_message'], collapse_key='')
         else:
             pusher_object = pusher.Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
                                           key=getattr(settings, 'PUSHER_KEY', None),
                                           secret=getattr(settings, 'PUSHER_SECRET', None),
                                           encoder=DjangoJSONEncoder)
             event = 'msg'
-            pusher_object[self.chat_id].trigger(event, json.loads(json_message))
+            pusher_object[self.chat_id].trigger(event, json.loads(message_data['json_message']))
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):

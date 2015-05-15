@@ -153,15 +153,18 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
-    'django.contrib.admindocs',
+    # 'django.contrib.admindocs',
     'rest_framework',
     'rest_framework_swagger',
     'test_ui',
     'datetimewidget',
-    'django_extensions',
+    # Uncomment the next line to enable the django_extensions package -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    # 'django_extensions',
     # Uncomment the next line to enable silk (performance monitoring, profiling)
-    'silk',
-    'debug_toolbar',
+    #  -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    # 'silk',
+    # Uncomment the next line to enable the debug_toolbar -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    # 'debug_toolbar',
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'

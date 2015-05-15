@@ -34,9 +34,11 @@ urlpatterns = patterns('',
     url(r'^hive_users/(?P<hive_slug>.+)/(?P<init>[0-9first]+)-(?P<interval>[0-9]+)/',
         'test_ui.views.get_hive_users', name='get_hive_users'),
 
-    url(r'^hive_chat/(?P<hive_slug>.+)/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-(mates|friends)-[\w]+-[\w]+)?)/', 'test_ui.views.hive_chat',
+    # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars
+    url(r'^hive_chat/(?P<hive_slug>.+)/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-.+--[\w]+-[\w]+)?)/', 'test_ui.views.hive_chat',
         name='chat'),
-    url(r'^messages/(?P<chat_name>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-(mates|friends)-[\w]+-[\w]+)?)/(?P<init>[0-9last]+)-(?P<interval>[0-9]+)/',
+    # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars
+    url(r'^messages/(?P<chat_name>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-.+--[\w]+-[\w]+)?)/(?P<init>[0-9last]+)-(?P<interval>[0-9]+)/',
         'test_ui.views.get_messages', name='get_messages'),
 
     url(r'^profile/(?P<public_name>[0-9a-zA-Z_]+)/(?P<private>[a-z]+)/', 'test_ui.views.profile', name='profile'),

@@ -164,7 +164,7 @@ def open_private_chat(request, target_public_name):
             # Its a private chat inside a hive
             hive = ChHive.objects.get(slug=hive_slug)
             public_names = sorted([profile.public_name, other_profile.public_name], key=str.lower)
-            slug_ends_with = '-mates-' + public_names[0] + '-' + public_names[1]
+            slug_ends_with = '-' + hive_slug + '--' + public_names[0] + '-' + public_names[1]
 
             try:
                 chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with, deleted=False)
@@ -198,7 +198,7 @@ def hive_chat(request, hive_slug, chat_id):
 
     # POST: User send a new message inside the chat
     if request.method == 'POST':
-
+        message_data = {'profile': profile}
         # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
         try:
             ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
@@ -207,13 +207,13 @@ def hive_chat(request, hive_slug, chat_id):
             response.status_code = 401
             return response
 
-        new_chat = request.POST.get('new_chat', False)
-        if new_chat:
+        new_chat = request.POST.get('new_chat', 'False')
+        if new_chat == 'True':
             chat_slug = chat_id
 
             # We remove the part that starts with '-mates' so we get a chat_id
-            slug_ends_with = chat_slug[chat_slug.find('-mates'):len(chat_slug)]
-            chat_id = chat_slug[0:chat_slug.find('-mates')]
+            slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
+            chat_id = chat_slug[0:chat_slug.find('-')]
             
             # We search for any other ChChat object with the same ending. Just in case the other profile was also
             # starting a new chat (he/she would have a different temporal chat_id assigned).
@@ -231,26 +231,27 @@ def hive_chat(request, hive_slug, chat_id):
                 return response
 
         # If the chat exist, then we have to send the message to the existing chat
-        if chat.deleted:
-            chat.deleted = False
-            chat.date = timezone.now()
-
-        # We now get (or create) the subscriptions in both users
+        if chat.type == 'public':
+            pass
+        else:
+            if chat.deleted:
+                chat.deleted = False
+                chat.date = timezone.now()
+            slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
+            other_profile_public_name = slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+            try:
+                ChChatSubscription.objects.get(
+                    chat=chat, profile__public_name=other_profile_public_name)
+            except ChChatSubscription.DoesNotExist:
+                other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
+                message_data['other_profile'] = other_profile
+                chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
+                chat_subscription_other_profile.save()
         try:
-            chat_subscription_profile = ChChatSubscription.objects.get(chat=chat, profile=profile)
+            ChChatSubscription.objects.get(chat=chat, profile=profile)
         except ChChatSubscription.DoesNotExist:
             chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
             chat_subscription_profile.save()
-
-        slug_ends_with = chat.slug[chat.slug.find('-mates'):len(chat.slug)]
-        other_profile_public_name = slug_ends_with.replace(profile.public_name, '').replace('-', '').replace('mates', '')
-        try:
-            chat_subscription_other_profile = ChChatSubscription.objects.get(
-                chat=chat, profile__public_name=other_profile_public_name)
-        except ChChatSubscription.DoesNotExist:
-            other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
-            chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
-            chat_subscription_other_profile.save()
 
         msg = request.POST.get("message")
         timestamp = request.POST.get("timestamp")
@@ -260,19 +261,18 @@ def hive_chat(request, hive_slug, chat_id):
                                    timestamp=timestamp)
         chat.save()
 
-        json_message = json.dumps({"username": user.username,
-                                   "public_name": profile.public_name,
-                                   "message": msg,
-                                   "timestamp": timestamp,
-                                   "server_time": message.datetime.astimezone()},
-                                  cls=DjangoJSONEncoder)
+        message_data['json_message'] = json.dumps({"username": user.username,
+                                                   "public_name": profile.public_name,
+                                                   "message": msg,
+                                                   "timestamp": timestamp,
+                                                   "server_time": message.datetime.astimezone()},
+                                                  cls=DjangoJSONEncoder)
 
         try:
-            chat.send_message(profile=profile, other_profile=other_profile, json_message=json_message)
+            chat.send_message(message_data)
         except Device.DoesNotExist:
             return HttpResponse("Not delivered")
         return HttpResponse("Server Ok")
-
 
     # GET: User retrieve the chat messages
     else:
@@ -464,7 +464,8 @@ def chats(request):
             return HttpResponse("Subscription not found")
 
         return render(request, "{app_name}/home_chats.html".format(app_name=settings.TEST_UI_APP_NAME), {
-            'chats': chats
+            'chats': chats,
+            'profile': profile
         })
 
     else:
