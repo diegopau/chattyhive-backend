@@ -70,7 +70,8 @@ def create_hive(request):
         formTags = TagForm(prefix="formTags")
         return render(request, "{app_name}/create_hive.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'formHive': formHive,
-            'formTags': formTags
+            'formTags': formTags,
+            'profile': request.user.profile,
         })
 
 
@@ -136,7 +137,8 @@ def create_community(request):
         formTags = TagForm(prefix="formTags")
         return render(request, "{app_name}/create_community.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'formHive': formHive,
-            'formTags': formTags
+            'formTags': formTags,
+            'profile': request.user.profile,
         })
 
 
@@ -386,7 +388,8 @@ def create_public_chat(request, hive_slug):
         hive = ChHive.objects.get(slug=hive_slug)
         return render(request, "{app_name}/create_public_chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'form': form,
-            'hive': hive
+            'hive': hive,
+            'profile': request.user.profile,
         })
 
 
@@ -439,8 +442,7 @@ def hives(request):
     """
     if request.method == 'GET':
         # Getting needed info
-        user = request.user
-        profile = user.profile
+        profile = request.user.profile
 
         # Trying to get all the subscriptions of this profile
         try:
@@ -448,7 +450,8 @@ def hives(request):
         except ChHiveSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
         return render(request, "{app_name}/home_hives.html".format(app_name=settings.TEST_UI_APP_NAME), {
-            'hives': hives
+            'hives': hives,
+            'profile': request.user.profile,
         })
 
 
@@ -607,6 +610,7 @@ def hive_description(request, hive_slug):
             'subscribed': subscribed,
             'owner': owner,
             'admin': admin,
+            'profile': request.user.profile
         })
 
     else:

@@ -2,13 +2,10 @@
 {% block title %}Chat{% endblock %}
 {% block more_scripts %}
     <script src="//js.pusher.com/3.0/pusher.min.js"></script>{% endblock %}
-{% block public_name %}{{ profile.public_name }}{%  endblock %}
+{% block public_name %}{{ user }}{%  endblock %}
 
 {% block content %}
 
-    <div align="right">
-        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
-    </div>
     <a href="/test-ui/home/chats/">Home</a>
     <br />
     Welcome, {{ user }}!  Hive: {{ hive.slug }}
