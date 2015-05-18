@@ -17,7 +17,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from chattyhive_project import settings
 from core.google_ccs import send_gcm_message
 import json
-import pusher
+from pusher import Pusher
 import hashlib
 import re
 
@@ -253,6 +253,8 @@ class Device(models.Model):
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
+    created = models.DateField(auto_now_add=True)
+    last_modified = models.DateField(auto_now=True)
     last_activity = models.DateTimeField(default=timezone.now())
 
     # Here are the choices definitions
@@ -272,7 +274,6 @@ class ChProfile(models.Model):
     birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # language is a multi value field now, related_name='languages'
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
-    timezone = models.DateField(auto_now=True, auto_now_add=True)
 
     # location = models.TextField(null=True, blank=True)  # todo location
     country = models.ForeignKey(Country, null=True, blank=True)
@@ -778,12 +779,17 @@ class ChChat(models.Model):
             for device in devices:
                 device.send_gcm_message(msg=message_data['json_message'], collapse_key='')
         else:
-            pusher_object = pusher.Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
-                                          key=getattr(settings, 'PUSHER_KEY', None),
-                                          secret=getattr(settings, 'PUSHER_SECRET', None),
-                                          encoder=DjangoJSONEncoder)
+            pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
+                                   key=getattr(settings, 'PUSHER_KEY', None),
+                                   secret=getattr(settings, 'PUSHER_SECRET', None),
+                                   json_encoder=DjangoJSONEncoder,
+                                   ssl=True)
             event = 'msg'
-            pusher_object[self.chat_id].trigger(event, json.loads(message_data['json_message']))
+
+            # TODO: pusher_channel should be a presence channel ('presence-' + self.chat_id) but backend auth is not
+            # yet implemented??? also user's socket_id should be included in the trigger
+            pusher_channel = self.chat_id
+            pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']))
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):

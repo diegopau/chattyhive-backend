@@ -3,9 +3,9 @@ from API import views
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = patterns('',
-    url(r'^sessions/start/', 'API.views.start_session', name='start_session'),
+    url(r'^sessions/start/', views.start_session, name='start_session'),
 
-    url(r'^sessions/login/', 'API.views.login', name='login'),
+    url(r'^sessions/login/', views.login, name='login'),
 
     url(r'^users/$', views.ChUserList.as_view(), name="user_list"),
     # TODO: Aunque se permite que el username pueda contener por ejemplo una '@', en la práctica un usuario estándar nunca
