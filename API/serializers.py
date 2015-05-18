@@ -77,13 +77,25 @@ class LoginCredentialsSerializer(serializers.Serializer):
 # =================================================================== #
 #                     Simple Model Serializers                        #
 # =================================================================== #
+class ChCommunityLevel1Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive info,
+       Used by the following serializers:
+
+    """
+    admins = serializers.SlugRelatedField(slug_field='public_name', many=True, read_only=True)
+    owner = serializers.SlugRelatedField(slug_field='public_name', read_only=True)
+
+    class Meta:
+        model = ChCommunity
+        fields = ('admins', 'owner')
+
 
 class ChPublicChatLevel1Serializer(serializers.ModelSerializer):
     chat = serializers.SlugRelatedField(read_only=True, slug_field='chat_id', allow_null=True)
 
     class Meta:
         model = ChPublicChat
-        fields = ('chat')
+        fields = ('chat', )
 
 
 class ChCommunityPublicChatLevel1Serializer(serializers.ModelSerializer):
@@ -106,19 +118,19 @@ class ChCommunityPublicChatListLevel1Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChCommunityPublicChat
-        fields = ('chat')
+        fields = ('chat', )
 
 
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
         model = LanguageModel
-        fields = ('language')
+        fields = ('language', )
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = TagModel
-        fields = ('tag')
+        fields = ('tag', )
 
 
 # Serializers define the API representation.
@@ -246,20 +258,37 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 # ============================================================ #
 #                        Hives & Chats                         #
 # ============================================================ #
+class ChChatLevel2Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive info,
+       Used by the following serializers: ChPublicChatLevel3Serializer, ChCommunityPublicChatLevel3Serializer
 
-# class ChHiveSerializer(serializers.ModelSerializer):
-#     # Los únicos objetos que pueden llegar a tener que ser creados son los tags. El resto ya están creados y lo que se
-#     # hace es relacionarlos únicamente
-#
-#     category = serializers.SlugRelatedField(read_only=True, slug_field='code')
-#     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')
-#     creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
-#     tags = TagSerializer(many=True)
-#
-#     class Meta:
-#         model = ChHive
-#         fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
-#                   'priority', 'type')
+    """
+    last_message = ChMessageLevel1Serializer(many=False, read_only=True)
+
+    class Meta:
+        model = ChChat
+        fields = ('chat_id', 'count', 'date', 'type', 'last_message')
+
+
+class ChCommunityPublicChatLevel4Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET chat info,
+
+    """
+
+    moderators = serializers.SlugRelatedField(many=True, slug_field='public_name', read_only=True)
+    chat = ChChatLevel2Serializer(many=False, read_only=True)
+
+    class Meta:
+        model = ChCommunityPublicChat
+        fields = ('name', 'description', 'moderators', 'rules', 'picture', 'chat')
+
+
+class ChPublicChatLevel4Serializer(serializers.ModelSerializer):
+    chat = ChChatLevel2Serializer(many=False, read_only=True)
+
+    class Meta:
+        model = ChPublicChat
+        fields = ('chat', )
 
 
 class ChHiveLevel1Serializer(serializers.ModelSerializer):
@@ -290,12 +319,11 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
             # Drop fields that are specified in the `fields` argument.
             for field_name in fields_to_remove:
                 self.fields.pop(field_name)
-                print("fields to be included: ", self.fields)
 
     class Meta:
         model = ChHive
-        fields = ('name', 'slug', 'description', 'category', 'languages', 'creator', 'creation_date', 'tags',
-                  'priority', 'type', 'public_chat', 'community_public_chats', 'subscribed_users_count')
+        fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'type', 'category', 'languages',
+                  'creator', 'tags', 'subscribed_users_count', 'public_chat', 'community_public_chats', 'admins')
 
 
 class ChChatListLevel2Serializer(serializers.ModelSerializer):
@@ -309,6 +337,43 @@ class ChChatListLevel2Serializer(serializers.ModelSerializer):
         fields = ('chat_id', 'type', 'last_message')
 
 
+class ChHiveSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive info,
+
+    """
+    category = serializers.SlugRelatedField(read_only=True, slug_field='code')
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
+
+    # If in the POST we only need to establish the relationship with User model (not update the model itself) we
+    # set read_only to True
+    creator = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
+    tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='tag')
+    public_chat = ChPublicChatLevel4Serializer(many=False, read_only=True)
+    community_public_chats = ChCommunityPublicChatLevel4Serializer(many=True, read_only=True)
+    community = ChCommunityLevel1Serializer(many=False, read_only=True)
+
+    subscribed_users_count = serializers.IntegerField(source='get_subscribed_users_count', read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
+
+        # Instantiate the superclass normally
+        super(ChHiveSerializer, self).__init__(*args, **kwargs)
+
+        if fields_to_remove is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields_to_remove:
+                self.fields.pop(field_name)
+
+    class Meta:
+        model = ChHive
+        fields = ('languages', 'category', 'chprofile_set', 'creation_date', 'creator', 'description',
+                  'name', 'priority', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
+                  'community_public_chats', 'community')
+
+
 class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,
 
@@ -317,4 +382,4 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChChat
-        fields = ('chat_id', 'community',  'count', 'date', 'type')
+        fields = ('chat_id', 'community', 'count', 'date', 'type')

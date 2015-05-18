@@ -268,7 +268,7 @@ class ChProfileHiveList(APIView):
         except APIException:
             return Response(status=status.HTTP_403_FORBIDDEN)
         hives = profile.hive_subscriptions
-        # En fields se le pasa el campo a eliminar del serializador
+
         fields_to_remove = ('priority', )
         serializer = serializers.ChHiveLevel1Serializer(hives, fields_to_remove=fields_to_remove, many=True)
         return Response(serializer.data)
@@ -322,7 +322,7 @@ class ChProfileDetail(APIView):
 # ============================================================ #
 
 class ChChatDetail(APIView):
-    """API method:
+    """API method: GET chat info
 
     """
 
@@ -337,14 +337,30 @@ class ChChatDetail(APIView):
     def get(self, request, chat_id, format=None):
         chat = self.get_object(chat_id)
 
-        # Como el serializador contiene un HyperlinkedRelatedField, se le tiene que pasar el request a través
-        # del contexto
         serializer = serializers.ChChatLevel3Serializer(chat)
 
         return Response(serializer.data)
 
 
+class ChHiveDetail(APIView):
+    """API method: GET hive info
 
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, hive_slug):
+        try:
+            return ChHive.objects.get(slug=hive_slug)
+        except ChHive.DoesNotExist:
+            raise Http404
+
+    def get(self, request, hive_slug, format=None):
+        hive = self.get_object(hive_slug)
+        fields_to_remove = ('chprofile_set', )
+        serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
+
+        return Response(serializer.data)
 
 
 # # @csrf_exempt

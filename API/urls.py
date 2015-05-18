@@ -32,8 +32,9 @@ urlpatterns = patterns('',
         views.ChChatDetail.as_view(),
         name="chat_info"),
 
-
     url(r'^hives/$', views.ChHiveList.as_view(), name="hive_list"),
+
+    url(r'^hives/(?P<hive_slug>.+)/$', views.ChHiveDetail.as_view(), name="hive_info"),
 )
 
 # Esto lo que hace es permitir que por ejemplo se haga /users/.json para que en un navegador te lo muestre en json en vez de html.

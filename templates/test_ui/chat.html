@@ -107,7 +107,7 @@
                     type: "POST",
                     url: "/test-ui/hive_chat/" + hive + '/' + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat},
+                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat, socket_id:pusher.socket_id},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);
@@ -120,7 +120,7 @@
                         alert(errMsg);
                     }
                 });
-                write(user, text_sent, timestamp, timestamp_server);
+               // write(user, text_sent, timestamp, timestamp_server);
                 return false;
             });
 
