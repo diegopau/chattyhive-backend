@@ -14,7 +14,7 @@ from core.pusher_extensions import ChPusher
 @csrf_exempt
 def welcome_screen(request):
     if request.method == 'GET':
-        return render(request, "core/welcome_dev.html")
+        return render(request, 'core/welcome_dev.html')
 
 
 @csrf_exempt
