@@ -46,6 +46,11 @@ class ChHiveAdmin(admin.ModelAdmin):
                     'deleted')
 
 
+@admin.register(ChMessage)
+class ChMessage(admin.ModelAdmin):
+    list_display = ('chat', 'client_timestamp', 'content', 'content_type', 'created', 'profile', 'received')
+
+
 @admin.register(GuidelinesModel)
 class GuidelineModelAdmin(admin.ModelAdmin):
     list_display = ('name', 'text')
@@ -67,7 +72,6 @@ admin.site.register(Device)
 admin.site.register(ChProfile)
 admin.site.register(ChCategory)
 admin.site.register(TagModel)
-admin.site.register(ChMessage)
 admin.site.register(ChFriendsGroupChat)
 admin.site.register(ChHivematesGroupChat)
 admin.site.register(ChPublicChat)

@@ -392,15 +392,14 @@ class ChMessageList(APIView):
         """something
 
         """
-
         # info retrieval
-        new_chat = request.POST.get('new_chat', 'False')
+        new_chat = request.data.get("new_chat", "False")
         profile = request.user.profile
 
         # Initialization of the message to be sent
         message_data = {'profile': profile}
 
-        if new_chat == 'True':
+        if new_chat.lower() == 'true':
             # In this case the client should be actually sending us a temp_id that is the chat slug
             # We extract the relevant info from it:
             chat_slug = chat_id
@@ -415,12 +414,12 @@ class ChMessageList(APIView):
                 other_profile_public_name = \
                     slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
 
+                hive = ChHive.objects.get(slug=hive_slug)
                 # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                 try:
-                    ChHiveSubscription.objects.select_related().get(hive=hive_slug, profile=profile, deleted=False)
+                    ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
                 except ChHiveSubscription.DoesNotExist:
                     return Response(status=status.HTTP_403_FORBIDDEN)
-                hive = ChHive.objects.get(slug=hive_slug)
 
                 # We search for any other ChChat object with the same ending. Just in case the other profile was also
                 # starting a new chat (he/she would have a different temporal chat_id assigned).
@@ -440,6 +439,12 @@ class ChMessageList(APIView):
                     hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
                     other_profile_public_name = \
                         slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                    hive = ChHive.objects.get(slug=hive_slug)
+                    # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                    try:
+                        ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
+                    except ChHiveSubscription.DoesNotExist:
+                        return Response(status=status.HTTP_403_FORBIDDEN)
             except ChChat.DoesNotExist:
                 return Response(status=status.HTTP_404_NOT_FOUND)
 
