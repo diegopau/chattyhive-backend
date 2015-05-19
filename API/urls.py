@@ -6,7 +6,7 @@ urlpatterns = patterns('',
 
     url(r'^sessions/start/', views.start_session, name='start_session'),
 
-    url(r'^sessions/login/', views.login, name='login'),
+    url(r'^sessions/login/', views.user_login, name='login'),
 
     url(r'^users/$', views.ChUserList.as_view(), name="user_list"),
     # TODO: Aunque se permite que el username pueda contener por ejemplo una '@', en la práctica un usuario estándar nunca

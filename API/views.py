@@ -16,6 +16,7 @@ from API import serializers
 from API import permissions
 from email_confirmation import email_info
 import datetime
+from django.contrib.auth import authenticate, login, logout
 from chattyhive_project import settings
 
 # =================================================================== #
@@ -52,7 +53,7 @@ def start_session(request, format=None):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-def login(request, format=None):
+def user_login(request, format=None):
     """POST sessions/login/
 
     Returns 200 OK if credentials are ok
