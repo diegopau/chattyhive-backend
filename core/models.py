@@ -750,7 +750,7 @@ class ChChat(models.Model):
         :return: The most recent ChMessage related to the chat or None if there isn't any
         """
         try:
-            last = self.messages.latest('datetime')
+            last = self.messages.latest('created')
             return last
         except ChMessage.DoesNotExist:
             return None
@@ -762,12 +762,12 @@ class ChChat(models.Model):
         except ChChatSubscription.DoesNotExist:
             raise UnauthorizedException("User isn't part of this chat")
 
-    def new_message(self, profile, content_type, content, timestamp):
+    def new_message(self, profile, content_type, content, client_timestamp):
         self.check_permissions(profile)
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
         message.datetime = timezone.now()
-        message.client_datetime = timestamp
+        message.client_timestamp = client_timestamp
         message.content_type = content_type
         message.content = content
         message.save()
@@ -890,7 +890,7 @@ class ChMessage(models.Model):
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
-    client_datetime = models.CharField(max_length=30)
+    client_timestamp = models.CharField(max_length=30)
     received = models.BooleanField(default=False)
 
     # Content of the message

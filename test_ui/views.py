@@ -156,18 +156,24 @@ def open_private_chat(request, target_public_name):
         if profile == other_profile:
             raise Http404
 
-        # We try to get the chat object that involves both users
-        # for this we use the last part of the slug in the ChChat objects
-
         if hive_slug == '':
             # TODO: for private chats between friends
             pass
         else:
             # Its a private chat inside a hive
             hive = ChHive.objects.get(slug=hive_slug)
+
+            # The user has to be subscribed to the hive in other to chat with other users
+            try:
+                ChHiveSubscription.objects.get(profile=profile, hive=hive, deleted=False)
+            except ChHiveSubscription:
+                response = HttpResponse("Forbidden")
+                response.status_code = 403
+                return response
             public_names = sorted([profile.public_name, other_profile.public_name], key=str.lower)
             slug_ends_with = '-' + hive_slug + '--' + public_names[0] + '-' + public_names[1]
-
+            # We try to get the chat object that involves both users
+            # for this we use the last part of the slug in the ChChat objects
             try:
                 chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with, deleted=False)
             except ChChat.DoesNotExist:
@@ -213,7 +219,7 @@ def hive_chat(request, hive_slug, chat_id):
         if new_chat == 'True':
             chat_slug = chat_id
 
-            # We remove the part that starts with '-mates' so we get a chat_id
+            # We get a chat_id
             slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
             chat_id = chat_slug[0:chat_slug.find('-')]
             
@@ -256,18 +262,18 @@ def hive_chat(request, hive_slug, chat_id):
             chat_subscription_profile.save()
 
         msg = request.POST.get("message")
-        timestamp = request.POST.get("timestamp")
+        client_timestamp = request.POST.get("timestamp")
         message = chat.new_message(profile=profile,
                                    content_type='text',
                                    content=msg,
-                                   timestamp=timestamp)
+                                   client_timestamp=client_timestamp)
         chat.save()
 
         message_data['json_message'] = json.dumps({"username": user.username,
                                                    "public_name": profile.public_name,
                                                    "message": msg,
-                                                   "timestamp": timestamp,
-                                                   "server_time": message.datetime.astimezone()},
+                                                   "client_timestamp": client_timestamp,
+                                                   "server_time": message.created.astimezone()},
                                                   cls=DjangoJSONEncoder)
 
         try:
@@ -353,7 +359,7 @@ def get_messages(request, chat_name, init, interval):
                 messages_row.append({"username": message.profile.username,
                                      "public_name": message.profile.public_name,
                                      "message": message.content,
-                                     "timestamp": message.client_datetime,
+                                     "client_timestamp": message.client_timestamp,
                                      "server_time": message.datetime.astimezone(),
                                      "id": message.id
                                      })

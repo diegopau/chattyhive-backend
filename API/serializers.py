@@ -267,7 +267,7 @@ class ChChatLevel2Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChChat
-        fields = ('chat_id', 'count', 'created', 'type', 'last_message')
+        fields = ('chat_id', 'count', 'created', 'slug', 'type', 'last_message')
 
 
 class ChCommunityPublicChatLevel4Serializer(serializers.ModelSerializer):
@@ -334,7 +334,7 @@ class ChChatListLevel2Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChChat
-        fields = ('chat_id', 'type', 'last_message')
+        fields = ('chat_id', 'slug', 'type', 'last_message')
 
 
 class ChHiveSerializer(serializers.ModelSerializer):
