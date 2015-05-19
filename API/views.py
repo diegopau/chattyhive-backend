@@ -363,6 +363,28 @@ class ChHiveDetail(APIView):
         return Response(serializer.data)
 
 
+class ChMessageList(APIView):
+    """API method: Chat messages
+
+    """
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatMessages)
+
+    def get_chat(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id, deleted=False)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+        chat = self.get_chat(chat_id)
+        try:
+            self.check_object_permissions(self.request, chat)
+        except APIException:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        messages = chat.messages
+        serializer = serializers.ChMessageSerializer(messages,  many=True)
+        return Response(serializer.data)
+
 # # @csrf_exempt
 # def chat(request):
 #     """

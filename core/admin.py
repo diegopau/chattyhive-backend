@@ -37,7 +37,7 @@ class ChChatSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(ChChat)
 class ChChatAdmin(admin.ModelAdmin):
-    list_display = ('type', 'hive', 'slug', 'chat_id',  'count', 'date', 'deleted')
+    list_display = ('type', 'hive', 'slug', 'chat_id',  'count', 'created', 'deleted')
 
 
 @admin.register(ChHive)

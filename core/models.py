@@ -694,6 +694,10 @@ class ChChat(models.Model):
         ('friends_group', 'friends_group')
     )
 
+    # Attributes of the Chat
+    created = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateField(auto_now=True)
+
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
     # Even though we now have a ChPublicChat model, we leave the field type because sometimes it is more convenient
@@ -706,9 +710,6 @@ class ChChat(models.Model):
     # In the case of the chat the slug won't be necessarely unique. That's because public chats in different communities
     # could have the same name and slug.
     slug = models.CharField(max_length=250, default='')
-
-    # Attributes of the Chat
-    date = models.DateTimeField(auto_now=True)
 
     @property
     def channel(self):
@@ -881,13 +882,14 @@ class ChMessage(models.Model):
     _id = models.AutoField(primary_key=True)
     _count = models.PositiveIntegerField(null=False, blank=False)
 
+    created = models.DateTimeField(auto_now_add=True)
+
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name="messages")
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
-    datetime = models.DateTimeField()
     client_datetime = models.CharField(max_length=30)
     received = models.BooleanField(default=False)
 
