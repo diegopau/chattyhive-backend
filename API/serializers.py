@@ -20,9 +20,9 @@ class URLParamsError(Exception):
         self.errors = errors
 
 
-# ============================================================= #
-#                     Session serializers                       #
-# ============================================================= #
+# ================================================================================== #
+#                     Session & 3rd-party services serializers                       #
+# ================================================================================== #
 
 class LoginCredentialsSerializer(serializers.Serializer):
     """Serializer class used validate a public_name or email and a password
@@ -56,7 +56,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
                 # For security reasons we return a 401 instead of a 404 (we don't want to give clues of who is or who
                 # is not registered in the service
             except ChUser.DoesNotExist:
-                raise ValidationError("The ChUser object does not exist", code="401")
+                raise ValidationError("Unauthorized", code="401")
             data['username'] = user.username
         elif 'public_name' in data:
             try:
@@ -72,6 +72,39 @@ class LoginCredentialsSerializer(serializers.Serializer):
     def save(self):
         username = self.validated_data['username']
         password = self.validated_data['password']
+
+
+class AsyncAuthSerializer(serializers.Serializer):
+    """Serializer class used validate a public_name or email and a password
+
+    """
+
+    service = serializers.CharField(max_length=30)
+    channel_name = serializers.CharField(max_length=41)
+    socket_id = serializers.CharField()
+
+    def validate(self, data):
+        if data['service'] == 'pusher':
+            # We set to an empty string the param that is not inside the request body
+            if data['channel_name'].starts_with('presence-'):
+                chat_id = data['channel_name'][9:len(data['channel_name'])]
+                try:
+                    ChChat.objects.get(chat_id=chat_id)
+                except ChUser.DoesNotExist:
+                    raise ValidationError("The chat belonging to that channel does not exist.", code="404")
+            else:
+                raise ValidationError("The channel_name does not have the correct format.", code="400")
+        else:
+            raise ValidationError("Only 'pusher' service is accepted by now.", code="400")
+        if data['socket_id'] == '':
+            raise ValidationError("Socket_id can not be empty", code="400")
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        service = self.validated_data['service']
+        channel_name = self.validated_data['channel_name']
+        socket_id = self.validated_data['socket_id']
 
 
 # ============================================================= #

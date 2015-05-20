@@ -38,8 +38,8 @@ def login_view(request):
                     # través del ChProfile) esté funcionando. Ver bien lo de select_related()...
                     user = authenticate(username=profile.username, password=password)
                 if user.is_active:
-                     # With login we persist the authentication, so the client won't have to reathenticate with each
-                     # request.
+                    # With login we persist the authentication, so the client won't have to reathenticate with each
+                    # request.
                     login(request, user)
                     email_address = EmailAddress.objects.get(email=user.email)
                     if not email_address.verified:
@@ -49,7 +49,8 @@ def login_view(request):
                             return HttpResponseRedirect("/email_warning/")
                         if email_address.warned:
                             if EmailConfirmation.warning_expired(
-                                    EmailConfirmation.objects.get(email_address=EmailAddress.objects.get(email=user.email))):
+                                    EmailConfirmation.objects.get(
+                                        email_address=EmailAddress.objects.get(email=user.email))):
                                 EmailAddress.objects.check_confirmation(email_address)
                             else:
                                 return HttpResponseRedirect("/email_warning/")
@@ -84,7 +85,7 @@ def create_user_view(request):
 
                 # Profile creation
                 original_name = re.sub('[.-]', '_', email.split('@')[0])  # '.' and '-' replaced by '_'
-                original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)    # other not allowed characters eliminated
+                original_name = re.sub('[^0-9a-zA-Z_]+', '', original_name)  # other not allowed characters eliminated
                 public_name = original_name
                 # if the name already exists we offer the name plus '_<number>'
                 ii = 0
@@ -108,7 +109,8 @@ def create_user_view(request):
                 else:
                     return HttpResponse("UNKNOWN ERROR")
 
-                return HttpResponseRedirect("/{base_url}/create_user/register1/".format(base_url=settings.TEST_UI_BASE_URL))
+                return HttpResponseRedirect(
+                    "/{base_url}/create_user/register1/".format(base_url=settings.TEST_UI_BASE_URL))
 
             # if the email is already used
             except IntegrityError:
@@ -158,7 +160,7 @@ def register_one(request):
             'country': profile.country,
             'region': profile.region,
             'city': profile.city,
-            })
+        })
         return render(request, "login/registration_1.html", {
             'form': form,
         })
@@ -242,7 +244,7 @@ def register_three(request):
         else:
             return HttpResponse("ERROR, invalid form")
     else:
-        try:    # if the user is created by twitter a valid email must be provided
+        try:  # if the user is created by twitter a valid email must be provided
             user_social = UserSocialAuth.objects.get(user=user)
             if user_social.provider == 'twitter':
                 form = RegistrationFormThree()
@@ -279,24 +281,26 @@ def chat_auth(request):
         try:
             ChChatSubscription.objects.get(chat=chat, profile=profile)
 
-            channel_data = {'user_id': socket_id,
-                            'user_info': {'public_name': profile.public_name,
-                                          'username': profile.username
-                            }
+            channel_data = {
+                'user_id': socket_id,
+                'user_info': {
+                    'public_name': profile.public_name,
+                    'username': profile.username
+                    }
             }
 
-            app_key = "55129"
-            key = 'f073ebb6f5d1b918e59e'
-            secret = '360b346d88ee47d4c230'
-
-            p = pusher.Pusher(
-                app_id=app_key,
-                key=key,
-                secret=secret,
+            pusher_object = pusher.Pusher(
+                app_id=settings.PUSHER_APP_ID,
+                key=settings.PUSHER_KEY,
+                secret=settings.PUSHER_SECRET,
                 encoder=DjangoJSONEncoder,
             )
 
-            auth_response = p[chat_channel].authenticate(socket_id, channel_data)
+            auth_response = pusher_object.authenticate(
+                channel=chat_channel,
+                socket_id=socket_id,
+                custom_data=channel_data
+            )
 
             return HttpResponse(json.dumps(auth_response, cls=DjangoJSONEncoder))
 

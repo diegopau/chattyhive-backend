@@ -780,7 +780,7 @@ class ChChat(models.Model):
             for device in devices:
                 device.send_gcm_message(msg=message_data['json_message'], collapse_key='')
         else:
-            pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
+            pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_ID', None),
                                    key=getattr(settings, 'PUSHER_KEY', None),
                                    secret=getattr(settings, 'PUSHER_SECRET', None),
                                    json_encoder=DjangoJSONEncoder,

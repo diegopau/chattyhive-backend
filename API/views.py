@@ -6,7 +6,7 @@ import django
 import json
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
-from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat,\
+from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
     ChMessage, Device
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
@@ -78,7 +78,7 @@ def user_login(request, format=None):
         # fields specifies the fields to be considered by the serializer
         serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields)
 
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             user = authenticate(username=serializer.validated_data['username'],
                                 password=serializer.validated_data['password'])
             if user is not None:
@@ -123,7 +123,7 @@ def user_login(request, format=None):
                                     data_dict['email_verification'] = 'warn'
                                     data_dict['expiration_date'] = \
                                         user_email_confirmation.warned_day + datetime.timedelta(
-                                        days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                            days=email_info.EMAIL_AFTER_WARNING_DAYS)
                                     return Response(data_dict, status=status.HTTP_200_OK)
                                 else:
                                     # FIRST EXPIRATION DATE IS NOT DUE
@@ -152,10 +152,6 @@ def user_login(request, format=None):
                 print("The username and password were incorrect.")
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        else:
-            print("serializer errors: ", serializer.errors)
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
@@ -163,7 +159,57 @@ def user_logout(request):
     if request.method == 'POST':
         logout(request)
         request.session['active'] = False
-    return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@parser_classes((JSONParser,))
+def set_asynchronous_notification_services(request):
+    if request.method == 'POST':
+        return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@parser_classes((JSONParser,))
+def asynchronous_authentication(request):
+    if request.method == 'POST':
+
+        serializer = serializers.AsyncAuthSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            chat_channel = serializer.validated_data['channel_name']
+            chat_id = chat_channel[9:len(chat_channel)]
+            chat = ChChat.objects.get(chat_id=chat_id)
+            socket_id = serializer.validated_data['socket_id']
+            profile = request.user.profile
+
+            try:
+                ChChatSubscription.objects.get(chat=chat, profile=profile)
+
+                channel_data = {
+                    'user_id': socket_id,
+                    'user_info': {
+                        'public_name': profile.public_name,
+                    }
+                }
+
+                pusher_object = pusher.Pusher(
+                    app_id=settings.PUSHER_APP_ID,
+                    key=settings.PUSHER_KEY,
+                    secret=settings.PUSHER_SECRET,
+                    encoder=DjangoJSONEncoder,
+                )
+
+                auth_response = pusher_object.authenticate(
+                    channel=chat_channel,
+                    socket_id=socket_id,
+                    custom_data=channel_data
+                )
+
+                return Response(json.dumps(auth_response, cls=DjangoJSONEncoder), status=status.HTTP_200_OK)
+
+            except ChChatSubscription.DoesNotExist:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
 # ============================================================ #
@@ -207,6 +253,7 @@ class ChUserList(APIView):
     User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
     (user registration)
     """
+
     def get(self, request, format=None):
         """prueba
         """
@@ -282,13 +329,12 @@ class ChProfileHiveList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         hives = profile.hive_subscriptions
 
-        fields_to_remove = ('priority', )
+        fields_to_remove = ('priority',)
         serializer = serializers.ChHiveLevel1Serializer(hives, fields_to_remove=fields_to_remove, many=True)
         return Response(serializer.data)
 
 
 class ChProfileChatList(APIView):
-
     permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
 
     def get_object(self, public_name):
@@ -311,7 +357,6 @@ class ChProfileChatList(APIView):
 
 
 class ChProfileDetail(APIView):
-
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_object(self, public_name):
@@ -370,7 +415,7 @@ class ChHiveDetail(APIView):
 
     def get(self, request, hive_slug, format=None):
         hive = self.get_object(hive_slug)
-        fields_to_remove = ('chprofile_set', )
+        fields_to_remove = ('chprofile_set',)
         serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
 
         return Response(serializer.data)
@@ -395,7 +440,7 @@ class ChMessageList(APIView):
         except APIException:
             return Response(status=status.HTTP_403_FORBIDDEN)
         messages = chat.messages
-        serializer = serializers.ChMessageSerializer(messages,  many=True)
+        serializer = serializers.ChMessageSerializer(messages, many=True)
         return Response(serializer.data)
 
     @transaction.atomic
@@ -464,7 +509,8 @@ class ChMessageList(APIView):
                             # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                             try:
                                 with transaction.atomic():
-                                    ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
+                                    ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
+                                                                                    deleted=False)
                             except ChHiveSubscription.DoesNotExist:
                                 return Response(status=status.HTTP_403_FORBIDDEN)
                 except ChChat.DoesNotExist:
@@ -493,8 +539,8 @@ class ChMessageList(APIView):
                 with transaction.atomic():
                     chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
                     if chat_subscription.deleted:
-                            chat_subscription.deleted = False
-                            chat_subscription.save()
+                        chat_subscription.deleted = False
+                        chat_subscription.save()
             except ChChatSubscription.DoesNotExist:
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription_profile.save()
@@ -523,6 +569,7 @@ class ChMessageList(APIView):
         else:
             print("serializer errors: ", serializer.errors)
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
 class OpenPrivateChat(APIView):
     """API method: Open private chat
@@ -571,6 +618,10 @@ class OpenPrivateChat(APIView):
             # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
             return Response(data_dict, status=status.HTTP_200_OK)
 
+
+# ============================================================ #
+#                            OLD                               #
+# ============================================================ #
 
 def email_check(request):
     """
@@ -674,7 +725,7 @@ def register(request):
             # Sending info to Android device
             status = "PROFILE_CREATED"
             return HttpResponse(json.dumps({
-                'status': status,   # Returning OK status
+                'status': status,  # Returning OK status
                 'profile': profile_json  # Returning complete Profile
             }))
 

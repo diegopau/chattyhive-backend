@@ -10,6 +10,9 @@ urlpatterns = patterns('',
 
     url(r'^sessions/logout/', views.user_logout, name='logout'),
 
+    url(r'^notifications/auth', views.asynchronous_authentication, name='asynchronous channel authentication'),
+    url(r'^notifications/', views.set_asynchronous_notification_services, name='set asynchronous notification services'),
+
     url(r'^users/$', views.ChUserList.as_view(), name="user_list"),
     # TODO: Aunque se permite que el username pueda contener por ejemplo una '@', en la práctica un usuario estándar nunca
     # debería tener este tipo de símbolos, de momento se permite sólo lo que un uuid4 pueda contener

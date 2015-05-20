@@ -191,7 +191,7 @@ GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
 # ###                         Pusher                           ###
 # ### ======================================================== ###
 
-PUSHER_APP_KEY = "55129"
+PUSHER_APP_ID = "55129"
 PUSHER_KEY = 'f073ebb6f5d1b918e59e'
 PUSHER_SECRET = '360b346d88ee47d4c230'
 
