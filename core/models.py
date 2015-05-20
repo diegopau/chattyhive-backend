@@ -674,10 +674,10 @@ class ChCommunity(models.Model):
     # todo: administrative info?
     deleted = models.BooleanField(_('The owner has deleted it'), default=False)
 
-    def new_public_chat(self, name, description):
+    def new_public_chat(self, name, public_chat_slug_ending, description):
         chat = ChChat(hive=self.hive, type='public')
         chat.chat_id = ChChat.get_chat_id()
-        chat.slug = self.hive.slug
+        chat.slug = chat.chat_id + '-' + public_chat_slug_ending
         chat.save()
         chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
@@ -809,7 +809,14 @@ class ChChat(models.Model):
                 raise
 
     def __str__(self):
-        return self.hive.name + '(' + self.type + ')'
+        slug_ends_with = ''
+        if self.type == 'mate_private':
+            slug_ends_with = ' - between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ')
+        if self.type == 'friend_private':
+            slug_ends_with = ' - between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
+        if self.type == 'public':
+            slug_ends_with = ''
+        return self.hive.name + '(' + self.type + ')' + slug_ends_with
 
 
 class ChChatSubscription(models.Model):

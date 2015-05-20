@@ -37,7 +37,8 @@ class ChChatSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(ChChat)
 class ChChatAdmin(admin.ModelAdmin):
-    list_display = ('type', 'hive', 'slug', 'chat_id',  'count', 'created', 'deleted')
+    list_display = ('__str__', 'type', 'hive', 'slug', 'chat_id',  'count', 'created', 'deleted')
+    search_fields = ['hive', 'chat_id']
 
 
 @admin.register(ChHive)
@@ -48,7 +49,7 @@ class ChHiveAdmin(admin.ModelAdmin):
 
 @admin.register(ChMessage)
 class ChMessage(admin.ModelAdmin):
-    list_display = ('chat', 'client_timestamp', 'content', 'content_type', 'created', 'profile', 'received')
+    list_display = ('chat', '_count', 'client_timestamp', 'content', 'content_type', 'created', 'profile', 'received')
 
 
 @admin.register(GuidelinesModel)

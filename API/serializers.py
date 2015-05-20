@@ -29,7 +29,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
 
     """
     email = serializers.EmailField()
-    public_name = serializers.CharField(max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]*$', 'Only alphanumeric characters and "_" are allowed.')])
+    public_name = serializers.CharField(max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]+$', 'Only alphanumeric characters and "_" are allowed.')])
     password = serializers.CharField(write_only=True)
 
     # In the init we will check which fields the view is telling the serializer to consider (this is because the
@@ -72,6 +72,57 @@ class LoginCredentialsSerializer(serializers.Serializer):
     def save(self):
         username = self.validated_data['username']
         password = self.validated_data['password']
+
+
+# ============================================================= #
+#                       Other serializers                       #
+# ============================================================= #
+
+class SendMessageSerializer(serializers.Serializer):
+    """Serializer class used validate a public_name or email and a password
+
+    """
+
+    content_type = serializers.CharField(max_length=20)
+    client_timestamp = serializers.CharField(max_length=30)
+    content = serializers.CharField(max_length=2048)
+    new_chat = serializers.CharField(max_length=5)
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
+
+        # Instantiate the superclass normally
+        super(SendMessageSerializer, self).__init__(*args, **kwargs)
+
+        if fields_to_remove is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields_to_remove:
+                self.fields.pop(field_name)
+
+    def validate(self, data):
+
+        CONTENTS = ('text', 'image', 'video', 'audio', 'animation', 'url', 'file', 'invitation')
+        BOOLEANS = ('true', 'false', 'True', 'False')
+
+        if data['content_type'] not in CONTENTS:
+            raise ValidationError("Wrong content_type", code="400")
+        if 'new_chat' in data:
+            if data['new_chat'] not in BOOLEANS:
+                raise ValidationError("Wrong new_chat value", code="400")
+        if data['content'] == '':
+            raise ValidationError("The message content is empty", code="400")
+        if data['client_timestamp'] == '':
+            raise ValidationError("No client timestamp specified", code="400")
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        content_type = self.validated_data['content_type']
+        client_timestamp = self.validated_data['client_timestamp']
+        content = self.validated_data['content']
+        new_chat = self.validadted_data['new_chat']
 
 
 # =================================================================== #

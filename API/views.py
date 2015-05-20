@@ -18,6 +18,7 @@ from email_confirmation import email_info
 import datetime
 from django.contrib.auth import authenticate, login, logout
 from chattyhive_project import settings
+from django.db import IntegrityError, transaction
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -66,10 +67,10 @@ def user_login(request, format=None):
             print("email and public_name should not be together in the JSON of the same request")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         elif 'email' in request.data:
-            fields = ('email', 'password')
+            fields = ['email', 'password']
             needs_public_name = True
         elif 'public_name' in request.data:
-            fields = ('public_name', 'password')
+            fields = ['public_name', 'password']
         else:
             print("at least email or public_name should be in the JSON")
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -388,108 +389,131 @@ class ChMessageList(APIView):
         serializer = serializers.ChMessageSerializer(messages,  many=True)
         return Response(serializer.data)
 
+    @transaction.atomic
     def post(self, request, chat_id, format=None):
-        """something
+        """Storage a message in database and send it to any target devices (via pusher, gcm, etc.)
 
         """
-        # info retrieval
-        new_chat = request.data.get("new_chat", "False")
-        profile = request.user.profile
+        fields_to_remove = []
+        if 'new_chat' not in request.data:
+            fields_to_remove.append('new_chat')
 
-        # Initialization of the message to be sent
-        message_data = {'profile': profile}
+        serializer = serializers.SendMessageSerializer(data=request.data, fields_to_remove=fields_to_remove)
 
-        if new_chat.lower() == 'true':
-            # In this case the client should be actually sending us a temp_id that is the chat slug
-            # We extract the relevant info from it:
-            chat_slug = chat_id
-            if chat_slug.find('-') == -1:  # new_chat == True and a chat_id without a slug format shouldn't happen
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            if chat_slug.find('--') == -1:  # This is a chat between friends
-                pass  # TODO
-            else:  # This is a chat between hivemates inside a hive
-                slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
-                chat_id = chat_slug[0:chat_slug.find('-')]
-                hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
-                other_profile_public_name = \
-                    slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+        if serializer.is_valid():
+            # info retrieval
+            new_chat = request.data.get("new_chat", "False")
+            profile = request.user.profile
 
-                hive = ChHive.objects.get(slug=hive_slug)
-                # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
-                try:
-                    ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
-                except ChHiveSubscription.DoesNotExist:
-                    return Response(status=status.HTTP_403_FORBIDDEN)
+            # Initialization of the message to be sent
+            message_data = {'profile': profile}
 
-                # We search for any other ChChat object with the same ending. Just in case the other profile was also
-                # starting a new chat (he/she would have a different temporal chat_id assigned).
-                try:
-                    chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
-                except ChChat.DoesNotExist:
-                    chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
-                    chat.save()
-        else:
-            try:
-                # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
-                chat = ChChat.objects.get(chat_id=chat_id)
-                if chat.slug.find('--') == -1:  # This is a chat between friends
+            if new_chat.lower() == 'true':
+                # In this case the client should be actually sending us a temp_id that is the chat slug
+                # We extract the relevant info from it:
+                chat_slug = chat_id
+                if chat_slug.find('-') == -1:  # new_chat == True and a chat_id without a slug format shouldn't happen
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                if chat_slug.find('--') == -1:  # This is a chat between friends
                     pass  # TODO
                 else:  # This is a chat between hivemates inside a hive
-                    slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
+                    slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
+                    chat_id = chat_slug[0:chat_slug.find('-')]
                     hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
                     other_profile_public_name = \
                         slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+
                     hive = ChHive.objects.get(slug=hive_slug)
                     # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                     try:
-                        ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
+                        with transaction.atomic():
+                            ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
                     except ChHiveSubscription.DoesNotExist:
                         return Response(status=status.HTTP_403_FORBIDDEN)
-            except ChChat.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
 
-        # If the chat exist, then we have to send the message to the existing chat
-        if chat.type == 'public':
-            pass
-        else:  # This is only needed if chat is private
-            if chat.deleted:
-                chat.deleted = False
-                chat.date = timezone.now()
-            try:
-                ChChatSubscription.objects.get(
-                    chat=chat, profile__public_name=other_profile_public_name)
-            except ChChatSubscription.DoesNotExist:
+                    # We search for any other ChChat object with the same ending. Just in case the other profile was also
+                    # starting a new chat (he/she would have a different temporal chat_id assigned).
+                    try:
+                        with transaction.atomic():
+                            chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+                    except ChChat.DoesNotExist:
+                        chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
+                        chat.save()
+            else:
+                try:
+                    with transaction.atomic():
+                        # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
+                        chat = ChChat.objects.get(chat_id=chat_id)
+                        if chat.slug.find('--') == -1:  # This is a chat between friends
+                            pass  # TODO
+                        else:  # This is a chat between hivemates inside a hive
+                            slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
+                            hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+                            other_profile_public_name = \
+                                slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                            hive = ChHive.objects.get(slug=hive_slug)
+                            # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                            try:
+                                with transaction.atomic():
+                                    ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
+                            except ChHiveSubscription.DoesNotExist:
+                                return Response(status=status.HTTP_403_FORBIDDEN)
+                except ChChat.DoesNotExist:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+
+            # If the chat exist, then we have to send the message to the existing chat
+            if chat.type == 'public':
+                pass
+            else:  # This is only needed if chat is private
                 other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
                 message_data['other_profile'] = other_profile
-                chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
-                chat_subscription_other_profile.save()
-        try:
-            ChChatSubscription.objects.get(chat=chat, profile=profile)
-        except ChChatSubscription.DoesNotExist:
-            chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
-            chat_subscription_profile.save()
+                if chat.deleted:
+                    chat.deleted = False
+                    chat.date = timezone.now()
+                try:
+                    with transaction.atomic():
+                        other_chat_subscription = ChChatSubscription.objects.get(
+                            chat=chat, profile__public_name=other_profile_public_name)
+                        if other_chat_subscription.deleted:
+                            other_chat_subscription.deleted = False
+                            other_chat_subscription.save()
+                except ChChatSubscription.DoesNotExist:
+                    chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
+                    chat_subscription_other_profile.save()
+            try:
+                with transaction.atomic():
+                    chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
+                    if chat_subscription.deleted:
+                            chat_subscription.deleted = False
+                            chat_subscription.save()
+            except ChChatSubscription.DoesNotExist:
+                chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
+                chat_subscription_profile.save()
 
-        msg_content = request.POST.get("content")
-        client_timestamp = request.POST.get("client_timestamp")
-        message = chat.new_message(profile=profile,
-                                   content_type='text',
-                                   content=msg_content,
-                                   client_timestamp=client_timestamp)
-        chat.save()
+            msg_content = request.data.get("content")
+            client_timestamp = request.data.get("client_timestamp")
+            message = chat.new_message(profile=profile,
+                                       content_type='text',
+                                       content=msg_content,
+                                       client_timestamp=client_timestamp)
+            chat.save()
 
-        message_data['json_message'] = json.dumps({"public_name": profile.public_name,
-                                                   "content": msg_content,
-                                                   "client_timestamp": client_timestamp,
-                                                   "server_time": message.created.astimezone()},
-                                                  cls=DjangoJSONEncoder)
+            message_data['json_message'] = json.dumps({"public_name": profile.public_name,
+                                                       "content": msg_content,
+                                                       "client_timestamp": client_timestamp,
+                                                       "server_time": message.created.astimezone()},
+                                                      cls=DjangoJSONEncoder)
 
-        data_dict = {'message_id': message.id, 'server_timestamp': message.created}
-        try:
-            chat.send_message(message_data)
-        except Device.DoesNotExist:
-            return Response(data_dict, status=status.HTTP_201_CREATED)
-        return Response(data_dict, status=status.HTTP_200_OK)
-
+            data_dict = {'message_id': message.id, 'server_timestamp': message.created}
+            try:
+                with transaction.atomic():
+                    chat.send_message(message_data)
+            except Device.DoesNotExist:
+                return Response(data_dict, status=status.HTTP_201_CREATED)
+            return Response(data_dict, status=status.HTTP_200_OK)
+        else:
+            print("serializer errors: ", serializer.errors)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class OpenPrivateChat(APIView):
     """API method: Open private chat

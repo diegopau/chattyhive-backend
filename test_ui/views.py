@@ -48,7 +48,7 @@ def create_hive(request):
                 chat.hive = hive
                 chat.type = 'public'
                 chat.chat_id = ChChat.get_chat_id()
-                chat.slug = hive.slug
+                chat.slug = chat.chat_id + '-' + hive.slug
                 chat.save()
 
                 # Creating public chat of hive, step 2: ChPublicChat object
@@ -123,7 +123,7 @@ def create_community(request):
             subscription.save()
 
             # Creating public chat of hive
-            community.new_public_chat(name=hive.name, description=hive.description)
+            community.new_public_chat(name=hive.name, public_chat_slug_ending=hive.slug, description=hive.description)
 
             # return HttpResponseRedirect("/create_hive/create/")
             # transaction.set_autocommit(True)
@@ -222,7 +222,9 @@ def hive_chat(request, hive_slug, chat_id):
             # We get a chat_id
             slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
             chat_id = chat_slug[0:chat_slug.find('-')]
-            
+            hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+            other_profile_public_name = \
+                slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
             # We search for any other ChChat object with the same ending. Just in case the other profile was also
             # starting a new chat (he/she would have a different temporal chat_id assigned).
             try:
@@ -233,6 +235,11 @@ def hive_chat(request, hive_slug, chat_id):
         else:
             try:
                 chat = ChChat.objects.get(chat_id=chat_id)
+                slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
+                hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+                other_profile_public_name = \
+                    slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+
             except ChChat.DoesNotExist:
                 response = HttpResponse("Unauthorized")
                 response.status_code = 401
@@ -242,6 +249,8 @@ def hive_chat(request, hive_slug, chat_id):
         if chat.type == 'public':
             pass
         else:
+            other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
+            message_data['other_profile'] = other_profile
             if chat.deleted:
                 chat.deleted = False
                 chat.date = timezone.now()
@@ -251,8 +260,6 @@ def hive_chat(request, hive_slug, chat_id):
                 ChChatSubscription.objects.get(
                     chat=chat, profile__public_name=other_profile_public_name)
             except ChChatSubscription.DoesNotExist:
-                other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
-                message_data['other_profile'] = other_profile
                 chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
                 chat_subscription_other_profile.save()
         try:
@@ -383,9 +390,9 @@ def create_public_chat(request, hive_slug):
         if form.is_valid():
             hive = ChHive.objects.get(slug=hive_slug)
             community = ChCommunity.objects.get(hive=hive)
-            public_chat_slug = slugify(hive.name, translate=None, to_lower=True, separator='-', capitalize=False,
-                                       max_length=250)
-            community.new_public_chat(form.cleaned_data['name'], form.cleaned_data['description'])
+            public_chat_slug_ending = slugify(form.cleaned_data['name'], translate=None, to_lower=True, separator='-', capitalize=False,
+                                              max_length=250)
+            community.new_public_chat(form.cleaned_data['name'], public_chat_slug_ending, form.cleaned_data['description'])
             return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
