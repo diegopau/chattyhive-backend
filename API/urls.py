@@ -8,6 +8,8 @@ urlpatterns = patterns('',
 
     url(r'^sessions/login/', views.user_login, name='login'),
 
+    url(r'^sessions/logout/', views.user_logout, name='logout'),
+
     url(r'^users/$', views.ChUserList.as_view(), name="user_list"),
     # TODO: Aunque se permite que el username pueda contener por ejemplo una '@', en la práctica un usuario estándar nunca
     # debería tener este tipo de símbolos, de momento se permite sólo lo que un uuid4 pueda contener

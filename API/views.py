@@ -157,6 +157,15 @@ def user_login(request, format=None):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
+@api_view(['POST'])
+@parser_classes((JSONParser,))
+def user_logout(request):
+    if request.method == 'POST':
+        logout(request)
+        request.session['active'] = False
+    return Response(status=status.HTTP_200_OK)
+
+
 # ============================================================ #
 #                          Explore                             #
 # ============================================================ #
