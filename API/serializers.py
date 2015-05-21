@@ -74,6 +74,56 @@ class LoginCredentialsSerializer(serializers.Serializer):
         password = self.validated_data['password']
 
 
+class AsyncServices(serializers.Serializer):
+
+    name = serializers.CharField(max_length=20)
+    app = serializers.CharField(max_length=255)
+    reg_id = serializers.CharField(max_length=255)
+
+    def validate(self, data):
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        name = self.validated_data['name']
+        app = self.validated_data['app']
+        reg_id = self.validated_data['reg_id']
+
+
+class SetAsyncServices(serializers.Serializer):
+    """Serializer class used validate a public_name or email and a password
+
+    """
+
+    dev_os = serializers.CharField(max_length=20)
+    dev_type = serializers.CharField(max_length=20)
+    dev_id = serializers.CharField(max_length=50)
+    services = AsyncServices(many=True)
+
+    def validate(self, data):
+        DEV_OS_CHOICES = ('android', 'ios', 'wp', 'browser', 'windows', 'linux', 'mac')
+        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'laptop', 'big_screen', 'tv')
+
+        if data['dev_os'] not in DEV_OS_CHOICES:
+            raise ValidationError("Wrong dev_os", code="400")
+        if data['dev_type'] not in DEV_TYPE_CHOICES:
+            raise ValidationError("Wrong dev_type", code="400")
+        for service in data['services']:
+            if service['name'] == 'gcm':
+                if service["app"] == "":
+                    raise ValidationError("app field for gcm can not be empty", code="400")
+                elif service["app"] not in settings.ALLOWED_GCM_APP_IDS:
+                    raise ValidationError("app id for gcm not allowed", code="400")
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        dev_os = self.validated_data['dev_os']
+        dev_type = self.validated_data['dev_type']
+        dev_id = self.validated_data['dev_id']
+        services = self.validated_data['services']
+
+
 class AsyncAuthSerializer(serializers.Serializer):
     """Serializer class used validate a public_name or email and a password
 
@@ -81,7 +131,7 @@ class AsyncAuthSerializer(serializers.Serializer):
 
     service = serializers.CharField(max_length=30)
     channel_name = serializers.CharField(max_length=41)
-    socket_id = serializers.CharField()
+    socket_id = serializers.CharField(max_length=255)
 
     def validate(self, data):
         if data['service'] == 'pusher':

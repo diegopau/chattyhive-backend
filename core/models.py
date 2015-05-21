@@ -216,10 +216,31 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Device(models.Model):
+
+    DEV_OS_CHOICES = (
+        ('android', 'Android'),
+        ('ios', 'iOS'),
+        ('wp', 'Windows Phone'),
+        ('browser', 'Web Browser'),
+        ('windows', 'Windows desktop OS'),
+        ('linux', 'Linux'),
+        ('mac', 'Mac OS')
+    )
+
+    DEV_TYPE_CHOICES = (
+        ('smartphone', 'smartphone up to 6 inch'),
+        ('6-8tablet', '6 to 8 inch tablet'),
+        ('big_tablet', 'More than 8 inch tablet'),
+        ('laptop', 'between 11 and 17 inch screen'),
+        ('big_screen', 'more than 17 inch screen'),
+        ('tv', 'TV device, big seen from long distance')
+    )
+
     user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
-    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
-    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
-    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
+    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
+    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
+    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=False, null=True, blank=True)
+    socket_id = models.CharField(max_length=255, verbose_name=_("Pusher Protocol Socket ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
     last_login = models.DateTimeField(default=timezone.now())
@@ -781,7 +802,7 @@ class ChChat(models.Model):
                 device.send_gcm_message(msg=message_data['json_message'], collapse_key='')
         else:
             pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_ID', None),
-                                   key=getattr(settings, 'PUSHER_KEY', None),
+                                   key=getattr(settings, 'PUSHER_APP_KEY', None),
                                    secret=getattr(settings, 'PUSHER_SECRET', None),
                                    json_encoder=DjangoJSONEncoder,
                                    ssl=True)

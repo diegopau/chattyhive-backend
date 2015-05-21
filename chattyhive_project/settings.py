@@ -186,13 +186,14 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 # ### ======================================================== ###
 
 GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
+ALLOWED_GCM_APP_IDS = ('com.chattyhive.chattyhive', )
 
 # ### ======================================================== ###
 # ###                         Pusher                           ###
 # ### ======================================================== ###
 
 PUSHER_APP_ID = "55129"
-PUSHER_KEY = 'f073ebb6f5d1b918e59e'
+PUSHER_APP_KEY = 'f073ebb6f5d1b918e59e'
 PUSHER_SECRET = '360b346d88ee47d4c230'
 
 # ### ======================================================== ###

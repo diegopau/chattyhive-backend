@@ -155,6 +155,7 @@ def user_login(request, format=None):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
+@permission_classes(permissions.IsAuthenticated,)
 def user_logout(request):
     if request.method == 'POST':
         logout(request)
@@ -164,13 +165,23 @@ def user_logout(request):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
+@permission_classes((permissions.IsAuthenticated,))
 def set_asynchronous_notification_services(request):
     if request.method == 'POST':
+
+        serializer = serializers.SetAsyncServices(data=request.data)
+        data_dict_pusher = {}
+        data_dict_gcm = {}
+
+        if serializer.is_valid(raise_exception=True):
+            print(serializer.validated_data)
+
         return Response(status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
+@permission_classes(permissions.IsAuthenticated,)
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
@@ -195,7 +206,7 @@ def asynchronous_authentication(request):
 
                 pusher_object = pusher.Pusher(
                     app_id=settings.PUSHER_APP_ID,
-                    key=settings.PUSHER_KEY,
+                    key=settings.PUSHER_APP_KEY,
                     secret=settings.PUSHER_SECRET,
                     encoder=DjangoJSONEncoder,
                 )
