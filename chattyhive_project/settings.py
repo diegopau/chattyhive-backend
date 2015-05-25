@@ -168,6 +168,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework_swagger',
     'test_ui',
+    'docs',
     'datetimewidget',
     'pusher',
     # Uncomment the next line to enable the django_extensions package -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER

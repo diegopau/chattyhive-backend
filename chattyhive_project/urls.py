@@ -10,10 +10,18 @@ from django.conf import settings
 urlpatterns = patterns('',
 
     ##################################
-    #         Welcome screen         #
+    #          Project docs          #
     ##################################
 
-    url(r'^$', 'core.views.welcome_screen', name='welcome_dev'),
+    url(r'^', include('docs.urls')),
+
+
+    #########################
+    #          Core         #
+    #########################
+
+    url(r'^', include('core.urls')),
+
 
     ########################
     #          API         #
