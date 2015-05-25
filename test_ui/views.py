@@ -367,7 +367,7 @@ def get_messages(request, chat_name, init, interval):
                                      "public_name": message.profile.public_name,
                                      "message": message.content,
                                      "client_timestamp": message.client_timestamp,
-                                     "server_time": message.datetime.astimezone(),
+                                     "server_time": message.created.astimezone(),
                                      "id": message.id
                                      })
             return HttpResponse(json.dumps(messages_row, cls=DjangoJSONEncoder))

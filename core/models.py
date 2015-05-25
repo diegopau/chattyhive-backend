@@ -812,7 +812,7 @@ class ChChat(models.Model):
 
             # TODO: pusher_channel should be a presence channel ('presence-' + self.chat_id) but backend auth is not
             # yet implemented??? also user's socket_id should be included in the trigger
-            pusher_channel = self.chat_id
+            pusher_channel = 'presence-' + self.chat_id
             pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']))
 
     @staticmethod

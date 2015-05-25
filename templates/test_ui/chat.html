@@ -44,7 +44,7 @@
                                     });
 
         //channel_name = channel_name.replace("ñ", "__nh__");
-        var channel = pusher.subscribe(channel_name);
+        var channel = pusher.subscribe("presence-".concat(channel_name));
 
         // Listening to the channel
         channel.bind(event_name, function(data) {

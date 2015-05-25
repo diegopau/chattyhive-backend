@@ -21,7 +21,6 @@ from chattyhive_project import settings
 
 def login_view(request):
     print("directorios staticos:", settings.STATICFILES_DIRS)
-
     if request.user.is_authenticated():
         return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
     if request.method == 'POST':
@@ -274,7 +273,8 @@ def chat_auth(request):
     user = request.user
     if request.method == 'POST':
         chat_channel = request.POST['channel_name']
-        chat = ChChat.objects.get(chat_id=chat_channel)
+        chat_id = chat_channel.replace('presence-', '')
+        chat = ChChat.objects.get(chat_id=chat_id)
         socket_id = request.POST['socket_id']
 
         profile = ChProfile.objects.get(user=user)
