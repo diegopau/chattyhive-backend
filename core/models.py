@@ -231,15 +231,17 @@ class Device(models.Model):
         ('smartphone', 'smartphone up to 6 inch'),
         ('6-8tablet', '6 to 8 inch tablet'),
         ('big_tablet', 'More than 8 inch tablet'),
-        ('laptop', 'between 11 and 17 inch screen'),
-        ('big_screen', 'more than 17 inch screen'),
+        ('netbook', 'less than 15 inch screen'),
+        ('laptop', 'between 15 and 17 inch screen'),
+        ('desktop', 'less than 21 inch screen'),
+        ('big_screen_desktop', 'more than 21 inch screen'),
         ('tv', 'TV device, big seen from long distance')
     )
 
     user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
     dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
     dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
-    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=False, null=True, blank=True)
+    dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=False, null=True, blank=True)
     socket_id = models.CharField(max_length=255, verbose_name=_("Pusher Protocol Socket ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
