@@ -21,6 +21,7 @@ from chattyhive_project import settings
 
 def login_view(request):
     print("directorios staticos:", settings.STATICFILES_DIRS)
+
     if request.user.is_authenticated():
         return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
     if request.method == 'POST':

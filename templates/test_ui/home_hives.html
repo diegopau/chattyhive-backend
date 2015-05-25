@@ -21,30 +21,7 @@
       </li>
     {% endfor %}
 
+{% endblock %}
 
-    <script type="text/javascript">
-        // Buttons behaviour
-        $(document).ready(function() {
-            // Button logout behaviour when clicked
-            $('#btn_logout').on('click', function()
-            {
-                var csrftoken = $.cookie('csrftoken');
-                $.ajax({
-                    type: "POST",
-                    url: "/test-ui/logout/",
-                    headers: {"X-CSRFToken":csrftoken},
-                    data: "",
-                    success: function(newData){
-                        alert(newData);
-                        //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/test-ui/";
-                    },
-                    failure: function(errMsg) {
-                        alert(errMsg);
-                    }
-                });
-                return false;
-            });
-        });
-    </script>
+{% block body_extra_scripts %}
 {% endblock %}

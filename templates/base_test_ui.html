@@ -49,7 +49,7 @@
     $(document).ready(function () {
         // Button logout behaviour when clicked
         $('#btn_logout').on('click', function () {
-            var csrftoken = $.cookie('csrftoken');
+            var csrftoken = Cookies.get('csrftoken');
             $.ajax({
                 type: "POST",
                 url: "/test-ui/logout/",
@@ -68,6 +68,10 @@
         });
     });
 </script>
+
+{% block body_extra_scripts %}
+
+{% endblock %}
 
 </body>
 </html>

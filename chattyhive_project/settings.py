@@ -181,6 +181,8 @@ INSTALLED_APPS = (
 )
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
+SESSION_COOKIE_AGE = '1209600'
+
 
 # ### ======================================================== ###
 # ###                          GCM                             ###

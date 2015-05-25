@@ -31,6 +31,9 @@ class LoginCredentialsSerializer(serializers.Serializer):
     email = serializers.EmailField()
     public_name = serializers.CharField(max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]+$', 'Only alphanumeric characters and "_" are allowed.')])
     password = serializers.CharField(write_only=True)
+    dev_os = serializers.CharField(max_length=20)
+    dev_type = serializers.CharField(max_length=20)
+    dev_id = serializers.CharField(max_length=50)
 
     # In the init we will check which fields the view is telling the serializer to consider (this is because the
     # serializer can't know which of the files email or public_name will be present
@@ -49,6 +52,9 @@ class LoginCredentialsSerializer(serializers.Serializer):
                 self.fields.pop(field_name)
 
     def validate(self, data):
+        DEV_OS_CHOICES = ('android', 'ios', 'wp', 'browser', 'windows', 'linux', 'mac')
+        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'laptop', 'desktop', 'big_screen_desktop', 'tv')
+
         if 'email' in data:
             # We set to an empty string the param that is not inside the request body
             try:
@@ -66,6 +72,14 @@ class LoginCredentialsSerializer(serializers.Serializer):
             data['username'] = profile.username
         else:
             raise serializers.ValidationError("No email or public_name specified")
+
+        if 'dev_os' in data:
+            if data['dev_os'] not in DEV_OS_CHOICES:
+                raise ValidationError("Wrong dev_os", code="400")
+        if 'dev_type' in data:
+            if data['dev_type'] not in DEV_TYPE_CHOICES:
+                raise ValidationError("Wrong dev_type", code="400")
+
         return data
 
     # We need a save() implementation to get an object instance from the view
@@ -95,19 +109,9 @@ class SetAsyncServices(serializers.Serializer):
 
     """
 
-    dev_os = serializers.CharField(max_length=20)
-    dev_type = serializers.CharField(max_length=20)
-    dev_id = serializers.CharField(max_length=50)
     services = AsyncServices(many=True)
 
     def validate(self, data):
-        DEV_OS_CHOICES = ('android', 'ios', 'wp', 'browser', 'windows', 'linux', 'mac')
-        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'laptop', 'big_screen', 'tv')
-
-        if data['dev_os'] not in DEV_OS_CHOICES:
-            raise ValidationError("Wrong dev_os", code="400")
-        if data['dev_type'] not in DEV_TYPE_CHOICES:
-            raise ValidationError("Wrong dev_type", code="400")
         for service in data['services']:
             if service['name'] == 'gcm':
                 if service["app"] == "":
@@ -118,9 +122,6 @@ class SetAsyncServices(serializers.Serializer):
 
     # We need a save() implementation to get an object instance from the view
     def save(self):
-        dev_os = self.validated_data['dev_os']
-        dev_type = self.validated_data['dev_type']
-        dev_id = self.validated_data['dev_id']
         services = self.validated_data['services']
 
 

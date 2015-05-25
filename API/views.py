@@ -63,20 +63,40 @@ def user_login(request, format=None):
     if request.method == 'POST':
         data_dict = {}  # This will contain the data to be sent as JSON
         needs_public_name = False
+        needs_dev_id = False
         if 'email' in request.data and 'public_name' in request.data:
             print("email and public_name should not be together in the JSON of the same request")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         elif 'email' in request.data:
-            fields = ['email', 'password']
+            fields_to_include = ['email', 'password']
             needs_public_name = True
         elif 'public_name' in request.data:
-            fields = ['public_name', 'password']
+            fields_to_include = ['public_name', 'password']
         else:
             print("at least email or public_name should be in the JSON")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        if ('dev_os' in request.data) and ('dev_type' in request.data):
+            if 'dev_id' in request.data:
+                print("dev_id, dev_os and dev_type shouldn't be together in the request")
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            fields_to_include.append('dev_os')
+            fields_to_include.append('dev_type')
+            # If request is coming from a web browser we will not associate any device with it
+            if request.data['dev_os'] != 'browser':
+                needs_dev_id = True
+
+        elif 'dev_id' in request.data:
+            if ('dev_os' in request.data) or ('dev_type' in request.data):
+                print("dev_os or dev_type fields shouldn't be included in this case")
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            fields_to_include.append('dev_id')
+        else:
+            print("some fields are missing, probably dev_type or dev_os")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
         # fields specifies the fields to be considered by the serializer
-        serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields)
+        serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields_to_include)
 
         if serializer.is_valid(raise_exception=True):
             user = authenticate(username=serializer.validated_data['username'],

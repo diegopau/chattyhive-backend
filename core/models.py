@@ -502,7 +502,7 @@ class ChHive(models.Model):
     # Attributes of the Hive
     name = models.CharField(max_length=80, unique=True)
     slug = models.CharField(max_length=250, unique=True, default='')
-    description = models.TextField(max_length=2048)
+    description = models.TextField(max_length=400)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)
@@ -799,7 +799,7 @@ class ChChat(models.Model):
     def send_message(self, message_data):
         self.check_permissions(message_data['profile'])
         if self.type.endswith('private'):
-            devices = Device.objects.filter(user=message_data['other_profile'].user)
+            devices = Device.objects.filter(user=message_data['other_profile'].user, dev_os='android')
             for device in devices:
                 device.send_gcm_message(msg=message_data['json_message'], collapse_key='')
         else:

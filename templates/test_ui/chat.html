@@ -19,7 +19,12 @@
     <button type="button" id="btn_send">Send</button>
     <p id="time"></p>
     <p id="status"></p>
-    <script type="text/javascript">
+
+{% endblock %}
+
+{% block body_extra_scripts %}
+
+ <script type="text/javascript">
 
         var num_rep=0;
         var user="{{ user }}";
@@ -29,7 +34,7 @@
         var event_name="{{ event }}";
         var chat="{{ chat_field }}";
         var new_chat="{{ new_chat }}";
-        var csrftoken = $.cookie('csrftoken');
+        var csrftoken = Cookies.get('csrftoken');
 
         // Connecting to pusher
         var pusher = new Pusher(key, {  authEndpoint: '/test-ui/chat_auth/',
@@ -162,28 +167,8 @@
                 });
                 return false;
             });
-
-            // Button logout behaviour when clicked
-            $('#btn_logout').on('click', function()
-            {
-                var csrftoken = $.cookie('csrftoken');
-                $.ajax({
-                    type: "POST",
-                    url: "/test-ui/logout/",
-                    headers: {"X-CSRFToken":csrftoken},
-                    data: "",
-                    success: function(newData){
-                        alert(newData);
-                        //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/test-ui/";
-                    },
-                    failure: function(errMsg) {
-                        alert(errMsg);
-                    }
-                });
-                return false;
-            });
         });
 
     </script>
+
 {% endblock %}
