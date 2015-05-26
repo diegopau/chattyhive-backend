@@ -242,7 +242,6 @@ class Device(models.Model):
     dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
     dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
     dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True, null=True, blank=True)
-    socket_id = models.CharField(max_length=255, verbose_name=_("Pusher Protocol Socket ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
     last_login = models.DateTimeField(default=timezone.now())
@@ -258,28 +257,6 @@ class Device(models.Model):
             except Device.DoesNotExist:
                 break
         return hex_dev_id
-
-    def send_gcm_message(self, msg, collapse_key="message"):
-        json_response = send_gcm_message(regs_id=[self.reg_id],
-                                         data={'msg': msg},
-                                         collapse_key=collapse_key)
-
-        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
-            return 'Ok'
-        else:
-            for result in json_response['results']:
-                if result['message_id'] and result['registration_id']:
-                    self.reg_id = result['registration_id']
-                    return 'Reg Updated'
-                else:
-                    if result['error'] == 'Unavailable':
-                        return 'Not sent'
-                    elif result['error'] == 'NotRegistered':
-                        self.active = False
-                        return 'Unregistered'
-                    else:
-                        self.active = False
-                        return 'Unknown'
 
     def __unicode__(self):
         return self.dev_id
@@ -808,12 +785,42 @@ class ChChat(models.Model):
         message.save()
         return message
 
+    def send_gcm_message(self, msg, reg_ids, collapse_key="message"):
+        json_response = send_gcm_message(regs_id=reg_ids,
+                                         data={'msg': msg},
+                                         collapse_key=collapse_key)
+        error_messages = []
+        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
+            return error_messages
+        else:
+            for result in json_response['results']:
+                if 'message_id' in result:
+                    if result['message_id'] and result['registration_id']:
+                        self.reg_id = result['registration_id']
+                        error_messages.append('Reg Updated')
+                else:
+                    if result['error'] == 'Unavailable':
+                        error_messages.append('Not sent')
+                    elif result['error'] == 'NotRegistered':
+                        self.active = False
+                        error_messages.append('Unregistered')
+                    else:
+                        self.active = False
+                        error_messages.append(result['error'])
+            return error_messages
+
     def send_message(self, message_data):
         self.check_permissions(message_data['profile'])
         if self.type.endswith('private'):
             devices = Device.objects.filter(user=message_data['other_profile'].user, dev_os='android')
+            reg_ids = []
             for device in devices:
-                device.send_gcm_message(msg=message_data['json_message'], collapse_key='')
+                # We can send just one message from server to gcm cloud and indicate several reg_ids so gcm will send
+                # it to several devices.
+                reg_ids.append(device.reg_id)
+            result = self.send_gcm_message(msg=message_data['json_message'], reg_ids=reg_ids, collapse_key='')
+            if len(result) > 0:
+                print("The following issues had happened while sending the message through GCM: ", result)
         else:
             pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_ID', None),
                                    key=getattr(settings, 'PUSHER_APP_KEY', None),
@@ -932,6 +939,8 @@ class ChMessage(models.Model):
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
+
+    # TODO: this should be saved as DateTime, but for this we have to establish a valid format the client should follow
     client_timestamp = models.CharField(max_length=30)
     received = models.BooleanField(default=False)
 
