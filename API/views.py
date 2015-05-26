@@ -276,7 +276,7 @@ def user_logout(request):
 @api_view(['POST'])
 @parser_classes((JSONParser,))
 @permission_classes((permissions.IsAuthenticated,))
-def set_asynchronous_notification_services(request):
+def set_asynchronous_services(request):
     if request.method == 'POST':
 
         serializer = serializers.SetAsyncServices(data=request.data)

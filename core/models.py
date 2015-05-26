@@ -21,7 +21,6 @@ from pusher import Pusher
 import hashlib
 import re
 
-
 class LanguageModel(models.Model):
     language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
 
@@ -785,29 +784,31 @@ class ChChat(models.Model):
         message.save()
         return message
 
-    def send_gcm_message(self, msg, reg_ids, collapse_key="message"):
+    def send_gcm_message(self, msg, reg_ids, devices, collapse_key="message"):
         json_response = send_gcm_message(regs_id=reg_ids,
                                          data={'msg': msg},
                                          collapse_key=collapse_key)
-        error_messages = []
+        gcm_response = []
         if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
-            return error_messages
+            return gcm_response
         else:
-            for result in json_response['results']:
+            for result, device in zip(json_response['results'], devices):
+                message = ''
                 if 'message_id' in result:
                     if result['message_id'] and result['registration_id']:
-                        self.reg_id = result['registration_id']
-                        error_messages.append('Reg Updated')
+                        device.reg_id = result['registration_id']
+                        message = 'Reg Updated'
                 else:
                     if result['error'] == 'Unavailable':
-                        error_messages.append('Not sent')
+                        message = 'Not sent'
                     elif result['error'] == 'NotRegistered':
                         self.active = False
-                        error_messages.append('Unregistered')
+                        message = 'Unregistered'
                     else:
                         self.active = False
-                        error_messages.append(result['error'])
-            return error_messages
+                        message = 'error'
+                gcm_response.append(message)
+            return gcm_response
 
     def send_message(self, message_data):
         self.check_permissions(message_data['profile'])
@@ -818,9 +819,10 @@ class ChChat(models.Model):
                 # We can send just one message from server to gcm cloud and indicate several reg_ids so gcm will send
                 # it to several devices.
                 reg_ids.append(device.reg_id)
-            result = self.send_gcm_message(msg=message_data['json_message'], reg_ids=reg_ids, collapse_key='')
-            if len(result) > 0:
-                print("The following issues had happened while sending the message through GCM: ", result)
+            gcm_response = self.send_gcm_message(msg=message_data['json_message'], reg_ids=reg_ids, devices=devices,
+                                                 collapse_key='')
+            if len(gcm_response) > 0:
+                print("The following issues had happened while sending the message through GCM: ", gcm_response)
         else:
             pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_ID', None),
                                    key=getattr(settings, 'PUSHER_APP_KEY', None),
