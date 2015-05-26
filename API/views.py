@@ -52,26 +52,56 @@ def start_session(request, format=None):
         return Response(data=data_dict, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
-@parser_classes((JSONParser,))
-def user_login(request, format=None):
-    """POST sessions/login/
 
-    Returns 200 OK if credentials are ok
-    """
+class UserLogin(APIView):
 
-    if request.method == 'POST':
+    def get_or_register_device(self, dev_id, dev_type, dev_os, new_device, user):
+
+        # The dev_id should point to an existing device
+        if not new_device and (dev_id != ''):
+            try:
+                device = Device.objects.get(dev_id=dev_id, active=True)
+                device.last_login = timezone.now()
+                device.save()
+                return device.dev_id
+            except Device.DoesNotExist:
+                return Response({'error_message': 'The device does not exist anymore'}, status=status.HTTP_404_NOT_FOUND)
+
+        # There is no device but we don't have to create one either (request comes from browser or a device without
+        # support for notifications
+        if not new_device and (dev_id == ''):
+            pass
+            return dev_id
+
+        if new_device:
+            device = Device(active=True, dev_os=dev_os, dev_type=dev_type, last_login=timezone.now(),
+                            user=user)
+            device.dev_id = Device.get_dev_id()
+            device.save()
+            return device.dev_id
+
+    def post(self, request, format=None):
+        # TODO: The code of this method could be heavily cleaned/optimized
+        """POST sessions/login/
+
+        Returns 200 OK if credentials are ok
+        """
         data_dict = {}  # This will contain the data to be sent as JSON
         needs_public_name = False
-        needs_dev_id = False
+        new_device = False
+        temp_dev_id = ''
+
+        if request.user.is_authenticated():  # User was already logged in
+            return Response({'error_message': 'The user was already logged in'}, status=status.HTTP_202_ACCEPTED)
+
         if 'email' in request.data and 'public_name' in request.data:
             print("email and public_name should not be together in the JSON of the same request")
             return Response(status=status.HTTP_400_BAD_REQUEST)
         elif 'email' in request.data:
-            fields_to_include = ['email', 'password']
+            fields_to_allow = ['email', 'password']
             needs_public_name = True
         elif 'public_name' in request.data:
-            fields_to_include = ['public_name', 'password']
+            fields_to_allow = ['public_name', 'password']
         else:
             print("at least email or public_name should be in the JSON")
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -80,23 +110,27 @@ def user_login(request, format=None):
             if 'dev_id' in request.data:
                 print("dev_id, dev_os and dev_type shouldn't be together in the request")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            fields_to_include.append('dev_os')
-            fields_to_include.append('dev_type')
+            fields_to_allow.append('dev_os')
+            fields_to_allow.append('dev_type')
             # If request is coming from a web browser we will not associate any device with it
-            if request.data['dev_os'] != 'browser':
-                needs_dev_id = True
-
+            if request.data['dev_os'] == 'android':
+                new_device = True
+            temp_dev_id = ''
         elif 'dev_id' in request.data:
             if ('dev_os' in request.data) or ('dev_type' in request.data):
                 print("dev_os or dev_type fields shouldn't be included in this case")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            fields_to_include.append('dev_id')
+            if request.data['dev_id'] == '':
+                print("dev_id can't be blank")
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            fields_to_allow.append('dev_id')
+            temp_dev_id = request.data['dev_id']
         else:
             print("some fields are missing, probably dev_type or dev_os")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # fields specifies the fields to be considered by the serializer
-        serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields_to_include)
+        serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields_to_allow)
 
         if serializer.is_valid(raise_exception=True):
             user = authenticate(username=serializer.validated_data['username'],
@@ -123,6 +157,20 @@ def user_login(request, format=None):
                                     # extra warning time has not expired,
                                     # we are in the middle of the extra expiration time
                                     login(request, user)
+                                    if new_device:
+                                        data_dict['dev_id'] = \
+                                            self.get_or_register_device(dev_id=temp_dev_id,
+                                                                        dev_type=serializer.validated_data['dev_type'],
+                                                                        dev_os=serializer.validated_data['dev_os'],
+                                                                        new_device=new_device,
+                                                                        user=request.user)
+                                    else:
+                                        data_dict['dev_id'] = \
+                                            self.get_or_register_device(dev_id=temp_dev_id,
+                                                                        dev_type='',
+                                                                        dev_os='',
+                                                                        new_device=new_device,
+                                                                        user=request.user)
                                     data_dict['email_verification'] = 'warned'
                                     if needs_public_name:
                                         data_dict['public_name'] = user.chprofile.public_name
@@ -138,6 +186,20 @@ def user_login(request, format=None):
                                     # With login method we persist the authentication, so the client won't have to
                                     # re-authenticate with each request.
                                     login(request, user)
+                                    if new_device:
+                                        data_dict['dev_id'] = \
+                                            self.get_or_register_device(dev_id=temp_dev_id,
+                                                                        dev_type=serializer.validated_data['dev_type'],
+                                                                        dev_os=serializer.validated_data['dev_os'],
+                                                                        new_device=new_device,
+                                                                        user=request.user)
+                                    else:
+                                        data_dict['dev_id'] = \
+                                            self.get_or_register_device(dev_id=temp_dev_id,
+                                                                        dev_type='',
+                                                                        dev_os='',
+                                                                        new_device=new_device,
+                                                                        user=request.user)
                                     if needs_public_name:
                                         data_dict['public_name'] = user.chprofile.public_name
                                     data_dict['email_verification'] = 'warn'
@@ -148,6 +210,20 @@ def user_login(request, format=None):
                                 else:
                                     # FIRST EXPIRATION DATE IS NOT DUE
                                     login(request, user)
+                                    if new_device:
+                                        data_dict['dev_id'] = \
+                                            self.get_or_register_device(dev_id=temp_dev_id,
+                                                                        dev_type=serializer.validated_data['dev_type'],
+                                                                        dev_os=serializer.validated_data['dev_os'],
+                                                                        new_device=new_device,
+                                                                        user=request.user)
+                                    else:
+                                        data_dict['dev_id'] = \
+                                            self.get_or_register_device(dev_id=temp_dev_id,
+                                                                        dev_type='',
+                                                                        dev_os='',
+                                                                        new_device=new_device,
+                                                                        user=request.user)
                                     if needs_public_name:
                                         data_dict['public_name'] = user.chprofile.public_name
                                     data_dict['email_verification'] = 'unverified'
@@ -159,11 +235,25 @@ def user_login(request, format=None):
                     else:
                         # ACCOUNT IS VERIFIED AND ACTIVE
                         login(request, user)
+                        if new_device:
+                            data_dict['dev_id'] = \
+                                self.get_or_register_device(dev_id=temp_dev_id,
+                                                            dev_type=serializer.validated_data['dev_type'],
+                                                            dev_os=serializer.validated_data['dev_os'],
+                                                            new_device=new_device,
+                                                            user=request.user)
+                        else:
+                            data_dict['dev_id'] = \
+                                self.get_or_register_device(dev_id=temp_dev_id,
+                                                            dev_type='',
+                                                            dev_os='',
+                                                            new_device=new_device,
+                                                            user=request.user)
                         if needs_public_name:
                             data_dict['public_name'] = user.chprofile.public_name
                             return Response(data_dict, status=status.HTTP_200_OK)
                         else:
-                            return Response(status=status.HTTP_200_OK)
+                            return Response(data_dict, status=status.HTTP_200_OK)
                 else:
                     print("The password is valid, but the account has been disabled!")
                     return Response(status=status.HTTP_401_UNAUTHORIZED)

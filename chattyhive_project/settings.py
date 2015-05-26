@@ -182,6 +182,7 @@ INSTALLED_APPS = (
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_COOKIE_AGE = 1209600
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 # ### ======================================================== ###

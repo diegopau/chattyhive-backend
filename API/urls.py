@@ -6,7 +6,7 @@ urlpatterns = patterns('',
 
     url(r'^sessions/start/', views.start_session, name='start_session'),
 
-    url(r'^sessions/login/', views.user_login, name='login'),
+    url(r'^sessions/login/', views.UserLogin.as_view(), name='login'),
 
     url(r'^sessions/logout/', views.user_logout, name='logout'),
 

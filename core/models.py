@@ -241,11 +241,23 @@ class Device(models.Model):
     user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
     dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
     dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
-    dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=False, null=True, blank=True)
+    dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True, null=True, blank=True)
     socket_id = models.CharField(max_length=255, verbose_name=_("Pusher Protocol Socket ID"), unique=True)
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=True)
     last_login = models.DateTimeField(default=timezone.now())
+
+    @classmethod
+    def get_dev_id(cls):
+        hex_dev_id = uuid4().hex   # 16^32 values low collision probabilities
+        while True:
+            try:
+                # if the email is already used
+                Device.objects.get(dev_id=hex_dev_id)
+                hex_dev_id = uuid4().hex    # 16^32 values low collision probabilities
+            except Device.DoesNotExist:
+                break
+        return hex_dev_id
 
     def send_gcm_message(self, msg, collapse_key="message"):
         json_response = send_gcm_message(regs_id=[self.reg_id],

@@ -53,7 +53,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
 
     def validate(self, data):
         DEV_OS_CHOICES = ('android', 'ios', 'wp', 'browser', 'windows', 'linux', 'mac')
-        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'laptop', 'desktop', 'big_screen_desktop', 'tv')
+        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'netbook', 'laptop', 'desktop', 'big_screen_desktop', 'tv')
 
         if 'email' in data:
             # We set to an empty string the param that is not inside the request body
