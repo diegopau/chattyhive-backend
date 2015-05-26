@@ -27,5 +27,5 @@ def send_gcm_message(regs_id, data, collapse_key=None):
                              data=values,
                              headers=headers)
 
-    json_response = json.loads(response.text)
-    return json_response
+    response.raise_for_status()
+    return json.loads(response.content)
