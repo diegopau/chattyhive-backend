@@ -55,13 +55,15 @@ def start_session(request, format=None):
 
 class UserLogin(APIView):
 
-    def get_or_register_device(self, dev_id, dev_type, dev_os, new_device, user):
+    def get_or_register_device(self, dev_id, dev_type, dev_os, new_device, reg_id, user):
 
         # The dev_id should point to an existing device
         if not new_device and (dev_id != ''):
             try:
                 device = Device.objects.get(dev_id=dev_id, active=True)
                 device.last_login = timezone.now()
+                if (device.reg_id != reg_id) and (reg_id != ''):
+                    device.reg_id = reg_id
                 device.save()
                 return device.dev_id
             except Device.DoesNotExist:
@@ -74,7 +76,7 @@ class UserLogin(APIView):
             return dev_id
 
         if new_device:
-            device = Device(active=True, dev_os=dev_os, dev_type=dev_type, last_login=timezone.now(),
+            device = Device(active=False, dev_os=dev_os, dev_type=dev_type, last_login=timezone.now(), reg_id=reg_id,
                             user=user)
             device.dev_id = Device.get_dev_id()
             device.save()
@@ -139,6 +141,20 @@ class UserLogin(APIView):
                 # the password verified for the user
                 if user.is_active:
                     print("User is valid, active and authenticated")
+
+                    reg_id = ''
+                    # We get info about async services from the serializer
+                    for service in serializer.validated_data['services']:
+                        if service['mame'] == 'pusher':
+                            pass  # TODO: we don't need anything for pusher from the client just yet...
+                        if service['name'] == 'gcm':
+                            reg_id = service['reg_id']
+
+                    # We now build a json with the server response that will include info the client might need
+                    # about asyn services
+                    services = [{'name': 'pusher', 'app': settings.PUSHER_APP_KEY, 'reg_id': ''}]
+                    data_dict['services'] = json.dumps(services)
+
                     email_address = EmailAddress.objects.get(email=user.email)
                     if not email_address.verified:
                         try:
@@ -163,6 +179,7 @@ class UserLogin(APIView):
                                                                         dev_type=serializer.validated_data['dev_type'],
                                                                         dev_os=serializer.validated_data['dev_os'],
                                                                         new_device=new_device,
+                                                                        reg_id=reg_id,
                                                                         user=request.user)
                                     else:
                                         data_dict['dev_id'] = \
@@ -170,6 +187,7 @@ class UserLogin(APIView):
                                                                         dev_type='',
                                                                         dev_os='',
                                                                         new_device=new_device,
+                                                                        reg_id='',
                                                                         user=request.user)
                                     data_dict['email_verification'] = 'warned'
                                     if needs_public_name:
@@ -192,6 +210,7 @@ class UserLogin(APIView):
                                                                         dev_type=serializer.validated_data['dev_type'],
                                                                         dev_os=serializer.validated_data['dev_os'],
                                                                         new_device=new_device,
+                                                                        reg_id=reg_id,
                                                                         user=request.user)
                                     else:
                                         data_dict['dev_id'] = \
@@ -199,6 +218,7 @@ class UserLogin(APIView):
                                                                         dev_type='',
                                                                         dev_os='',
                                                                         new_device=new_device,
+                                                                        reg_id='',
                                                                         user=request.user)
                                     if needs_public_name:
                                         data_dict['public_name'] = user.chprofile.public_name
@@ -216,6 +236,7 @@ class UserLogin(APIView):
                                                                         dev_type=serializer.validated_data['dev_type'],
                                                                         dev_os=serializer.validated_data['dev_os'],
                                                                         new_device=new_device,
+                                                                        reg_id=reg_id,
                                                                         user=request.user)
                                     else:
                                         data_dict['dev_id'] = \
@@ -223,6 +244,7 @@ class UserLogin(APIView):
                                                                         dev_type='',
                                                                         dev_os='',
                                                                         new_device=new_device,
+                                                                        reg_id='',
                                                                         user=request.user)
                                     if needs_public_name:
                                         data_dict['public_name'] = user.chprofile.public_name
@@ -241,6 +263,7 @@ class UserLogin(APIView):
                                                             dev_type=serializer.validated_data['dev_type'],
                                                             dev_os=serializer.validated_data['dev_os'],
                                                             new_device=new_device,
+                                                            reg_id=reg_id,
                                                             user=request.user)
                         else:
                             data_dict['dev_id'] = \
@@ -248,6 +271,7 @@ class UserLogin(APIView):
                                                             dev_type='',
                                                             dev_os='',
                                                             new_device=new_device,
+                                                            reg_id='',
                                                             user=request.user)
                         if needs_public_name:
                             data_dict['public_name'] = user.chprofile.public_name
@@ -273,20 +297,30 @@ def user_logout(request):
         return Response(status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
-@parser_classes((JSONParser,))
-@permission_classes((permissions.IsAuthenticated,))
-def set_asynchronous_services(request):
-    if request.method == 'POST':
+class CheckAsynchronousServices(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
 
-        serializer = serializers.SetAsyncServices(data=request.data)
+    def check_dev_id(self, dev_id):
+      #  try:
+     #       device = Device.objects.get(dev_id=dev_id)
+        pass
+
+    def update_gcm(self, reg_id):
+        pass
+
+    def post(self, request, format=None):
+
+        serializer = serializers.CheckAsyncServices(data=request.data)
         data_dict_pusher = {}
         data_dict_gcm = {}
 
         if serializer.is_valid(raise_exception=True):
-            print(serializer.validated_data)
+            new_dev_id = self.check_dev_id(serializer.validated_data['dev_id'])
+            for service in serializer.validated_data['services']:
+                if service['name'] == 'gcm':
+                    new_reg_id = self.update_gcm(reg_id=service['reg_id'])
 
-        return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])

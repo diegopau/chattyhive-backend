@@ -11,13 +11,13 @@ urlpatterns = patterns('',
     url(r'^sessions/logout/', views.user_logout, name='logout'),
 
     url(r'^notifications/auth', views.asynchronous_authentication, name='asynchronous channel authentication'),
-    url(r'^notifications/', views.set_asynchronous_services, name='set asynchronous services'),
+    url(r'^notifications/', views.CheckAsynchronousServices.as_view(), name='set asynchronous services'),
 
     url(r'^users/$', views.ChUserList.as_view(), name="user_list"),
     # TODO: Aunque se permite que el username pueda contener por ejemplo una '@', en la práctica un usuario estándar nunca
     # debería tener este tipo de símbolos, de momento se permite sólo lo que un uuid4 pueda contener
     # ver: https://docs.google.com/document/d/1WH7zUVjVpw4GChMHHBJKN_w6ORyyWgvyn8kXd1pHBNc/edit#bookmark=kix.ktwhvvh1izbl
-    #url(r'^users/(?P<username>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89ABab][0-9a-fA-F]{3}-[0-9a-fA-F]{12})/$',
+    #url(r'^users/(?P<username>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15})/$',
 
     #    views.ChUserDetail.as_view(), name="user_detail"),
 

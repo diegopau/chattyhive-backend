@@ -240,9 +240,10 @@ class Device(models.Model):
     user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
     dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
     dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
-    dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True, null=True, blank=True)
+    dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True,
+                              validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
-    active = models.BooleanField(default=True)
+    active = models.BooleanField(default=False)
     last_login = models.DateTimeField(default=timezone.now())
 
     @classmethod
@@ -715,7 +716,8 @@ class ChChat(models.Model):
     # for database queries to use this type field
     type = models.CharField(max_length=32, choices=TYPE, default='mate_private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
-    chat_id = models.CharField(max_length=32, unique=True)
+    chat_id = models.CharField(max_length=32, unique=True,
+                               validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     deleted = models.BooleanField(default=False)
 
     # In the case of the chat the slug won't be necessarely unique. That's because public chats in different communities
@@ -813,16 +815,18 @@ class ChChat(models.Model):
     def send_message(self, message_data):
         self.check_permissions(message_data['profile'])
         if self.type.endswith('private'):
-            devices = Device.objects.filter(user=message_data['other_profile'].user, dev_os='android')
+            devices = Device.objects.filter(user=message_data['other_profile'].user, dev_os='android', active=True)
             reg_ids = []
             for device in devices:
                 # We can send just one message from server to gcm cloud and indicate several reg_ids so gcm will send
                 # it to several devices.
-                reg_ids.append(device.reg_id)
-            gcm_response = self.send_gcm_message(msg=message_data['json_message'], reg_ids=reg_ids, devices=devices,
-                                                 collapse_key='')
-            if len(gcm_response) > 0:
-                print("The following issues had happened while sending the message through GCM: ", gcm_response)
+                if device.reg_id != '':
+                    reg_ids.append(device.reg_id)
+            if len(reg_ids) > 0:
+                gcm_response = self.send_gcm_message(msg=message_data['json_message'], reg_ids=reg_ids, devices=devices,
+                                                     collapse_key='')
+                if len(gcm_response) > 0:
+                    print("The following issues had happened while sending the message through GCM: ", gcm_response)
         else:
             pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_ID', None),
                                    key=getattr(settings, 'PUSHER_APP_KEY', None),
@@ -830,11 +834,9 @@ class ChChat(models.Model):
                                    json_encoder=DjangoJSONEncoder,
                                    ssl=True)
             event = 'msg'
-
-            # TODO: pusher_channel should be a presence channel ('presence-' + self.chat_id) but backend auth is not
-            # yet implemented??? also user's socket_id should be included in the trigger
+            socket_id_to_exclude = message_data['socket_id']
             pusher_channel = 'presence-' + self.chat_id
-            pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']))
+            pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']), socket_id_to_exclude)
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):

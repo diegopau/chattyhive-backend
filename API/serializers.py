@@ -34,6 +34,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
     dev_os = serializers.CharField(max_length=20)
     dev_type = serializers.CharField(max_length=20)
     dev_id = serializers.CharField(max_length=50)
+    services = AsyncServices(many=True)
 
     # In the init we will check which fields the view is telling the serializer to consider (this is because the
     # serializer can't know which of the files email or public_name will be present
@@ -80,6 +81,22 @@ class LoginCredentialsSerializer(serializers.Serializer):
             if data['dev_type'] not in DEV_TYPE_CHOICES:
                 raise ValidationError("Wrong dev_type", code="400")
 
+        for service in data['services']:
+            if service['name'] == 'gcm':
+                if data['dev_os'] != 'android':
+                    raise ValidationError("gcm service should never be specified if dev_os is not android", code="400")
+                if 'app' in service:
+                    if service['app'] == "":
+                        raise ValidationError("app field for gcm can not be empty", code="400")
+                    elif service['app'] not in settings.ALLOWED_GCM_APP_IDS:
+                        raise ValidationError("app id for gcm not allowed", code="400")
+                else:
+                    raise ValidationError("app id is missing for gcm service", code="400")
+
+                if 'reg_id' in service:
+                    if service['reg_id'] == "":
+                        raise ValidationError("app field for gcm can not be empty", code="400")
+
         return data
 
     # We need a save() implementation to get an object instance from the view
@@ -104,20 +121,39 @@ class AsyncServices(serializers.Serializer):
         reg_id = self.validated_data['reg_id']
 
 
-class SetAsyncServices(serializers.Serializer):
+class CheckAsyncServices(serializers.Serializer):
     """Serializer class used validate a public_name or email and a password
 
     """
 
+    dev_id = \
+        serializers.CharField(validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     services = AsyncServices(many=True)
 
     def validate(self, data):
+        DEV_OS_CHOICES = ('android', 'ios', 'wp', 'browser', 'windows', 'linux', 'mac')
+
+        if 'dev_os' in data:
+            if data['dev_os'] not in DEV_OS_CHOICES:
+                raise ValidationError("Wrong dev_os", code="400")
+        else:
+            raise ValidationError("dev_os field is missing", code="400")
+
         for service in data['services']:
             if service['name'] == 'gcm':
-                if service["app"] == "":
-                    raise ValidationError("app field for gcm can not be empty", code="400")
-                elif service["app"] not in settings.ALLOWED_GCM_APP_IDS:
-                    raise ValidationError("app id for gcm not allowed", code="400")
+                if data['dev_os'] != 'android':
+                    raise ValidationError("gcm service should never be specified if dev_os is not android", code="400")
+                if 'app' in service:
+                    if service['app'] == "":
+                        raise ValidationError("app field for gcm can not be empty", code="400")
+                    elif service['app'] not in settings.ALLOWED_GCM_APP_IDS:
+                        raise ValidationError("app id for gcm not allowed", code="400")
+                else:
+                    raise ValidationError("app id is missing for gcm service", code="400")
+
+                if 'reg_id' in service:
+                    if service['reg_id'] == "":
+                        raise ValidationError("app field for gcm can not be empty", code="400")
         return data
 
     # We need a save() implementation to get an object instance from the view

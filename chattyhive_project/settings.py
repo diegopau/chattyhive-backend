@@ -188,7 +188,7 @@ SESSION_SAVE_EVERY_REQUEST = True
 # ### ======================================================== ###
 # ###                          GCM                             ###
 # ### ======================================================== ###
-GCM_SENDER_ID =
+GCM_SENDER_ID = 549771636005
 GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
 ALLOWED_GCM_APP_IDS = ('com.chattyhive.chattyhive', )
 

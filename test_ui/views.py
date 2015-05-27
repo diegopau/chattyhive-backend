@@ -275,7 +275,7 @@ def hive_chat(request, hive_slug, chat_id):
                                    content=msg,
                                    client_timestamp=client_timestamp)
         chat.save()
-
+        message_data['socket_id'] = request.POST.get("socket_id")
         message_data['json_message'] = json.dumps({"username": user.username,
                                                    "public_name": profile.public_name,
                                                    "message": msg,
