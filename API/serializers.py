@@ -126,8 +126,8 @@ class CheckAsyncServices(serializers.Serializer):
 
     """
 
-    dev_id = \
-        serializers.CharField(validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
+    dev_id = serializers.CharField(
+        max_length=50, validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     services = AsyncServices(many=True)
 
     def validate(self, data):
@@ -207,6 +207,9 @@ class SendMessageSerializer(serializers.Serializer):
     client_timestamp = serializers.CharField(max_length=30)
     content = serializers.CharField(max_length=2048)
     new_chat = serializers.CharField(max_length=5)
+    dev_id = serializers.CharField(
+        max_length=50, validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
+    socket_id = serializers.CharField(max_length=255)
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
@@ -235,6 +238,8 @@ class SendMessageSerializer(serializers.Serializer):
             raise ValidationError("The message content is empty", code="400")
         if data['client_timestamp'] == '':
             raise ValidationError("No client timestamp specified", code="400")
+        if data['socket_id'] == '':
+            raise ValidationError("Socket_id can not be a empty string", code="400")
         return data
 
     # We need a save() implementation to get an object instance from the view

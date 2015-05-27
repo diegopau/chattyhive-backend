@@ -244,7 +244,7 @@ class Device(models.Model):
                               validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
     active = models.BooleanField(default=False)
-    last_login = models.DateTimeField(default=timezone.now())
+    last_activity = models.DateTimeField(default=timezone.now())
 
     @classmethod
     def get_dev_id(cls):

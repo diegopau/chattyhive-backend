@@ -61,7 +61,7 @@ class UserLogin(APIView):
         if not new_device and (dev_id != ''):
             try:
                 device = Device.objects.get(dev_id=dev_id, active=True)
-                device.last_login = timezone.now()
+                device.last_activity = timezone.now()
                 if (device.reg_id != reg_id) and (reg_id != ''):
                     device.reg_id = reg_id
                 device.save()
@@ -76,7 +76,7 @@ class UserLogin(APIView):
             return dev_id
 
         if new_device:
-            device = Device(active=False, dev_os=dev_os, dev_type=dev_type, last_login=timezone.now(), reg_id=reg_id,
+            device = Device(active=True, dev_os=dev_os, dev_type=dev_type, last_activity=timezone.now(), reg_id=reg_id,
                             user=user)
             device.dev_id = Device.get_dev_id()
             device.save()
@@ -153,7 +153,7 @@ class UserLogin(APIView):
                     # We now build a json with the server response that will include info the client might need
                     # about asyn services
                     services = [{'name': 'pusher', 'app': settings.PUSHER_APP_KEY, 'reg_id': ''}]
-                    data_dict['services'] = json.dumps(services)
+                    data_dict['services'] = services
 
                     email_address = EmailAddress.objects.get(email=user.email)
                     if not email_address.verified:
@@ -300,27 +300,44 @@ def user_logout(request):
 class CheckAsynchronousServices(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    def check_dev_id(self, dev_id):
-      #  try:
-     #       device = Device.objects.get(dev_id=dev_id)
-        pass
+    def check_dev_id(self, dev_id, user):
+        try:
+            device = Device.objects.get(dev_id=dev_id, active=True)
+            if not device.user == user:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        except Device.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def update_gcm(self, reg_id):
-        pass
+        # Here could go code to update the dev_id if needed
+
+        return device
+
+    def update_gcm(self, reg_id, device):
+
+        if (device.reg_id != reg_id) and (reg_id != ''):
+            device.reg_id = reg_id
+            device.save()
+
+        return reg_id
 
     def post(self, request, format=None):
 
         serializer = serializers.CheckAsyncServices(data=request.data)
-        data_dict_pusher = {}
-        data_dict_gcm = {}
 
         if serializer.is_valid(raise_exception=True):
-            new_dev_id = self.check_dev_id(serializer.validated_data['dev_id'])
+            device = self.check_dev_id(serializer.validated_data['dev_id'], request.user)
+            response_data = {}
+
             for service in serializer.validated_data['services']:
                 if service['name'] == 'gcm':
-                    new_reg_id = self.update_gcm(reg_id=service['reg_id'])
+                    new_reg_id = self.update_gcm(reg_id=service['reg_id'], device=device)
 
-            return Response(status=status.HTTP_200_OK)
+            # We now build a json with the server response that will include info the client might need
+            # about async services
+            services = [{'name': 'pusher', 'app': settings.PUSHER_APP_KEY, 'reg_id': ''}]
+            response_data['services'] = services
+
+            return Response(response_data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -606,6 +623,8 @@ class ChMessageList(APIView):
         fields_to_remove = []
         if 'new_chat' not in request.data:
             fields_to_remove.append('new_chat')
+        if 'dev_id' not in request.data:
+            fields_to_remove.append('dev_id')
 
         serializer = serializers.SendMessageSerializer(data=request.data, fields_to_remove=fields_to_remove)
 
@@ -613,9 +632,19 @@ class ChMessageList(APIView):
             # info retrieval
             new_chat = request.data.get("new_chat", "False")
             profile = request.user.profile
+            socket_id = serializer.validated_data['socket_id']
 
             # Initialization of the message to be sent
             message_data = {'profile': profile}
+
+            # If the client has sent a dev_id we update the last_activity field of the device to the date
+            if 'dev_id' in serializer.validated_data:
+                try:
+                    device = Device.objects.get(dev_id=serializer.validated_data['dev_id'], active=True)
+                    device.last_activity = timezone.now()
+                    device.save()
+                except Device.DoesNotExist:
+                    return Response({'error_message': 'No device found for this dev_id'}, status=status.HTTP_404_NOT_FOUND)
 
             if new_chat.lower() == 'true':
                 # In this case the client should be actually sending us a temp_id that is the chat slug
@@ -707,7 +736,7 @@ class ChMessageList(APIView):
                                        content=msg_content,
                                        client_timestamp=client_timestamp)
             chat.save()
-
+            message_data['socket_id'] = socket_id
             message_data['json_message'] = json.dumps({"public_name": profile.public_name,
                                                        "content": msg_content,
                                                        "client_timestamp": client_timestamp,
@@ -715,11 +744,7 @@ class ChMessageList(APIView):
                                                       cls=DjangoJSONEncoder)
 
             data_dict = {'message_id': message.id, 'server_timestamp': message.created}
-            try:
-                with transaction.atomic():
-                    chat.send_message(message_data)
-            except Device.DoesNotExist:
-                return Response(data_dict, status=status.HTTP_201_CREATED)
+            chat.send_message(message_data)
             return Response(data_dict, status=status.HTTP_200_OK)
         else:
             print("serializer errors: ", serializer.errors)
