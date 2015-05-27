@@ -24,6 +24,23 @@ class URLParamsError(Exception):
 #                     Session & 3rd-party services serializers                       #
 # ================================================================================== #
 
+
+class AsyncServices(serializers.Serializer):
+
+    name = serializers.CharField(max_length=20)
+    app = serializers.CharField(max_length=255)
+    reg_id = serializers.CharField(max_length=255)
+
+    def validate(self, data):
+        return data
+
+    # We need a save() implementation to get an object instance from the view
+    def save(self):
+        name = self.validated_data['name']
+        app = self.validated_data['app']
+        reg_id = self.validated_data['reg_id']
+
+
 class LoginCredentialsSerializer(serializers.Serializer):
     """Serializer class used validate a public_name or email and a password
 
@@ -103,22 +120,6 @@ class LoginCredentialsSerializer(serializers.Serializer):
     def save(self):
         username = self.validated_data['username']
         password = self.validated_data['password']
-
-
-class AsyncServices(serializers.Serializer):
-
-    name = serializers.CharField(max_length=20)
-    app = serializers.CharField(max_length=255)
-    reg_id = serializers.CharField(max_length=255)
-
-    def validate(self, data):
-        return data
-
-    # We need a save() implementation to get an object instance from the view
-    def save(self):
-        name = self.validated_data['name']
-        app = self.validated_data['app']
-        reg_id = self.validated_data['reg_id']
 
 
 class CheckAsyncServices(serializers.Serializer):
@@ -337,73 +338,87 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 
 # This support class will allow the other related ModelSerializers to use only the needed fields (depending on the
 # url path params and query params
-# class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
-#     """
-#     A ModelSerializer that takes an additional `fields` argument that
-#     controls which fields should be displayed.
-#     """
-#
-#     def __init__(self, *args, **kwargs):
-#         # Don't pass the 'fields' arg up to the superclass
-#         profile_type = kwargs.pop('type', None)
-#         profile_package = kwargs.pop('package', None)
-#
-#         # Instantiate the superclass normally
-#         super(SelectProfileFieldsModelSerializer, self).__init__(*args, **kwargs)
-#
-#         # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
-#         # drop some of these fields depending on the url path params and the query params of the client request
-#         existing_fields = set(self.fiedls.keys())  # This will be all the fields that are set in the ModelSerializer
-#
-#         if profile_type is not None:
-#             if profile_type == 'public':
-#                 if profile_package is not None:
-#                     if profile_package == 'basic'
-#                         allowed_fields = set("username", "public_name", )
-#                     elif profile_package == 'info'
-#
-#                     elif profile_package == 'hives'
-#
-#                     elif profile_package == 'complete'
-#
-#                     else:
-#                         raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
-#                 else:
-#                     raise URLParamsError("No profile package specified", errors={})
-#             elif profile_type == 'private':
-#                 if profile_package is not None:
-#                     if profile_package == 'basic'
-#
-#                     elif profile_package == 'info'
-#
-#                     elif profile_package == 'hives'
-#
-#                     elif profile_package == 'complete'
-#
-#                     else:
-#                         raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
-#                 else:
-#                     raise URLParamsError("No profile package specified", errors={})
-#             else:
-#                 allowed_fields = set("", "")
-#
-#         if allowed_fields is not None:
-#             # Drop any fields that are not specified in the `fields` argument.
-#             allowed = set(allowed_fields)
-#             existing = set(self.fields.keys())
-#             for field_name in existing - allowed:
-#                 self.fields.pop(field_name)
-#
-#
-# class ChProfileSerializer(SelectProfileFieldsModelSerializer):
-#     class Meta:
-#         model = ChProfile
-#         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
-#                   '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-#                   'personal_color', 'picture', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
-#                   'public_show_sex')
-#
-#
+class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` argument that
+    controls which fields should be displayed.
+    """
+
+    def remove_restricted_fields(self, fields, package_type, profile_type, profile_package):
+        pass
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        profile_type = kwargs.pop('type', None)
+        profile_package = kwargs.pop('package', None)
+
+        # Instantiate the superclass normally
+        super(SelectProfileFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
+        # drop some of these fields depending on the url path params and the query params of the client request
+        if profile_type is not None:
+            allowed_fields = set()
+            basic_fields = set()
+            info_fields = set()
+            hives_fields = set()
+
+            if profile_type == 'logged_profile':
+
+                basic_fields = {'username', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
+                               'first_name', 'last_name', 'picture', 'private_status'}
+                info_fields = {'birth_date', 'sex',
+                               'languages', 'country', 'region', 'city', 'public_show_age', 'public_show_sex'
+                               'public_show_location', 'private_show_age', 'private_show_location'}
+                hives_fields = {'hives'}
+
+            elif profile_type == 'public':
+
+                basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
+                info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city'}
+                hives_fields = {'hives'}
+
+            elif profile_type == 'private':
+
+                pass  # TODO: private profiles code
+
+            else:
+                raise URLParamsError("Incorrect profile type specified", errors={})
+
+            if profile_package is not None:
+                if profile_package == 'basic':
+                    allowed_fields = basic_fields
+                elif profile_package == 'info':
+                    allowed_fields = info_fields
+                elif profile_package == 'hives':
+                    allowed_fields = hives_fields
+                elif profile_package == 'complete':
+                    allowed_fields = basic_fields | info_fields | hives_fields
+                else:
+                    raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+            else:
+                raise URLParamsError("No profile package specified", errors={})
+        else:
+            raise URLParamsError("No profile type specified", errors={})
+
+        allowed_fields = self.remove_restricted_fields(allowed_fields, profile_type, profile_package)
+
+        if allowed_fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed_fields:
+                self.fields.pop(field_name)
+
+
+class ChProfileSerializer(SelectProfileFieldsModelSerializer):
+    class Meta:
+        model = ChProfile
+        fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
+                  '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
+                  'personal_color', 'picture', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
+                  'public_show_sex')
+
+
 # class ChProfileLevel0Serializer(SelectProfileFieldsModelSerializer):
 #
 #     class Meta:
