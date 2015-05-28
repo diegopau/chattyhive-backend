@@ -310,12 +310,18 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('tag', )
 
 
-# Serializers define the API representation.
+#Serializers define the API representation.
 class ChUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChUser
         fields = ('date_joined', 'email', 'is_active', 'is_authenticated', 'is_staff', 'objects', 'related_device',
                   'username')
+
+
+class ChUserLevel0Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChUser
+        fields = ('email', 'username')
 
 
 class ChChatLevel0Serializer(serializers.ModelSerializer):
@@ -344,9 +350,6 @@ class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
     controls which fields should be displayed.
     """
 
-    def remove_restricted_fields(self, fields, package_type, profile_type, profile_package):
-        pass
-
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
         profile_type = kwargs.pop('type', None)
@@ -365,17 +368,17 @@ class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
 
             if profile_type == 'logged_profile':
 
-                basic_fields = {'username', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
-                               'first_name', 'last_name', 'picture', 'private_status'}
+                basic_fields = {'user', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
+                                'first_name', 'last_name', 'picture', 'private_status'}
                 info_fields = {'birth_date', 'sex',
-                               'languages', 'country', 'region', 'city', 'public_show_age', 'public_show_sex'
+                               'languages', 'country', 'region', 'city', 'location', 'public_show_age', 'public_show_sex'
                                'public_show_location', 'private_show_age', 'private_show_location'}
                 hives_fields = {'hives'}
 
             elif profile_type == 'public':
 
                 basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
-                info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city'}
+                info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'location'}
                 hives_fields = {'hives'}
 
             elif profile_type == 'private':
@@ -401,8 +404,6 @@ class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
         else:
             raise URLParamsError("No profile type specified", errors={})
 
-        allowed_fields = self.remove_restricted_fields(allowed_fields, profile_type, profile_package)
-
         if allowed_fields is not None:
             # Drop any fields that are not specified in the `fields` argument.
             existing = set(self.fields.keys())
@@ -411,39 +412,21 @@ class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
 
 
 class ChProfileSerializer(SelectProfileFieldsModelSerializer):
+    user = ChUserLevel0Serializer(many=False, read_only=True)
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
+    region = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
+    city = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
+    location = serializers.CharField(source='get_location', read_only=True)
+
+    hives = ChHiveLevel1Serializer(many=True, read_only=True)
+
     class Meta:
         model = ChProfile
-        fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
-                  '_languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-                  'personal_color', 'picture', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
-                  'public_show_sex')
-
-
-# class ChProfileLevel0Serializer(SelectProfileFieldsModelSerializer):
-#
-#     class Meta:
-#         model = ChProfile
-#         fields = ('user', 'public_name', 'avatar', 'personal_color', 'first_name', 'last_name', 'picture', )
-#
-#
-#
-# class ChProfileLevel1Serializer(SelectProfileFieldsModelSerializer):
-#
-#     user = serializers.SlugRelatedField(read_only=True, slug_field='username', allow_null=False)
-#     city = serializers.SlugRelatedField(read_only=True, slug_field='name', )  # TODO: read only??
-#     region = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
-#     country = serializers.SlugRelatedField(read_only=True, slug_field='name')  # TODO: read only??
-#     languages = serializers.SlugRelatedField(many=True, read_only=True, slug_field='language')  # TODO: read only??
-#
-#     # Hive subscriptions (and not only hive of which he is the creator)
-# #    hives = serializers.SlugRelatedField(many=True, slug_field='slug')
-#
-#     class Meta:
-#         model = ChProfile
-#         fields = ('user', 'last_login', 'public_name', 'first_name', 'last_name', 'sex', 'birth_date',
-#                   'languages', 'timezone', 'country', 'region', 'city', 'private_status', 'public_status',
-#                   'personal_color', 'picture', 'avatar', 'private_show_age', 'public_show_age', 'public_show_location',
-#                   'public_show_sex')
+        fields = ('user',  'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
+                  'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
+                  'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex', 'private_show_age',
+                  'private_show_location', 'created', 'last_login')
 
 
 # ============================================================ #

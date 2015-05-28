@@ -343,6 +343,13 @@ class ChProfile(models.Model):
         except LanguageModel.DoesNotExist:
             return
 
+    def get_location(self):
+        if self.city:
+            location = str(self.city.latitude) + ' ' + str(self.city.longitude)
+        else:
+            location = 'not_set'
+        return location
+
     def set_approximate_location(self, text_location):
         """
         :param text_location: name of approximate place

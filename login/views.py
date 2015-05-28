@@ -97,7 +97,7 @@ def create_user_view(request):
                     ii += 1
                     public_name = original_name + '_' + str(ii)
 
-                profile = ChProfile(user=user, public_name=public_name)  # temporal profile name
+                profile = ChProfile(user=user, public_name=public_name, created=timezone.now())  # temporal profile name
                 profile.save()
 
                 user2 = authenticate(username=user.username, password=password)

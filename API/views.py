@@ -52,7 +52,6 @@ def start_session(request, format=None):
         return Response(data=data_dict, status=status.HTTP_200_OK)
 
 
-
 class UserLogin(APIView):
 
     def get_or_register_device(self, dev_id, dev_type, dev_os, new_device, reg_id, user):
@@ -191,10 +190,15 @@ class UserLogin(APIView):
                                                                         user=request.user)
                                     data_dict['email_verification'] = 'warned'
                                     if needs_public_name:
-                                        data_dict['public_name'] = user.chprofile.public_name
+                                        data_dict['public_name'] = user.profile.public_name
                                     data_dict['expiration_date'] = \
                                         user_email_confirmation.warned_day + datetime.timedelta(
                                             days=email_info.EMAIL_AFTER_WARNING_DAYS)
+
+                                    # We update last_login date
+                                    user.profile.last_activity = timezone.now()
+                                    user.profile.save()
+
                                     return Response(data_dict, status=status.HTTP_200_OK)
                             else:
                                 # THE USER HAS NOT BEEN ALREADY WARNED
@@ -221,11 +225,16 @@ class UserLogin(APIView):
                                                                         reg_id='',
                                                                         user=request.user)
                                     if needs_public_name:
-                                        data_dict['public_name'] = user.chprofile.public_name
+                                        data_dict['public_name'] = user.profile.public_name
                                     data_dict['email_verification'] = 'warn'
                                     data_dict['expiration_date'] = \
                                         user_email_confirmation.warned_day + datetime.timedelta(
                                             days=email_info.EMAIL_AFTER_WARNING_DAYS)
+
+                                    # We update last_login date
+                                    user.profile.last_activity = timezone.now()
+                                    user.profile.save()
+
                                     return Response(data_dict, status=status.HTTP_200_OK)
                                 else:
                                     # FIRST EXPIRATION DATE IS NOT DUE
@@ -247,10 +256,15 @@ class UserLogin(APIView):
                                                                         reg_id='',
                                                                         user=request.user)
                                     if needs_public_name:
-                                        data_dict['public_name'] = user.chprofile.public_name
+                                        data_dict['public_name'] = user.profile.public_name
                                     data_dict['email_verification'] = 'unverified'
                                     data_dict['expiration_date'] = user_email_confirmation.sent + datetime.timedelta(
                                         days=email_info.EMAIL_CONFIRMATION_DAYS)
+
+                                    # We update last_login date
+                                    user.profile.last_activity = timezone.now()
+                                    user.profile.save()
+
                                     return Response(data_dict, status=status.HTTP_200_OK)
                         except EmailConfirmation.DoesNotExist:
                             print("email confirmation object does not exist for user ", user.chprofile.public_name)
@@ -273,11 +287,14 @@ class UserLogin(APIView):
                                                             new_device=new_device,
                                                             reg_id='',
                                                             user=request.user)
+
+                        # We update last_login date
+                        user.profile.last_activity = timezone.now()
+                        user.profile.save()
+
                         if needs_public_name:
-                            data_dict['public_name'] = user.chprofile.public_name
-                            return Response(data_dict, status=status.HTTP_200_OK)
-                        else:
-                            return Response(data_dict, status=status.HTTP_200_OK)
+                            data_dict['public_name'] = user.profile.public_name
+                        return Response(data_dict, status=status.HTTP_200_OK)
                 else:
                     print("The password is valid, but the account has been disabled!")
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
