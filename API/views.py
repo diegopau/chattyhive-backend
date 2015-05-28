@@ -19,6 +19,7 @@ import datetime
 from django.contrib.auth import authenticate, login, logout
 from chattyhive_project import settings
 from django.db import IntegrityError, transaction
+from core.models import UnauthorizedException
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -31,7 +32,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError, NotAuthenticated
 
 
 # ============================================================ #
@@ -514,7 +515,9 @@ class ChProfileHiveList(APIView):
         try:
             # If the user is requesting his/her own subscriptions we go on
             self.check_object_permissions(self.request, profile)
-        except APIException:
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
         hives = profile.hive_subscriptions
 
@@ -528,7 +531,9 @@ class ChProfileHiveList(APIView):
         try:
             # If the user is requesting a join with his own profile then we go on
             self.check_object_permissions(self.request, profile)
-        except APIException:
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         hive_slug = request.data.get('hive_slug', '')
@@ -542,16 +547,60 @@ class ChProfileHiveList(APIView):
         except ChHive.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        # We check if the user had already joined the hive
         try:
-            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=hive)
-            if hive_subscription.deleted:
-                hive_subscription.deleted = False
-        except ChHiveSubscription.DoesNotExist:
-            hive_subscription = ChHiveSubscription(profile=profile, hive=hive, )
+            hive.join(profile)
+        except IntegrityError:
+            return Response({'error_message': 'The user was already subscribed to the hive'},
+                            status=status.HTTP_409_CONFLICT)
+        except UnauthorizedException:
+            return Response({'error_message': 'The user is expelled from the hive'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        fields_to_remove = ('chprofile_set',)
+        serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class ChProfileHiveDetail(APIView):
+    """API method: Hive list
 
+    """
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def delete(self, request, public_name, hive_slug, format=None):
+
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting a join with his own profile then we go on
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if hive_slug == '':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # We get the hive for this hive_slug
+        try:
+            hive = ChHive.objects.get(slug=hive_slug, deleted=False)
+        except ChHive.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            hive.leave(profile)
+        except IntegrityError:
+            return Response({'error_message': 'User have not joined the hive'},
+                            status=status.HTTP_409_CONFLICT)
+
+        return Response(status=status.HTTP_200_OK)
 
 
 class ChProfileChatList(APIView):
@@ -568,7 +617,9 @@ class ChProfileChatList(APIView):
         try:
             # If the user is requesting his/her own subscriptions we go on
             self.check_object_permissions(self.request, profile)
-        except APIException:
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
         chats = profile.chat_subscriptions
         # En fields se le pasa el campo a eliminar del serializador
@@ -692,7 +743,9 @@ class ChMessageList(APIView):
         chat = self.get_chat(chat_id)
         try:
             self.check_object_permissions(self.request, chat)
-        except APIException:
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
         messages = chat.messages
         serializer = serializers.ChMessageSerializer(messages, many=True)

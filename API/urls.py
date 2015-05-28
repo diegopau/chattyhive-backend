@@ -24,6 +24,10 @@ urlpatterns = patterns('',
     url(r'^users/(?P<username>[\w-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),
 
     # TODO: Regex for public_names should be improved (also validation) not allowing to start with a number or '_'
+
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/hives/(?P<hive_slug>.+)/$', views.ChProfileHiveDetail.as_view(),
+        name="leave_hive"),
+
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/hives/$', views.ChProfileHiveList.as_view(),
         name="profile_hive_list"),
 

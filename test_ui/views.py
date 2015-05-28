@@ -496,11 +496,19 @@ def explore(request):
     """
     if request.method == 'GET':
         # Returns all the hives (subscribed and not subscribed)
-        try:
-            hives = ChHive.objects.all().exclude(deleted=True)
 
+        # We have to exclude hives that the user is subscribed (and the subscription not marked as deleted)
+        user_hive_subscriptions = ChHiveSubscription(profile=request.user.profile, deleted=False)
+
+        # We can not directly exclude using the queryset
+        #hive_subscriptions_to_exclude = [hive_subscription.id for hive_subscription in user_hive_subscriptions]
+        hives_to exclude =
+
+        try:
+            hives = ChHive.objects.all().exclude(deleted=True).exclude(subscriptions__id__in=[o.id for o in user_hive_subscriptions])
         except ChHive.DoesNotExist:
             hives = None
+
         return render(request, "{app_name}/explore.html".format(app_name=settings.TEST_UI_APP_NAME), {
             'hives': hives
         })

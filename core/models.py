@@ -553,7 +553,7 @@ class ChHive(models.Model):
         """
         :return: hive's subscribers total number
         """
-        return self.hive_subscribers.count()
+        return self.subscriptions.count()
 
     def get_users_by_country(self, country):
         """
@@ -651,7 +651,9 @@ class ChHive(models.Model):
                             community_public_chat.chat.deleted = True
                             community_public_chat.chat.save()
                         else:
-                            raise IntegrityError("This community does not have any public chats")
+                            # TODO: the community doesn't have any public chat, this would be weird, but I don't
+                            # think it should stop the request from being completed,  what should be done with this?
+                            pass
                 else:
                     self.public_chat.deleted = True
                     self.public_chat.save()
@@ -674,7 +676,7 @@ class ChHive(models.Model):
 class ChHiveSubscription(models.Model):
     # Subscription object which relates Profiles with Hives
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
-    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='subscriptions')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     deleted = models.BooleanField(default=False)
