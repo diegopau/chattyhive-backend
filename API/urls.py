@@ -30,7 +30,7 @@ urlpatterns = patterns('',
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/chats/$', views.ChProfileChatList.as_view(),
         name="profile_chat_list"),
 
-    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/(?P<type>(public|private)?)/$', views.ChProfileDetail.as_view(),
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/(?P<profile_type>(public|private|logged_profile)?)/$', views.ChProfileDetail.as_view(),
         name="profile_detail"),
 
     # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars

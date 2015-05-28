@@ -31,7 +31,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 
 
 # ============================================================ #
@@ -522,6 +522,37 @@ class ChProfileHiveList(APIView):
         serializer = serializers.ChHiveLevel1Serializer(hives, fields_to_remove=fields_to_remove, many=True)
         return Response(serializer.data)
 
+    def post(self, request, public_name, format=None):
+
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting a join with his own profile then we go on
+            self.check_object_permissions(self.request, profile)
+        except APIException:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        hive_slug = request.data.get('hive_slug', '')
+
+        if hive_slug == '':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # We get the hive for this hive_slug
+        try:
+            hive = ChHive.objects.get(slug=hive_slug, deleted=False)
+        except ChHive.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # We check if the user had already joined the hive
+        try:
+            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=hive)
+            if hive_subscription.deleted:
+                hive_subscription.deleted = False
+        except ChHiveSubscription.DoesNotExist:
+            hive_subscription = ChHiveSubscription(profile=profile, hive=hive, )
+
+
+
+
 
 class ChProfileChatList(APIView):
     permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
@@ -554,12 +585,49 @@ class ChProfileDetail(APIView):
         except ChProfile.DoesNotExist:
             raise Http404
 
-    def get(self, request, public_name, format=None):
-        profile = self.get_object(public_name)
+    def remove_restricted_fields(self, user_profile, other_profile, serializer_data, profile_type):
 
-        serializer = serializers.ChProfileSerializer(profile, context={'request': request})
+        if profile_type == 'logged_profile':
+            if user_profile == other_profile:
+                pass  # nothing to be excluded!
+            else:
+                raise PermissionDenied
+        elif profile_type == 'private':
 
-        return Response(serializer.data)
+            pass  # Code for friends implementation
+
+        elif profile_type == 'public':
+            elements_to_exclude = ['user', 'public_show_age', 'public_show_sex', 'public_show_location',
+                                   'private_show_age', 'private_show_location']
+            if not other_profile.public_show_age:
+                elements_to_exclude.append('birth_date')
+            if not other_profile.public_show_sex:
+                elements_to_exclude.append('sex')
+            if not other_profile.public_show_location:
+                elements_to_exclude.append('country')
+                elements_to_exclude.append('region')
+                elements_to_exclude.append('city')
+                elements_to_exclude.append('location')
+            for key in serializer_data.keys():
+                if key in elements_to_exclude:
+                    del serializer_data[key]
+        else:
+            raise ValidationError
+
+        return serializer_data
+
+    def get(self, request, public_name, profile_type, format=None):
+
+        other_profile = self.get_object(public_name)
+        user_profile = request.user.profile
+
+        profile_package = request.GET.get('package', '')
+
+        serializer = serializers.ChProfileSerializer(other_profile, type=profile_type, package=profile_package)
+
+        allowed_data = self.remove_restricted_fields(user_profile, other_profile, serializer.data, profile_type)
+
+        return Response(allowed_data)
 
 
 # ============================================================ #

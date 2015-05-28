@@ -505,6 +505,7 @@ class ChHive(models.Model):
     creation_date = models.DateField(auto_now=True)
     tags = models.ManyToManyField(TagModel, null=True)
     rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
+    picture = models.CharField(max_length=200, default='')
 
     # TODO: Add validator to ensure that this field has a value from 1 to 100
     priority = models.IntegerField(default=50)
@@ -675,7 +676,6 @@ class ChHiveSubscription(models.Model):
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
-    picture = models.CharField(max_length=200)
 
     deleted = models.BooleanField(default=False)
     expelled = models.BooleanField(default=False)

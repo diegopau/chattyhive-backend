@@ -339,97 +339,6 @@ class ChMessageLevel1Serializer(serializers.ModelSerializer):
 
 
 # ============================================================ #
-#                       Users & Profiles                       #
-# ============================================================ #
-
-# This support class will allow the other related ModelSerializers to use only the needed fields (depending on the
-# url path params and query params
-class SelectProfileFieldsModelSerializer(serializers.ModelSerializer):
-    """
-    A ModelSerializer that takes an additional `fields` argument that
-    controls which fields should be displayed.
-    """
-
-    def __init__(self, *args, **kwargs):
-        # Don't pass the 'fields' arg up to the superclass
-        profile_type = kwargs.pop('type', None)
-        profile_package = kwargs.pop('package', None)
-
-        # Instantiate the superclass normally
-        super(SelectProfileFieldsModelSerializer, self).__init__(*args, **kwargs)
-
-        # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
-        # drop some of these fields depending on the url path params and the query params of the client request
-        if profile_type is not None:
-            allowed_fields = set()
-            basic_fields = set()
-            info_fields = set()
-            hives_fields = set()
-
-            if profile_type == 'logged_profile':
-
-                basic_fields = {'user', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
-                                'first_name', 'last_name', 'picture', 'private_status'}
-                info_fields = {'birth_date', 'sex',
-                               'languages', 'country', 'region', 'city', 'location', 'public_show_age', 'public_show_sex'
-                               'public_show_location', 'private_show_age', 'private_show_location'}
-                hives_fields = {'hives'}
-
-            elif profile_type == 'public':
-
-                basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
-                info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'location'}
-                hives_fields = {'hives'}
-
-            elif profile_type == 'private':
-
-                pass  # TODO: private profiles code
-
-            else:
-                raise URLParamsError("Incorrect profile type specified", errors={})
-
-            if profile_package is not None:
-                if profile_package == 'basic':
-                    allowed_fields = basic_fields
-                elif profile_package == 'info':
-                    allowed_fields = info_fields
-                elif profile_package == 'hives':
-                    allowed_fields = hives_fields
-                elif profile_package == 'complete':
-                    allowed_fields = basic_fields | info_fields | hives_fields
-                else:
-                    raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
-            else:
-                raise URLParamsError("No profile package specified", errors={})
-        else:
-            raise URLParamsError("No profile type specified", errors={})
-
-        if allowed_fields is not None:
-            # Drop any fields that are not specified in the `fields` argument.
-            existing = set(self.fields.keys())
-            for field_name in existing - allowed_fields:
-                self.fields.pop(field_name)
-
-
-class ChProfileSerializer(SelectProfileFieldsModelSerializer):
-    user = ChUserLevel0Serializer(many=False, read_only=True)
-    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
-    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
-    region = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
-    city = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
-    location = serializers.CharField(source='get_location', read_only=True)
-
-    hives = ChHiveLevel1Serializer(many=True, read_only=True)
-
-    class Meta:
-        model = ChProfile
-        fields = ('user',  'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
-                  'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
-                  'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex', 'private_show_age',
-                  'private_show_location', 'created', 'last_login')
-
-
-# ============================================================ #
 #                        Hives & Chats                         #
 # ============================================================ #
 class ChChatLevel2Serializer(serializers.ModelSerializer):
@@ -466,7 +375,7 @@ class ChPublicChatLevel4Serializer(serializers.ModelSerializer):
 
 
 class ChHiveLevel1Serializer(serializers.ModelSerializer):
-    """Used by the following API methods: GET hive list,
+    """Used by the following API methods: GET hive list, ChProfileSerializer
 
     """
     category = serializers.SlugRelatedField(read_only=True, slug_field='code')
@@ -497,7 +406,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'type', 'category', 'languages',
-                  'creator', 'tags', 'subscribed_users_count', 'public_chat', 'community_public_chats', 'admins')
+                  'creator', 'tags', 'subscribed_users_count', 'public_chat', 'community_public_chats',)
 
 
 class ChChatListLevel2Serializer(serializers.ModelSerializer):
@@ -566,3 +475,99 @@ class ChMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChMessage
         fields = ('id', 'received', 'content', 'content_type', 'created', 'profile')
+
+
+# ============================================================ #
+#                       Users & Profiles                       #
+# ============================================================ #
+
+class ChProfileSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET user profile,
+       Used by the following serializers: --
+
+    """
+
+    user = ChUserLevel0Serializer(many=False, read_only=True)
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
+    region = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
+    city = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
+    location = serializers.CharField(source='get_location', read_only=True)
+
+    hives = ChHiveLevel1Serializer(many=True, read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        profile_type = kwargs.pop('type', None)
+        profile_package = kwargs.pop('package', None)
+
+        TYPE_CHOICES = ('public', 'private', 'logged_profile')
+        PACKAGE_CHOICES = ('basic', 'info', 'hives', 'complete')
+
+        if profile_type is not None:
+            if profile_type not in TYPE_CHOICES:
+                raise ValidationError("Wrong type", code="400")
+        else:
+            raise ValidationError("profile_type is missing", code="400")
+
+        if profile_package is not None:
+            if profile_package not in PACKAGE_CHOICES:
+                raise ValidationError("Wrong package", code="400")
+        else:
+            raise ValidationError("profile_package is missing", code="400")
+
+        # Instantiate the superclass normally
+        super(ChProfileSerializer, self).__init__(*args, **kwargs)
+
+        # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
+        # drop some of these fields depending on the url path params and the query params of the client request
+        allowed_fields = set()
+        basic_fields = set()
+        info_fields = set()
+        hives_fields = set()
+
+        if profile_type == 'logged_profile':
+
+            basic_fields = {'user', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
+                            'first_name', 'last_name', 'picture', 'private_status'}
+            info_fields = {'birth_date', 'sex',
+                           'languages', 'country', 'region', 'city', 'location', 'public_show_age', 'public_show_sex'
+                           'public_show_location', 'private_show_age', 'private_show_location'}
+            hives_fields = {'hives'}
+
+        elif profile_type == 'public':
+
+            basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
+            info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'location'}
+            hives_fields = {'hives'}
+
+        elif profile_type == 'private':
+
+            pass  # TODO: private profiles code
+
+        else:
+            raise URLParamsError("Incorrect profile type specified", errors={})
+
+        if profile_package == 'basic':
+            allowed_fields = basic_fields
+        elif profile_package == 'info':
+            allowed_fields = info_fields
+        elif profile_package == 'hives':
+            allowed_fields = hives_fields
+        elif profile_package == 'complete':
+            allowed_fields = basic_fields | info_fields | hives_fields
+        else:
+            raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+
+        if allowed_fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed_fields:
+                self.fields.pop(field_name)
+
+    class Meta:
+        model = ChProfile
+        fields = ('user',  'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
+                  'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
+                  'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex',
+                  'private_show_age', 'private_show_location', 'created', 'last_activity')
