@@ -755,7 +755,7 @@ class ChHiveUsersList(APIView):
 
         try:
             # If the user is requesting users for a hive he/she is subscribed, then we go on...
-            self.check_object_permissions(self.request, profile)
+            self.check_object_permissions(self.request, hive)
         except PermissionDenied:
             return Response(status=status.HTTP_403_FORBIDDEN)
         except NotAuthenticated:

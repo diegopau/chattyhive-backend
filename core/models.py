@@ -571,18 +571,15 @@ class ChHive(models.Model):
 
         if profile.region is not None:
             users_in_same_region = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, region=profile.region).exclude(
-                id__in=[o.id for o in users_in_same_city]).order_by('-last_activity')
+                hive_subscription__in=hive_subscriptions, region=profile.region).order_by('-last_activity')
 
         if profile.country is not None:
             users_in_same_country = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, region=profile.region).exclude(
-                id__in=[o.id for o in users_in_same_city]).exclude(
-                id__in=[o.id for o in users_in_same_region]).order_by('-last_activity')
+                hive_subscription__in=hive_subscriptions, country=profile.country).order_by('-last_activity')
         else:
             raise IntegrityError("User has no country assigned")
 
-        return users_in_same_city + users_in_same_region + users_in_same_country
+        return users_in_same_city | users_in_same_region | users_in_same_country
 
     def get_users_recently_join(self, profile):
 
