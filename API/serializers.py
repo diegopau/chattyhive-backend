@@ -452,8 +452,8 @@ class ChHiveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChHive
-        fields = ('languages', 'category', 'chprofile_set', 'creation_date', 'creator', 'description',
-                  'name', 'priority', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
+        fields = ('name', 'languages', 'category', 'creation_date', 'creator', 'description',
+                  'priority', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
                   'community_public_chats', 'community')
 
 

@@ -724,7 +724,7 @@ class ChHiveDetail(APIView):
 
     def get(self, request, hive_slug, format=None):
         hive = self.get_object(hive_slug)
-        fields_to_remove = ('chprofile_set',)
+        fields_to_remove = ()
         serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
 
         return Response(serializer.data)
