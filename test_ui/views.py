@@ -498,14 +498,10 @@ def explore(request):
         # Returns all the hives (subscribed and not subscribed)
 
         # We have to exclude hives that the user is subscribed (and the subscription not marked as deleted)
-        user_hive_subscriptions = ChHiveSubscription(profile=request.user.profile, deleted=False)
-
-        # We can not directly exclude using the queryset
-        #hive_subscriptions_to_exclude = [hive_subscription.id for hive_subscription in user_hive_subscriptions]
-        hives_to exclude =
+        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=request.user.profile, deleted=False)
 
         try:
-            hives = ChHive.objects.all().exclude(deleted=True).exclude(subscriptions__id__in=[o.id for o in user_hive_subscriptions])
+            hives = ChHive.objects.all().exclude(deleted=True).exclude(subscriptions__in=user_hive_subscriptions)
         except ChHive.DoesNotExist:
             hives = None
 
@@ -618,7 +614,7 @@ def hive_description(request, hive_slug):
                 community = ChCommunity.objects.get(hive=hive)
                 if community.owner == profile:
                     owner = True
-                elif profile in community.admins:
+                elif profile in community.admins.all():
                     admin = True
             except ChCommunity.DoesNotExist:
                 pass

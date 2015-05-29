@@ -557,9 +557,11 @@ class ChProfileHiveList(APIView):
                             status=status.HTTP_401_UNAUTHORIZED)
 
         fields_to_remove = ('chprofile_set',)
-        serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Because I don't want Django Rest Framework to treat it as a serializer in this case, I cast it to a dict
+        hive_info = dict(serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove).data)
+
+        return Response(hive_info, status=status.HTTP_200_OK)
 
 
 class ChProfileHiveDetail(APIView):

@@ -615,7 +615,7 @@ class ChHive(models.Model):
         :return: void
         """
         try:
-            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self)
+            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self, deleted=False)
             hive_subscription.deleted = True
             hive_subscription.save()
             chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
