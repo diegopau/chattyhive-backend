@@ -132,6 +132,8 @@ class UserLogin(APIView):
             print("some fields are missing, probably dev_type or dev_os")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        fields_to_allow.append('services')
+
         # fields specifies the fields to be considered by the serializer
         serializer = serializers.LoginCredentialsSerializer(data=request.data, fields=fields_to_allow)
 
@@ -146,7 +148,7 @@ class UserLogin(APIView):
                     reg_id = ''
                     # We get info about async services from the serializer
                     for service in serializer.validated_data['services']:
-                        if service['mame'] == 'pusher':
+                        if service['name'] == 'pusher':
                             pass  # TODO: we don't need anything for pusher from the client just yet...
                         if service['name'] == 'gcm':
                             reg_id = service['reg_id']
@@ -365,7 +367,12 @@ class CheckAsynchronousServices(APIView):
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
-        serializer = serializers.AsyncAuthSerializer(data=request.data)
+        data_to_serialize = request.data
+
+        # TODO: While we have only pusher auth, this is the easiest way to do it, but must be changed in the future
+        data_to_serialize['service'] = 'pusher'
+
+        serializer = serializers.AsyncAuthSerializer(data=data_to_serialize)
 
         if serializer.is_valid(raise_exception=True):
             chat_channel = serializer.validated_data['channel_name']
@@ -374,33 +381,32 @@ def asynchronous_authentication(request):
             socket_id = serializer.validated_data['socket_id']
             profile = request.user.profile
 
-            try:
-                ChChatSubscription.objects.get(chat=chat, profile=profile)
-
-                channel_data = {
-                    'user_id': socket_id,
-                    'user_info': {
-                        'public_name': profile.public_name,
-                    }
+            if chat.type != 'public':
+                try:
+                    ChChatSubscription.objects.get(chat=chat, profile=profile)
+                except ChChatSubscription.DoesNotExist:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            channel_data = {
+                'user_id': socket_id,
+                'user_info': {
+                    'public_name': profile.public_name,
                 }
+            }
 
-                pusher_object = pusher.Pusher(
-                    app_id=settings.PUSHER_APP_ID,
-                    key=settings.PUSHER_APP_KEY,
-                    secret=settings.PUSHER_SECRET,
-                    encoder=DjangoJSONEncoder,
-                )
+            pusher_object = pusher.Pusher(
+                app_id=settings.PUSHER_APP_ID,
+                key=settings.PUSHER_APP_KEY,
+                secret=settings.PUSHER_SECRET,
+                encoder=DjangoJSONEncoder,
+            )
 
-                auth_response = pusher_object.authenticate(
-                    channel=chat_channel,
-                    socket_id=socket_id,
-                    custom_data=channel_data
-                )
+            auth_response = pusher_object.authenticate(
+                channel=chat_channel,
+                socket_id=socket_id,
+                custom_data=channel_data
+            )
 
-                return Response(json.dumps(auth_response, cls=DjangoJSONEncoder), status=status.HTTP_200_OK)
-
-            except ChChatSubscription.DoesNotExist:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(json.dumps(auth_response, cls=DjangoJSONEncoder), status=status.HTTP_200_OK)
 
 
 # ============================================================ #

@@ -279,36 +279,36 @@ def chat_auth(request):
 
         profile = ChProfile.objects.get(user=user)
 
-        try:
-            ChChatSubscription.objects.get(chat=chat, profile=profile)
+        if chat.type != 'public':
+            try:
+                ChChatSubscription.objects.get(chat=chat, profile=profile)
+            except ChChatSubscription.DoesNotExist:
+                response = HttpResponse("Unauthorized")
+                response.status_code = 401
+                return response
 
-            channel_data = {
-                'user_id': socket_id,
-                'user_info': {
-                    'public_name': profile.public_name,
-                    'username': profile.username
-                    }
-            }
+        channel_data = {
+            'user_id': socket_id,
+            'user_info': {
+                'public_name': profile.public_name,
+                'username': profile.username
+                }
+        }
 
-            pusher_object = pusher.Pusher(
-                app_id=settings.PUSHER_APP_ID,
-                key=settings.PUSHER_APP_KEY,
-                secret=settings.PUSHER_SECRET,
-                encoder=DjangoJSONEncoder,
-            )
+        pusher_object = pusher.Pusher(
+            app_id=settings.PUSHER_APP_ID,
+            key=settings.PUSHER_APP_KEY,
+            secret=settings.PUSHER_SECRET,
+            encoder=DjangoJSONEncoder,
+        )
 
-            auth_response = pusher_object.authenticate(
-                channel=chat_channel,
-                socket_id=socket_id,
-                custom_data=channel_data
-            )
+        auth_response = pusher_object.authenticate(
+            channel=chat_channel,
+            socket_id=socket_id,
+            custom_data=channel_data
+        )
 
-            return HttpResponse(json.dumps(auth_response, cls=DjangoJSONEncoder))
-
-        except ChChatSubscription.DoesNotExist:
-            response = HttpResponse("Unauthorized")
-            response.status_code = 401
-            return response
+        return HttpResponse(json.dumps(auth_response, cls=DjangoJSONEncoder))
 
     else:
         raise Http404

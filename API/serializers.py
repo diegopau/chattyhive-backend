@@ -28,8 +28,8 @@ class URLParamsError(Exception):
 class AsyncServices(serializers.Serializer):
 
     name = serializers.CharField(max_length=20)
-    app = serializers.CharField(max_length=255)
-    reg_id = serializers.CharField(max_length=255)
+    app = serializers.CharField(max_length=255, allow_blank=True)
+    reg_id = serializers.CharField(max_length=255, allow_blank=True)
 
     def validate(self, data):
         return data
@@ -119,7 +119,12 @@ class LoginCredentialsSerializer(serializers.Serializer):
     # We need a save() implementation to get an object instance from the view
     def save(self):
         username = self.validated_data['username']
+        email = self.validated_data['email']
         password = self.validated_data['password']
+        dev_os = self.validated_data['dev_os']
+        dev_type = self.validated_data['dev_type']
+        dev_id = self.validated_data['dev_id']
+        services = self.validated_data['services']
 
 
 class CheckAsyncServices(serializers.Serializer):
