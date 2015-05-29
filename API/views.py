@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
     ChMessage, Device
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
 import pusher
 from email_confirmation.models import EmailAddress, EmailConfirmation
@@ -519,7 +520,7 @@ class ChProfileHiveList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        hives = profile.hive_subscriptions
+        hives = profile.hives
 
         fields_to_remove = ('priority',)
         serializer = serializers.ChHiveLevel1Serializer(hives, fields_to_remove=fields_to_remove, many=True)
@@ -623,7 +624,7 @@ class ChProfileChatList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        chats = profile.chat_subscriptions
+        chats = profile.chats
         # En fields se le pasa el campo a eliminar del serializador
         serializer = serializers.ChChatListLevel2Serializer(chats, many=True)
         return Response(serializer.data)
@@ -725,6 +726,51 @@ class ChHiveDetail(APIView):
         hive = self.get_object(hive_slug)
         fields_to_remove = ('chprofile_set',)
         serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
+
+        return Response(serializer.data)
+
+
+class ChHiveUsersList(APIView):
+    """API method: GET hive info
+
+    """
+
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveUsers)
+
+    def get_object(self, hive_slug):
+        try:
+            return ChHive.objects.get(slug=hive_slug)
+        except ChHive.DoesNotExist:
+            raise Http404
+
+    def get(self, request, hive_slug, list_order, format=None):
+
+        # Info retrieval
+        hive = self.get_object(hive_slug)
+        profile = request.user.profile
+
+        try:
+            # If the user is requesting users for a hive he/she is subscribed, then we go on...
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if list_order == 'recommended':
+            profiles = hive.get_users_recommended(profile)
+        elif list_order == 'near':
+            # TODO: This could be much more improved, using the latitude and longitude data on the database,
+            # but using cities, regions and countries is not bad solution at all
+            profiles = hive.get_users_near(profile)
+        elif list_order == 'recent':
+            profiles = hive.get_users_recently_online(profile)
+        elif list_order == 'new':
+            profiles = hive.get_users_recently_join(profile)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = serializers.ChProfileSerializer(profiles, many=True, type='public', package='basic')
 
         return Response(serializer.data)
 

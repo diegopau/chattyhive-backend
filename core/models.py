@@ -310,8 +310,8 @@ class ChProfile(models.Model):
     # Many-to-Many fields through the intermediate models (the subscriptions)
     # IMPORTANTE, se meten los modelos entre comillas por necesidad (por estar declaradas las clases para ambos
     # modelos después de esta clase, pero ese no es el modo habitual de hacer esto!
-    hive_subscriptions = models.ManyToManyField('ChHive', through='ChHiveSubscription')
-    chat_subscriptions = models.ManyToManyField('ChChat', through='ChChatSubscription')
+    hives = models.ManyToManyField('ChHive', through='ChHiveSubscription')
+    chats = models.ManyToManyField('ChChat', through='ChChatSubscription')
 
     # methods
     def add_language(self, char_language):
@@ -555,17 +555,56 @@ class ChHive(models.Model):
         """
         return self.subscriptions.count()
 
-    def get_users_by_country(self, country):
+    def get_users_near(self, profile):
         """
-        :return: profiles of users joining the hive in the country specified
+        :return: profiles of users near to the user, prioritizing first city, then region, then country
         """
-        return self.users.filter(country=country)
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False).exclude(profile=profile)
 
-    def get_users_recently_online(self):
+        users_in_same_city = None
+        users_in_same_region = None
+
+        if profile.city is not None:
+            users_in_same_city = ChProfile.objects.filter(
+                hive_subscription__in=hive_subscriptions, city=profile.city).order_by('-last_activity')
+
+        if profile.region is not None:
+            users_in_same_region = ChProfile.objects.filter(
+                hive_subscription__in=hive_subscriptions, region=profile.region).exclude(
+                id__in=[o.id for o in users_in_same_city]).order_by('-last_activity')
+
+        if profile.country is not None:
+            users_in_same_country = ChProfile.objects.filter(
+                hive_subscription__in=hive_subscriptions, region=profile.region).exclude(
+                id__in=[o.id for o in users_in_same_city]).exclude(
+                id__in=[o.id for o in users_in_same_region]).order_by('-last_activity')
+        else:
+            raise IntegrityError("User has no country assigned")
+
+        return users_in_same_city + users_in_same_region + users_in_same_country
+
+    def get_users_recently_join(self, profile):
+
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False).exclude(profile=profile)
+
+        users_recently_join = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+            '-hive_subscription__creation_date')
+
+        return users_recently_join
+
+    def get_users_recently_online(self, profile):
         """
         :return: profiles of users joining the hive in the country specified
         """
-        return self.users.order_by('-last_activity')
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, deleted=False, expelled=False).exclude(profile=profile)
+
+        users_recently_online = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+            '-last_activity')
+
+        return users_recently_online
 
     def get_users_recommended(self, profile):
         """
@@ -877,7 +916,7 @@ class ChChat(models.Model):
 class ChChatSubscription(models.Model):
     # Subscription object which relates Profiles with Chats
     profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
-    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='subscriptions')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
     deleted = models.BooleanField(default=False)
