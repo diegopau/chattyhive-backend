@@ -363,7 +363,7 @@ class CheckAsynchronousServices(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-@permission_classes(permissions.IsAuthenticated,)
+
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
