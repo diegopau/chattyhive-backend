@@ -134,6 +134,7 @@ class CheckAsyncServices(serializers.Serializer):
 
     dev_id = serializers.CharField(
         max_length=50, validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
+    dev_os = serializers.CharField(max_length=20)
     services = AsyncServices(many=True)
 
     def validate(self, data):
@@ -164,6 +165,8 @@ class CheckAsyncServices(serializers.Serializer):
 
     # We need a save() implementation to get an object instance from the view
     def save(self):
+        dev_id = self.validated_data['dev_id']
+        dev_os = self.validated_data['dev_os']
         services = self.validated_data['services']
 
 
