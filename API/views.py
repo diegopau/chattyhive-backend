@@ -310,12 +310,12 @@ class UserLogin(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-@permission_classes(permissions.IsAuthenticated,)
+
+# TODO: This permission should be set, but is giving problems
+# @permission_classes(permissions.IsAuthenticated,)
 def user_logout(request):
-    if request.method == 'POST':
-        logout(request)
-        request.session['active'] = False
-        return Response(status=status.HTTP_200_OK)
+    logout(request)
+    return Response(status=status.HTTP_200_OK)
 
 
 class CheckAsynchronousServices(APIView):

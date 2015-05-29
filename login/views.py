@@ -264,7 +264,6 @@ def register_three(request):
 
 def logout_view(request):
     logout(request)
-    request.session['active'] = False
     return HttpResponse("logged out")
 
 
