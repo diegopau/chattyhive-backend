@@ -182,7 +182,7 @@ class AsyncAuthSerializer(serializers.Serializer):
     def validate(self, data):
         if data['service'] == 'pusher':
             # We set to an empty string the param that is not inside the request body
-            if data['channel_name'].starts_with('presence-'):
+            if data['channel_name'].startswith('presence-'):
                 chat_id = data['channel_name'][9:len(data['channel_name'])]
                 try:
                     ChChat.objects.get(chat_id=chat_id)

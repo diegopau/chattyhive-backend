@@ -363,7 +363,8 @@ class CheckAsynchronousServices(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-
+# TODO: This permission should be set, but is giving problems
+# @permission_classes(permissions.IsAuthenticated,)
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
@@ -397,7 +398,6 @@ def asynchronous_authentication(request):
                 app_id=settings.PUSHER_APP_ID,
                 key=settings.PUSHER_APP_KEY,
                 secret=settings.PUSHER_SECRET,
-                encoder=DjangoJSONEncoder,
             )
 
             auth_response = pusher_object.authenticate(
@@ -406,7 +406,7 @@ def asynchronous_authentication(request):
                 custom_data=channel_data
             )
 
-            return Response(json.dumps(auth_response, cls=DjangoJSONEncoder), status=status.HTTP_200_OK)
+            return Response(auth_response, status=status.HTTP_200_OK)
 
 
 # ============================================================ #
@@ -563,10 +563,8 @@ class ChProfileHiveList(APIView):
             return Response({'error_message': 'The user is expelled from the hive'},
                             status=status.HTTP_401_UNAUTHORIZED)
 
-        fields_to_remove = ('chprofile_set',)
-
         # Because I don't want Django Rest Framework to treat it as a serializer in this case, I cast it to a dict
-        hive_info = dict(serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove).data)
+        hive_info = dict(serializers.ChHiveSerializer(hive).data)
 
         return Response(hive_info, status=status.HTTP_200_OK)
 
