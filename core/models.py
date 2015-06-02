@@ -296,8 +296,8 @@ class ChProfile(models.Model):
     public_status = models.CharField(max_length=140, blank=True, null=True)
     personal_color = RGBColorField()
     # image fields
-    picture = models.URLField(null=True)
-    avatar = models.URLField(null=True)
+    picture = models.URLField(null=True, blank=True)
+    avatar = models.URLField(null=True, blank=True)
 
     private_show_age = models.BooleanField(default=False)
     private_show_location = models.BooleanField(default=True)
