@@ -46,10 +46,13 @@ class LoginCredentialsSerializer(serializers.Serializer):
 
     """
     email = serializers.EmailField()
-    public_name = serializers.CharField(max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]+$', 'Only alphanumeric characters and "_" are allowed.')])
+    public_name = serializers.CharField(
+        max_length=20, validators=[RegexValidator(r'^[0-9a-zA-Z_]+$',
+                                                  'Only alphanumeric characters and "_" are allowed.')])
     password = serializers.CharField(write_only=True)
     dev_os = serializers.CharField(max_length=20)
     dev_type = serializers.CharField(max_length=20)
+    dev_code = serializers.CharField(max_length=16, allow_blank=True)
     dev_id = serializers.CharField(max_length=50)
     services = AsyncServices(many=True)
 
@@ -71,7 +74,8 @@ class LoginCredentialsSerializer(serializers.Serializer):
 
     def validate(self, data):
         DEV_OS_CHOICES = ('android', 'ios', 'wp', 'browser', 'windows', 'linux', 'mac')
-        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'netbook', 'laptop', 'desktop', 'big_screen_desktop', 'tv')
+        DEV_TYPE_CHOICES = ('smartphone', '6-8tablet', 'big_tablet', 'netbook', 'laptop', 'desktop',
+                            'big_screen_desktop', 'tv')
 
         if 'email' in data:
             # We set to an empty string the param that is not inside the request body
@@ -123,6 +127,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
         password = self.validated_data['password']
         dev_os = self.validated_data['dev_os']
         dev_type = self.validated_data['dev_type']
+        dev_code = self.validated_data['dev_code']
         dev_id = self.validated_data['dev_id']
         services = self.validated_data['services']
 

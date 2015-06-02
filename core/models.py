@@ -228,7 +228,7 @@ class Device(models.Model):
 
     DEV_TYPE_CHOICES = (
         ('smartphone', 'smartphone up to 6 inch'),
-        ('6-8tablet', '6 to 8 inch tablet'),
+        ('6_8tablet', '6 to 8 inch tablet'),
         ('big_tablet', 'More than 8 inch tablet'),
         ('netbook', 'less than 15 inch screen'),
         ('laptop', 'between 15 and 17 inch screen'),
@@ -240,6 +240,17 @@ class Device(models.Model):
     user = models.ForeignKey(ChUser, related_name='related_device')
     dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
     dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
+
+    # This id can be re-constructed from info that are persistent for the client (dev_os, dev_type, device identifier
+    # (which we call dev_code in the API))
+    # It is known that some devices (because of a bug) could report the same dev_code, also if a device have no dev_code
+    # will be stored without the last part of the chain (dev_code=''), in this
+    # case two real devices could share the same dev_id, this means that when the server sends messages through
+    # gcm it will only send it to the reg_id of this device, but is a weird condition and we could look in the future
+    # for better solutions
+
+    dev_alternative_id = models.CharField(unique=True, max_length=255,
+                                          verbose_name=_("public_name + dev_os + dev_type + dev_cod"))
     dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True,
                               validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)

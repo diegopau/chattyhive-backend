@@ -5,7 +5,7 @@ __author__ = 'diego'
 import django
 import json
 from django.contrib.auth import authenticate
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
     ChMessage, Device
 from django.core.serializers.json import DjangoJSONEncoder
@@ -56,7 +56,7 @@ def start_session(request, format=None):
 
 class UserLogin(APIView):
 
-    def get_or_register_device(self, dev_id, dev_type, dev_os, new_device, reg_id, user):
+    def get_or_register_device(self, dev_id, dev_type, dev_os, dev_code, new_device, reg_id, user):
 
         # The dev_id should point to an existing device
         if not new_device and (dev_id != ''):
@@ -77,10 +77,16 @@ class UserLogin(APIView):
             return dev_id
 
         if new_device:
-            device = Device(active=True, dev_os=dev_os, dev_type=dev_type, last_activity=timezone.now(), reg_id=reg_id,
-                            user=user)
-            device.dev_id = Device.get_dev_id()
-            device.save()
+            # First we try if for this user there is already a device matching the parameters
+            # public_name + dev_os + dev_type + dev_code
+            dev_alternative_id = user.profile.public_name + '-' + dev_os + '-' + dev_type + '-' + dev_code
+            try:
+                device = Device.objects.get(dev_alternative_id=dev_alternative_id, active=True)
+            except Device.DoesNotExist:
+                device = Device(active=True, dev_os=dev_os, dev_type=dev_type, dev_alternative_id=dev_alternative_id,
+                                last_activity=timezone.now(), reg_id=reg_id, user=user)
+                device.dev_id = Device.get_dev_id()
+                device.save()
             return device.dev_id
 
     def post(self, request, format=None):
@@ -109,12 +115,13 @@ class UserLogin(APIView):
             print("at least email or public_name should be in the JSON")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        if ('dev_os' in request.data) and ('dev_type' in request.data):
+        if ('dev_os' in request.data) and ('dev_type' in request.data) and ('dev_code' in request.data):
             if 'dev_id' in request.data:
-                print("dev_id, dev_os and dev_type shouldn't be together in the request")
+                print("dev_id, dev_os, dev_code and dev_type shouldn't be together in the request")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             fields_to_allow.append('dev_os')
             fields_to_allow.append('dev_type')
+            fields_to_allow.append('dev_code')
             # If request is coming from a web browser we will not associate any device with it
             if request.data['dev_os'] == 'android':
                 new_device = True
@@ -129,7 +136,7 @@ class UserLogin(APIView):
             fields_to_allow.append('dev_id')
             temp_dev_id = request.data['dev_id']
         else:
-            print("some fields are missing, probably dev_type or dev_os")
+            print("some fields are missing, probably dev_type, dev_os or dev_code")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         fields_to_allow.append('services')
@@ -181,6 +188,7 @@ class UserLogin(APIView):
                                             self.get_or_register_device(dev_id=temp_dev_id,
                                                                         dev_type=serializer.validated_data['dev_type'],
                                                                         dev_os=serializer.validated_data['dev_os'],
+                                                                        dev_code=serializer.validated_data['dev_code'],
                                                                         new_device=new_device,
                                                                         reg_id=reg_id,
                                                                         user=request.user)
@@ -189,6 +197,7 @@ class UserLogin(APIView):
                                             self.get_or_register_device(dev_id=temp_dev_id,
                                                                         dev_type='',
                                                                         dev_os='',
+                                                                        dev_code='',
                                                                         new_device=new_device,
                                                                         reg_id='',
                                                                         user=request.user)
@@ -217,6 +226,7 @@ class UserLogin(APIView):
                                             self.get_or_register_device(dev_id=temp_dev_id,
                                                                         dev_type=serializer.validated_data['dev_type'],
                                                                         dev_os=serializer.validated_data['dev_os'],
+                                                                        dev_code=serializer.validated_data['dev_code'],
                                                                         new_device=new_device,
                                                                         reg_id=reg_id,
                                                                         user=request.user)
@@ -225,6 +235,7 @@ class UserLogin(APIView):
                                             self.get_or_register_device(dev_id=temp_dev_id,
                                                                         dev_type='',
                                                                         dev_os='',
+                                                                        dev_code='',
                                                                         new_device=new_device,
                                                                         reg_id='',
                                                                         user=request.user)
@@ -248,6 +259,7 @@ class UserLogin(APIView):
                                             self.get_or_register_device(dev_id=temp_dev_id,
                                                                         dev_type=serializer.validated_data['dev_type'],
                                                                         dev_os=serializer.validated_data['dev_os'],
+                                                                        dev_code=serializer.validated_data['dev_code'],
                                                                         new_device=new_device,
                                                                         reg_id=reg_id,
                                                                         user=request.user)
@@ -256,6 +268,7 @@ class UserLogin(APIView):
                                             self.get_or_register_device(dev_id=temp_dev_id,
                                                                         dev_type='',
                                                                         dev_os='',
+                                                                        dev_code='',
                                                                         new_device=new_device,
                                                                         reg_id='',
                                                                         user=request.user)
@@ -280,6 +293,7 @@ class UserLogin(APIView):
                                 self.get_or_register_device(dev_id=temp_dev_id,
                                                             dev_type=serializer.validated_data['dev_type'],
                                                             dev_os=serializer.validated_data['dev_os'],
+                                                            dev_code=serializer.validated_data['dev_code'],
                                                             new_device=new_device,
                                                             reg_id=reg_id,
                                                             user=request.user)
@@ -288,6 +302,7 @@ class UserLogin(APIView):
                                 self.get_or_register_device(dev_id=temp_dev_id,
                                                             dev_type='',
                                                             dev_os='',
+                                                            dev_code='',
                                                             new_device=new_device,
                                                             reg_id='',
                                                             user=request.user)
