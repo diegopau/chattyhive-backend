@@ -1,6 +1,7 @@
 # Django settings for clean_project project.
 # -*- encoding: utf-8 -*-
 import os
+from django.utils.translation import ugettext_lazy as _ 
 
 DEBUG = True
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
@@ -69,6 +70,86 @@ USE_I18N = True
 # If you set this to False, Django will not format dates, numbers and
 # calendars according to the current locale.
 USE_L10N = True
+
+
+LANGUAGES = (
+    ('af', _('Afrikaans')),
+    ('ar', _('Arabic')),
+    ('ast', _('Asturian')),
+    ('az', _('Azerbaijani')),
+    ('bg', _('Bulgarian')),
+    ('be', _('Belarusian')),
+    ('bn', _('Bengali')),
+    ('br', _('Breton')),
+    ('bs', _('Bosnian')),
+    ('ca', _('Catalan')),
+    ('cs', _('Czech')),
+    ('cy', _('Welsh')),
+    ('da', _('Danish')),
+    ('de', _('German')),
+    ('el', _('Greek')),
+    ('en', _('English')),
+    ('eo', _('Esperanto')),
+    ('es', _('Spanish')),
+    ('et', _('Estonian')),
+    ('eu', _('Basque')),
+    ('fa', _('Persian')),
+    ('fi', _('Finnish')),
+    ('fr', _('French')),
+    ('fy', _('Frisian')),
+    ('ga', _('Irish')),
+    ('gl', _('Galician')),
+    ('he', _('Hebrew')),
+    ('hi', _('Hindi')),
+    ('hr', _('Croatian')),
+    ('hu', _('Hungarian')),
+    ('ia', _('Interlingua')),
+    ('id', _('Indonesian')),
+    ('io', _('Ido')),
+    ('is', _('Icelandic')),
+    ('it', _('Italian')),
+    ('ja', _('Japanese')),
+    ('ka', _('Georgian')),
+    ('kk', _('Kazakh')),
+    ('km', _('Khmer')),
+    ('kn', _('Kannada')),
+    ('ko', _('Korean')),
+    ('lb', _('Luxembourgish')),
+    ('lt', _('Lithuanian')),
+    ('lv', _('Latvian')),
+    ('mk', _('Macedonian')),
+    ('ml', _('Malayalam')),
+    ('mn', _('Mongolian')),
+    ('mr', _('Marathi')),
+    ('my', _('Burmese')),
+    ('nb', _('Norwegian Bokmal')),
+    ('ne', _('Nepali')),
+    ('nl', _('Dutch')),
+    ('nn', _('Norwegian Nynorsk')),
+    ('os', _('Ossetic')),
+    ('pa', _('Punjabi')),
+    ('pl', _('Polish')),
+    ('pt', _('Portuguese')),
+    ('ro', _('Romanian')),
+    ('ru', _('Russian')),
+    ('sk', _('Slovak')),
+    ('sl', _('Slovenian')),
+    ('sq', _('Albanian')),
+    ('sr', _('Serbian')),
+    ('sv', _('Swedish')),
+    ('sw', _('Swahili')),
+    ('ta', _('Tamil')),
+    ('te', _('Telugu')),
+    ('th', _('Thai')),
+    ('tr', _('Turkish')),
+    ('tt', _('Tatar')),
+    ('udm', _('Udmurt')),
+    ('uk', _('Ukrainian')),
+    ('ur', _('Urdu')),
+    ('vi', _('Vietnamese')),
+    ('zh-hant', _('Chinese')),
+)
+
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
