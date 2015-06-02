@@ -52,6 +52,11 @@ class ChMessage(admin.ModelAdmin):
     list_display = ('chat', '_count', 'client_timestamp', 'content', 'content_type', 'created', 'profile', 'received')
 
 
+@admin.register(Device)
+class Device(admin.ModelAdmin):
+    list_display = ('user', 'dev_os', 'dev_type', 'dev_id', 'reg_id', 'active', 'last_activity')
+
+
 @admin.register(GuidelinesModel)
 class GuidelineModelAdmin(admin.ModelAdmin):
     list_display = ('name', 'text')
@@ -69,7 +74,6 @@ class GuidelineModelAdmin(admin.ModelAdmin):
 
 # Include all models in Admin site
 admin.site.register(ChUser)
-admin.site.register(Device)
 admin.site.register(ChProfile)
 admin.site.register(ChCategory)
 admin.site.register(TagModel)

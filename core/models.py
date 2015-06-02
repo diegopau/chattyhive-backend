@@ -237,7 +237,7 @@ class Device(models.Model):
         ('tv', 'TV device, big seen from long distance')
     )
 
-    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
+    user = models.ForeignKey(ChUser, related_name='related_device')
     dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
     dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
     dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True,
