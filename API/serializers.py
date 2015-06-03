@@ -502,9 +502,9 @@ class ChProfileSerializer(serializers.ModelSerializer):
 
     user = ChUserLevel0Serializer(many=False, read_only=True)
     languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
-    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
-    region = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
-    city = serializers.SlugRelatedField(read_only=True, slug_field='name_ascii')
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2'.lower())
+    region = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    city = serializers.SlugRelatedField(read_only=True, slug_field='name')
     location = serializers.CharField(source='get_location', read_only=True)
 
     hives = ChHiveLevel1Serializer(many=True, read_only=True)

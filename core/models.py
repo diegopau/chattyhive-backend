@@ -636,7 +636,6 @@ class ChHive(models.Model):
         #     if profile.city != ''
         pass
 
-
     @classmethod
     def get_hives_by_priority(cls, profile):
         user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
