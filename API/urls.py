@@ -34,8 +34,8 @@ urlpatterns = patterns('',
     url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/chats/$', views.ChProfileChatList.as_view(),
         name="profile_chat_list"),
 
-    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/(?P<profile_type>(public|private|logged_profile)?)/$', views.ChProfileDetail.as_view(),
-        name="profile_detail"),
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/(?P<profile_type>(public|private|logged_profile)?)/$',
+        views.ChProfileDetail.as_view(), name="profile_detail"),
 
     # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars
     url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/$',
@@ -45,6 +45,9 @@ urlpatterns = patterns('',
     # Careful! order of the following item is important
     url(r'^chats/(?P<target_public_name>[0-9a-zA-Z_]+)/$',
         views.OpenPrivateChat.as_view(), name="open_private_chat"),
+
+    url(r'^hives/((?P<list_order>(recommended|near|recent|communities)?)|(?P<category>(\d{2}.\d{2})))/$',
+        views.ChHiveList.as_view(), name="hive_list"),
 
     url(r'^hives/(?P<hive_slug>.+)/users/(?P<list_order>(recommended|near|recent|new)?)/$', views.ChHiveUsersList.as_view(),
         name="hive_user_list"),

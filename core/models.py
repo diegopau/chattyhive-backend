@@ -517,11 +517,9 @@ class ChHive(models.Model):
     tags = models.ManyToManyField(TagModel, null=True)
     rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
     picture = models.CharField(max_length=200, default='')
-
-    # TODO: Add validator to ensure that this field has a value from 1 to 100
-    priority = models.IntegerField(default=50)
+    priority = models.IntegerField(default=50, validators=[RegexValidator(r'^(?:100|[1-9]?[0-9])$',
+                                                                          'Only integers between 0 - 100 allowed')])
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
-
     deleted = models.BooleanField(default=False)
 
     @property
@@ -629,6 +627,48 @@ class ChHive(models.Model):
             '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
+
+    @classmethod
+    def get_matching_location(cls, profile, location):
+        # if 'coordinates' in location:
+        #     pass  # This is for more accurate and complete location based on latitude and longitude
+        # if 'city' in location:
+        #     if profile.city != ''
+        pass
+
+
+    @classmethod
+    def get_hives_by_priority(cls, profile):
+        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+        hives = \
+            cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by('-priority')
+        return hives
+
+    @classmethod
+    def get_hives_by_proximity(cls, profile, location):
+        # user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+        # if location:
+        #     matching_location = cls.get_matching_location(profile, location)
+        #
+        # hives =
+
+        pass
+
+    @classmethod
+    def get_hives_by_age(cls, profile):
+        pass
+
+    @classmethod
+    def get_hives_by_category(cls, profile, location):
+        # We give higher priority to those created by someone in the same country than the user requesting them
+        # and we order them by age
+        pass
+
+    @classmethod
+    def get_communities(cls, profile, location):
+        # We give higher priority to those created by someone in the same country than the user requesting them
+        # and we order them by age
+        pass
 
     def join(self, profile):
         """
