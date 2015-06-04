@@ -269,11 +269,11 @@ SESSION_SAVE_EVERY_REQUEST = True
 # ### ========================================================== ###
 # ###                          AWS S3                            ###
 # ### ========================================================== ###
-S3_ENDPOINT =
-S3_ACCESS_ID =
-S3_ACCESS_KEY =
-S3_REGION =
-S3_SERVICE =
+# S3_ENDPOINT =
+# S3_ACCESS_ID =
+# S3_ACCESS_KEY =
+# S3_REGION =
+# S3_SERVICE =
 
 
 

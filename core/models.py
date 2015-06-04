@@ -354,12 +354,12 @@ class ChProfile(models.Model):
         except LanguageModel.DoesNotExist:
             return
 
-    def get_location(self):
+    def get_coordinates(self):
         if self.city:
-            location = str(self.city.latitude) + ' ' + str(self.city.longitude)
+            coordinates = str(self.city.latitude) + ' ' + str(self.city.longitude)
         else:
-            location = 'not_set'
-        return location
+            coordinates = 'not_set'
+        return coordinates
 
     def set_approximate_location(self, text_location):
         """
@@ -629,14 +629,6 @@ class ChHive(models.Model):
         return users_list
 
     @classmethod
-    def get_matching_location(cls, profile, location):
-        # if 'coordinates' in location:
-        #     pass  # This is for more accurate and complete location based on latitude and longitude
-        # if 'city' in location:
-        #     if profile.city != ''
-        pass
-
-    @classmethod
     def get_hives_by_priority(cls, profile):
         user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
         hives = \
@@ -644,30 +636,62 @@ class ChHive(models.Model):
         return hives
 
     @classmethod
-    def get_hives_by_proximity(cls, profile, location):
-        # user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
-        # if location:
-        #     matching_location = cls.get_matching_location(profile, location)
-        #
-        # hives =
+    def get_hives_by_proximity_or_location(cls, profile, location):
+        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+        hives_precise = None
+        hives_city = None
+        hives_region = None
+        hives_country = None
+        if location:
+            if 'coordinates' in location and location['coordinates'] != '':
+                # hives_precise = ...
+                pass  # This can be used in the future for more precise location
+            else:
+                if 'city' in location and location['city'] != '':
+                    hives_city = cls.objects.filter(
+                        deleted=False, creator__city__name=location['city']).order_by('-creation_date')
+                if 'region' in location and location['region'] != '':
+                    hives_region = cls.objects.filter(
+                        deleted=False, creator__region__name=location['region']).order_by('-creation_date')
+                hives_country = cls.objects.filter(
+                    deleted=False, creator__country__code2=location['country'].upper()).order_by('-creation_date')
+        else:
+            # We use the location of the user making the request. This could be improved in the future using coordinates
+            if profile.city:
+                hives_city = cls.objects.filter(
+                    deleted=False, creator__city=profile.city).order_by('-creation_date')
+            if profile.region:
+                hives_region = cls.objects.filter(
+                    deleted=False, creator__region=profile.region).order_by('-creation_date')
+            hives_country = cls.objects.filter(
+                deleted=False, creator__country=profile.country).order_by('-creation_date')
 
-        pass
+        hives = hives_precise | hives_city | hives_region | hives_country
+        hives_not_subscribed = hives.exclude(subscriptions__in=user_hive_subscriptions)
+        return hives_not_subscribed
 
     @classmethod
     def get_hives_by_age(cls, profile):
-        pass
+        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+        hives = cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by(
+            '-creation_date')
+        return hives
 
     @classmethod
-    def get_hives_by_category(cls, profile, location):
+    def get_hives_by_category(cls, profile, category, location):
         # We give higher priority to those created by someone in the same country than the user requesting them
         # and we order them by age
-        pass
+        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location)
+        hives_by_category = hives_by_age_and_location.filter(category__code=category)
+        return hives_by_category
 
     @classmethod
     def get_communities(cls, profile, location):
         # We give higher priority to those created by someone in the same country than the user requesting them
         # and we order them by age
-        pass
+        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location)
+        communities = hives_by_age_and_location.filter(type='Community')
+        return communities
 
     def join(self, profile):
         """

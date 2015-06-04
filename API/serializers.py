@@ -505,7 +505,7 @@ class ChProfileSerializer(serializers.ModelSerializer):
     country = serializers.SlugRelatedField(read_only=True, slug_field='code2'.lower())
     region = serializers.SlugRelatedField(read_only=True, slug_field='name')
     city = serializers.SlugRelatedField(read_only=True, slug_field='name')
-    location = serializers.CharField(source='get_location', read_only=True)
+    coordinates = serializers.CharField(source='get_coordinates', read_only=True)
 
     hives = ChHiveLevel1Serializer(many=True, read_only=True)
 
