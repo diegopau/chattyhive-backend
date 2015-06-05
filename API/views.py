@@ -7,7 +7,7 @@ import json
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
-    ChMessage, Device
+    ChMessage, Device, ChCategory
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
@@ -437,12 +437,68 @@ class ChHiveList(APIView):
 
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, format=None):
+    def get(self, request, list_order, category, format=None):
         """prueba
         """
-        hives = ChHive.objects.all()
+        location = {}
+
+        # Info retrieval
+        profile = request.user.profile
+
+        coordinates = request.query_params.get('coordinates', '')
+        if coordinates != '':
+            location['coordinates'] = coordinates
+
+        else:  # If we get coordinates we discard anything else
+            country = request.query_params.get('country', '')
+            if country != '':
+                location['country'] = country
+
+            region = request.query_params.get('region', '')
+            if region != '':
+                location['region'] = region
+
+            city = request.query_params.get('city', '')
+            if city != '':
+                location['city'] = region
+
+            # We check if the params are coherent
+            if 'city' in location:
+                if 'region' not in location:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+            if 'region' in location:
+                if 'country' not in location:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if list_order and category:  # Can not be both present at the same time!
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        elif list_order or category:  # If one param
+            if category:
+                try:
+                    category_id = ChCategory.objects.get(code=category)
+                except ChCategory.DoesNotExist:
+                    return Response({'error_message': 'Category not found by this code'},
+                                    status=status.HTTP_404_NOT_FOUND)
+                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location)
+            elif list_order:
+                if list_order == 'recommended':
+                    hives = ChHive.get_hives_by_priority(profile=profile)
+                elif list_order == 'near':
+                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location)
+                elif list_order == 'recent':
+                    hives = ChHive.get_hives_by_age(profile=profile)
+                elif list_order == 'communities':
+                    hives = ChHive.get_communities(profile=profile, location=location)
+                else:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        else:  # no parameters, we just give back all hives
+            hives = ChHive.objects.all()
+
         serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
-        return Response(serializer.data)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, format=None):
         """post prueba

@@ -682,7 +682,7 @@ class ChHive(models.Model):
         # We give higher priority to those created by someone in the same country than the user requesting them
         # and we order them by age
         hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location)
-        hives_by_category = hives_by_age_and_location.filter(category__code=category)
+        hives_by_category = hives_by_age_and_location.filter(category=category)
         return hives_by_category
 
     @classmethod
