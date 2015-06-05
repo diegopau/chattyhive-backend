@@ -276,8 +276,8 @@ class Device(models.Model):
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
-    created = models.DateField(auto_now_add=True)
-    last_modified = models.DateField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateTimeField(auto_now=True)
     last_activity = models.DateTimeField(default=timezone.now())
 
     # Here are the choices definitions
@@ -512,7 +512,7 @@ class ChHive(models.Model):
     description = models.TextField(max_length=400)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
-    creator = models.ForeignKey(ChProfile, null=True)
+    creator = models.ForeignKey(ChProfile, null=True, related_name='created_hives')
     creation_date = models.DateTimeField(auto_now=False, auto_now_add=False)
     tags = models.ManyToManyField(TagModel, null=True)
     rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
@@ -638,10 +638,10 @@ class ChHive(models.Model):
     @classmethod
     def get_hives_by_proximity_or_location(cls, profile, location):
         user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
-        hives_precise = None
-        hives_city = None
-        hives_region = None
-        hives_country = None
+        hives_precise = ChHive.objects.none()  # This is the recommended way to create an empty queryset
+        hives_city = ChHive.objects.none()
+        hives_region = ChHive.objects.none()
+        hives_country = ChHive.objects.none()
         if location:
             if 'coordinates' in location and location['coordinates'] != '':
                 # hives_precise = ...
