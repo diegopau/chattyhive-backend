@@ -43,8 +43,11 @@ class ChChatAdmin(admin.ModelAdmin):
 
 @admin.register(ChHive)
 class ChHiveAdmin(admin.ModelAdmin):
+
+    readonly_fields = ('creator_location', )
+
     list_display = ('name', 'type', 'slug', 'category', 'description', 'priority', 'creation_date', 'creator',
-                    'deleted')
+                    'deleted', 'creator_location')
 
 
 @admin.register(ChMessage)
@@ -75,10 +78,10 @@ class GuidelineModelAdmin(admin.ModelAdmin):
 @admin.register(ChProfile)
 class ChProfile(admin.ModelAdmin):
 
-    fields = ('_languages', 'avatar', 'birth_date', 'country', 'region', 'city', 'created', 'first_name',
-              'last_name', 'last_activity', 'last_modified', 'personal_color',
-              'picture', 'private_show_age', 'private_show_location', 'private_status', 'public_status',
-              'public_name', 'public_show_age', 'public_show_location', 'public_show_sex', 'sex', 'user')
+    # fields = ('_languages', 'avatar', 'birth_date', 'country', 'region', 'city', 'created', 'first_name',
+    #           'last_name', 'last_activity', 'last_modified', 'personal_color',
+    #           'picture', 'private_show_age', 'private_show_location', 'private_status', 'public_status',
+    #           'public_name', 'public_show_age', 'public_show_location', 'public_show_sex', 'sex', 'user')
 
     list_display = ('public_name', 'first_name', 'last_name', 'birth_date', 'country', 'region', 'city', 'created',
                     'last_activity', 'last_modified', 'personal_color', 'private_status', 'public_status',

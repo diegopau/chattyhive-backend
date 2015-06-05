@@ -535,9 +535,16 @@ class ChHive(models.Model):
     @property
     def languages(self):
         """
-        :return: profile's languages QuerySet
+        :return: hive's languages QuerySet
         """
         return self._languages.all
+
+    @property
+    def creator_location(self):
+        """
+        :return: hive's creator location string
+        """
+        return self.creator.display_location()
 
     @languages.setter
     def languages(self, languages):
