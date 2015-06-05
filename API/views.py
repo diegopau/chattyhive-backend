@@ -437,7 +437,7 @@ class ChHiveList(APIView):
 
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, list_order, category, format=None):
+    def get(self, request, list_order='', category='', format=None):
         """prueba
         """
         location = {}
@@ -473,7 +473,7 @@ class ChHiveList(APIView):
         if list_order and category:  # Can not be both present at the same time!
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        elif list_order or category:  # If one param
+        elif list_order or category:
             if category:
                 try:
                     category_id = ChCategory.objects.get(code=category)

@@ -513,10 +513,10 @@ class ChHive(models.Model):
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
     creator = models.ForeignKey(ChProfile, null=True)
-    creation_date = models.DateField(auto_now=True)
+    creation_date = models.DateTimeField(auto_now=False, auto_now_add=False)
     tags = models.ManyToManyField(TagModel, null=True)
     rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
-    picture = models.CharField(max_length=200, default='')
+    picture = models.URLField(null=True, blank=True)
     priority = models.IntegerField(default=50, validators=[RegexValidator(r'^(?:100|[1-9]?[0-9])$',
                                                                           'Only integers between 0 - 100 allowed')])
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
