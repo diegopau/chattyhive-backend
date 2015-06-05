@@ -700,6 +700,13 @@ class ChHive(models.Model):
         communities = hives_by_age_and_location.filter(type='Community')
         return communities
 
+    @classmethod
+    def get_hives_containing(cls, profile, search_string):
+        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+        hives_containing = cls.objects.filter(deleted=False, name__icontains=search_string).exclude(
+            subscriptions__in=user_hive_subscriptions).order_by('-creation_date')
+        return hives_containing
+
     def join(self, profile):
         """
         :param profile:  profile joining the hive

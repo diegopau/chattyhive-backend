@@ -445,6 +445,8 @@ class ChHiveList(APIView):
         # Info retrieval
         profile = request.user.profile
 
+        search_string =request.query_params.get('search_string', '')
+
         coordinates = request.query_params.get('coordinates', '')
         if coordinates != '':
             location['coordinates'] = coordinates
@@ -474,6 +476,9 @@ class ChHiveList(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         elif list_order or category:
+            if search_string:
+                return Response({'error_message': 'if search_string is present no other params should be'},
+                                status=status.HTTP_400_BAD_REQUEST)
             if category:
                 try:
                     category_id = ChCategory.objects.get(code=category)
@@ -493,8 +498,11 @@ class ChHiveList(APIView):
                 else:
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        else:  # no parameters, we just give back all hives
-            hives = ChHive.objects.all()
+        else:  # no parameters, we just give back all hives or perform the search if search_string present
+            if search_string:
+                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string)
+            else:
+                hives = ChHive.objects.all()
 
         serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
 
