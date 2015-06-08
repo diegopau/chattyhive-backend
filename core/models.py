@@ -32,7 +32,7 @@ class LanguageModel(models.Model):
 
 class TagModel(models.Model):
     tag = models.CharField(max_length=32, unique=True, validators=[RegexValidator(re.compile('^([a-zA-Z0-9]|([a-zA-Z0-9][\w]*[a-zA-Z0-9]))$'))])
-    slug = models.CharField(max_length=32, default='')
+    slug = models.CharField(max_length=32, default='', blank=True)
 
     my_slugify = Slugify()
     my_slugify.separator = '-'
@@ -43,7 +43,27 @@ class TagModel(models.Model):
     my_slugify.safe_chars = ''
 
     def save(self, *args, **kwargs):
-        self.slug = self.my_slugify(self.tag)
+
+        # We first pre-proccess the string, if capital letters are found (except the first char) then it will converted
+        # to '_' + char.to_lower. Also if found several capital together, only for the first one we will add the '_'
+        # before, this is to avoid to separate initials
+        last_was_upper = True  # This way the first char will be considered as upper
+        pre_slug = ''
+        for c in self.tag:
+            if c == '_':
+                last_was_upper = True
+                pre_slug += c
+            elif c.isupper():
+                if last_was_upper:
+                    pre_slug += c
+                else:
+                    pre_slug = pre_slug + '_' + c.lower()
+                    last_was_upper = True
+            else:
+                pre_slug += c
+                last_was_upper = False
+
+        self.slug = self.my_slugify(pre_slug)
         super(TagModel, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -654,26 +674,32 @@ class ChHive(models.Model):
     @classmethod
     def get_hives_by_tags(cls, tags=[], hives=None):
 
+        hives_by_tags = ChHive.objects.none()
+
         if not tags:
             return hives
         else:
-            hives_to_include = []
-            i = 0
-            for tag in tags:
-                hives_to_include[i] = hives.objects.filter(tag__tag=)
-
-
+            hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags)
+            return hives_by_tags
 
     @classmethod
-    def get_hives_by_priority(cls, profile):
-        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+    def get_hives_by_priority(cls, profile, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
         hives = \
             cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by('-priority')
-        return hives
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives)
+            return final_hives
+        else:
+            return hives
 
     @classmethod
-    def get_hives_by_proximity_or_location(cls, profile, location):
-        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+    def get_hives_by_proximity_or_location(cls, profile, location, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
         hives_precise = ChHive.objects.none()  # This is the recommended way to create an empty queryset
         hives_city = ChHive.objects.none()
         hives_region = ChHive.objects.none()
@@ -704,34 +730,48 @@ class ChHive(models.Model):
 
         hives = hives_precise | hives_city | hives_region | hives_country
         hives_not_subscribed = hives.exclude(subscriptions__in=user_hive_subscriptions)
-        return hives_not_subscribed
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives_not_subscribed)
+            return final_hives
+        else:
+            return hives_not_subscribed
 
     @classmethod
-    def get_hives_by_age(cls, profile):
-        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+    def get_hives_by_age(cls, profile, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
         hives = cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by(
             '-creation_date')
-        return hives
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives)
+            return final_hives
+        else:
+            return hives
 
     @classmethod
-    def get_hives_by_category(cls, profile, category, location):
+    def get_hives_by_category(cls, profile, category, location, tags, include_subscribed):
         # We give higher priority to those created by someone in the same country than the user requesting them
         # and we order them by age
-        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location)
+        # tags are also filtered in get_hives_by_proximity_or_location
+        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location, tags, include_subscribed)
         hives_by_category = hives_by_age_and_location.filter(category=category)
         return hives_by_category
 
     @classmethod
-    def get_communities(cls, profile, location):
+    def get_communities(cls, profile, location, tags, include_subscribed):
         # We give higher priority to those created by someone in the same country than the user requesting them
         # and we order them by age
-        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location)
+        # tags are also filtered in get_hives_by_proximity_or_location
+        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location, tags, include_subscribed)
         communities = hives_by_age_and_location.filter(type='Community')
         return communities
 
     @classmethod
-    def get_hives_containing(cls, profile, search_string):
-        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+    def get_hives_containing(cls, profile, search_string, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
         hives_containing = cls.objects.filter(deleted=False, name__icontains=search_string).exclude(
             subscriptions__in=user_hive_subscriptions).order_by('-creation_date')
         return hives_containing

@@ -445,6 +445,14 @@ class ChHiveList(APIView):
         # Info retrieval
         profile = request.user.profile
 
+        tags = request.query_params.getlist('tags')
+
+        include_subscribed_string = request.query_params.get('include_subscribed', 'False')
+        include_subscribed = False
+
+        if include_subscribed_string == 'True':
+            include_subscribed = True
+
         search_string =request.query_params.get('search_string', '')
 
         coordinates = request.query_params.get('coordinates', '')
@@ -492,24 +500,29 @@ class ChHiveList(APIView):
                     except ChCategory.DoesNotExist:
                         return Response({'error_message': 'Category not found by this slug'},
                                         status=status.HTTP_404_NOT_FOUND)
-                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location)
+                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location,
+                                                     tags=tags, include_subscribed=include_subscribed)
             elif list_order:
                 if list_order == 'recommended':
-                    hives = ChHive.get_hives_by_priority(profile=profile)
+                    hives = ChHive.get_hives_by_priority(profile=profile, tags=tags,
+                                                         include_subscribed=include_subscribed)
                 elif list_order == 'near':
-                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location)
+                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location,
+                                                                      tags=tags, include_subscribed=include_subscribed)
                 elif list_order == 'recent':
-                    hives = ChHive.get_hives_by_age(profile=profile)
+                    hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
                 elif list_order == 'communities':
-                    hives = ChHive.get_communities(profile=profile, location=location)
+                    hives = ChHive.get_communities(profile=profile, location=location,
+                                                   tags=tags, include_subscribed=include_subscribed)
                 else:
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 
         else:  # no parameters, we just give back all hives or perform the search if search_string present
             if search_string:
-                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string)
+                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string,
+                                                    include_subscribed=include_subscribed)
             else:
-                hives = ChHive.objects.all()
+                hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
 
         serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
 

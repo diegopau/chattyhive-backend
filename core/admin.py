@@ -51,12 +51,12 @@ class ChHiveAdmin(admin.ModelAdmin):
 
 
 @admin.register(ChMessage)
-class ChMessage(admin.ModelAdmin):
+class ChMessageAdmin(admin.ModelAdmin):
     list_display = ('chat', '_count', 'client_timestamp', 'content', 'content_type', 'created', 'profile', 'received')
 
 
 @admin.register(Device)
-class Device(admin.ModelAdmin):
+class DeviceADmin(admin.ModelAdmin):
     list_display = ('user', 'dev_os', 'dev_type', 'dev_id', 'reg_id', 'active', 'last_activity')
 
 
@@ -76,7 +76,7 @@ class GuidelineModelAdmin(admin.ModelAdmin):
 
 
 @admin.register(ChProfile)
-class ChProfile(admin.ModelAdmin):
+class ChProfileAdmin(admin.ModelAdmin):
 
     # fields = ('_languages', 'avatar', 'birth_date', 'country', 'region', 'city', 'created', 'first_name',
     #           'last_name', 'last_activity', 'last_modified', 'personal_color',
@@ -89,10 +89,20 @@ class ChProfile(admin.ModelAdmin):
                     'public_show_sex', 'sex', 'user')
 
 
+@admin.register(TagModel)
+class TagModelAdmin(admin.ModelAdmin):
+
+    list_display = ('tag', 'slug')
+
+
+@admin.register(ChCategory)
+class ChCategoryAdmin(admin.ModelAdmin):
+
+    list_display = ('code', 'name', 'slug', 'group', 'description')
+
+
 # Include all models in Admin site
 admin.site.register(ChUser)
-admin.site.register(ChCategory)
-admin.site.register(TagModel)
 admin.site.register(ChFriendsGroupChat)
 admin.site.register(ChHivematesGroupChat)
 admin.site.register(ChPublicChat)
