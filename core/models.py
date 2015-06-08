@@ -20,6 +20,8 @@ import json
 from pusher import Pusher
 import hashlib
 import re
+from slugify import Slugify
+
 
 class LanguageModel(models.Model):
     language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
@@ -29,7 +31,20 @@ class LanguageModel(models.Model):
 
 
 class TagModel(models.Model):
-    tag = models.CharField(max_length=32, unique=True)
+    tag = models.CharField(max_length=32, unique=True, validators=[RegexValidator(re.compile('^([a-zA-Z0-9]|([a-zA-Z0-9][\w]*[a-zA-Z0-9]))$'))])
+    slug = models.CharField(max_length=32, default='')
+
+    my_slugify = Slugify()
+    my_slugify.separator = '-'
+    my_slugify.pretranslate = {'&': 'and'}
+    my_slugify.to_lower = True
+    my_slugify.max_length = None
+    my_slugify.capitalize = False
+    my_slugify.safe_chars = ''
+
+    def save(self, *args, **kwargs):
+        self.slug = self.my_slugify(self.tag)
+        super(TagModel, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.tag
@@ -76,6 +91,7 @@ class ChCategory(models.Model):
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=140)
     code = models.CharField(max_length=8, unique=True)
+    slug = models.CharField(max_length=255, unique=True, default='')
     group = models.CharField(max_length=32, choices=GROUPS)
 
     @classmethod
@@ -634,6 +650,19 @@ class ChHive(models.Model):
             '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
+
+    @classmethod
+    def get_hives_by_tags(cls, tags=[], hives=None):
+
+        if not tags:
+            return hives
+        else:
+            hives_to_include = []
+            i = 0
+            for tag in tags:
+                hives_to_include[i] = hives.objects.filter(tag__tag=)
+
+
 
     @classmethod
     def get_hives_by_priority(cls, profile):

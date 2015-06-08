@@ -437,7 +437,7 @@ class ChHiveList(APIView):
 
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, list_order='', category='', format=None):
+    def get(self, request, list_order='', category_slug='', category_code='', format=None):
         """prueba
         """
         location = {}
@@ -472,19 +472,26 @@ class ChHiveList(APIView):
                 if 'country' not in location:
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        if list_order and category:  # Can not be both present at the same time!
+        if list_order and (category_code or category_slug):  # Can not be both present at the same time!
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        elif list_order or category:
+        elif list_order or (category_code or category_slug):
             if search_string:
                 return Response({'error_message': 'if search_string is present no other params should be'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            if category:
-                try:
-                    category_id = ChCategory.objects.get(code=category)
-                except ChCategory.DoesNotExist:
-                    return Response({'error_message': 'Category not found by this code'},
-                                    status=status.HTTP_404_NOT_FOUND)
+            if category_code or category_slug:
+                if category_code:
+                    try:
+                        category_id = ChCategory.objects.get(code=category_code)
+                    except ChCategory.DoesNotExist:
+                        return Response({'error_message': 'Category not found by this code'},
+                                        status=status.HTTP_404_NOT_FOUND)
+                elif category_slug:
+                    try:
+                        category_id = ChCategory.objects.get(slug=category_slug)
+                    except ChCategory.DoesNotExist:
+                        return Response({'error_message': 'Category not found by this slug'},
+                                        status=status.HTTP_404_NOT_FOUND)
                 hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location)
             elif list_order:
                 if list_order == 'recommended':
