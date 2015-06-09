@@ -4,6 +4,7 @@ __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
 from django.db import models, IntegrityError
+from django.db.models import Count
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
@@ -681,6 +682,21 @@ class ChHive(models.Model):
         else:
             hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags)
             return hives_by_tags
+
+    @classmethod
+    def get_hives_by_subscriptions_number(cls, profile, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+        hives = \
+            cls.objects.filter(deleted=False).exclude(
+                subscriptions__in=user_hive_subscriptions).annotate(
+                subscribers_count=Count('subscriptions')).order_by('-subscribers_count')
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives)
+            return final_hives
+        else:
+            return hives
 
     @classmethod
     def get_hives_by_priority(cls, profile, tags, include_subscribed):

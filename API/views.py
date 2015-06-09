@@ -514,6 +514,9 @@ class ChHiveList(APIView):
                 elif list_order == 'communities':
                     hives = ChHive.get_communities(profile=profile, location=location,
                                                    tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'top':
+                    hives = ChHive.get_hives_by_subscriptions_number(profile=profile,
+                                                                     tags=tags, include_subscribed=include_subscribed)
                 else:
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 

@@ -46,7 +46,7 @@ urlpatterns = patterns('',
     url(r'^chats/(?P<target_public_name>[0-9a-zA-Z_]+)/$',
         views.OpenPrivateChat.as_view(), name="open_private_chat"),
 
-    url(r'^hives/((?P<list_order>(recommended|near|recent|communities)?)|((?P<category_slug>(([a-z0-9]|([a-z0-9]([a-z0-9]|-)*[a-z0-9]))))|(?P<category_code>(\d{2}.\d{2}))))/$',
+    url(r'^hives/((?P<list_order>(recommended|near|recent|communities|top)?)|((?P<category_slug>(([a-z0-9]|([a-z0-9]([a-z0-9]|-)*[a-z0-9]))))|(?P<category_code>(\d{2}.\d{2}))))/$',
         views.ChHiveList.as_view(), name="hive_list"),
 
     url(r'^hives/(?P<hive_slug>.+)/users/(?P<list_order>(recommended|near|recent|new)?)/$', views.ChHiveUsersList.as_view(),
