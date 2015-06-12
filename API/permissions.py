@@ -28,7 +28,7 @@ class CanGetChatMessages(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         try:
-            ChHiveSubscription.objects.get(hive=obj.hive, profile=request.user.profile, deleted=False)
+            ChHiveSubscription.objects.get(hive=obj.hive, profile=request.user.profile, subscription_state='active')
         except ChHiveSubscription.DoesNotExist:
             return False
         else:
@@ -48,7 +48,7 @@ class CanGetHiveUsers(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         try:
-            ChHiveSubscription.objects.get(hive=obj, profile=request.user.profile, deleted=False)
+            ChHiveSubscription.objects.get(hive=obj, profile=request.user.profile, subscription_state='active')
         except ChHiveSubscription.DoesNotExist:
             return False
         else:

@@ -22,7 +22,7 @@ class LanguagesAdmin(admin.ModelAdmin):
 
 @admin.register(ChHiveSubscription)
 class ChHiveSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('profile', 'hive', 'creation_date', 'deleted', 'expelled', 'expulsion_due_date')
+    list_display = ('profile', 'hive', 'creation_date', 'subscription_state', 'expelled', 'expulsion_due_date')
 
 
 @admin.register(ChCommunity)
@@ -32,7 +32,7 @@ class ChCommunityAdmin(admin.ModelAdmin):
 
 @admin.register(ChChatSubscription)
 class ChChatSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('profile', 'chat', 'creation_date', 'deleted', 'expelled', 'expulsion_due_date')
+    list_display = ('profile', 'chat', 'creation_date', 'subscription_state', 'expelled', 'expulsion_due_date')
 
 
 @admin.register(ChChat)

@@ -955,7 +955,8 @@ class ChMessageList(APIView):
                     # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                     try:
                         with transaction.atomic():
-                            ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile, deleted=False)
+                            ChHiveSubscription.objects.select_related().get(
+                                hive=hive, profile=profile, subscription_state='active')
                     except ChHiveSubscription.DoesNotExist:
                         return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -984,7 +985,7 @@ class ChMessageList(APIView):
                             try:
                                 with transaction.atomic():
                                     ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
-                                                                                    deleted=False)
+                                                                                    subscription_state='active')
                             except ChHiveSubscription.DoesNotExist:
                                 return Response(status=status.HTTP_403_FORBIDDEN)
                 except ChChat.DoesNotExist:
@@ -1003,8 +1004,8 @@ class ChMessageList(APIView):
                     with transaction.atomic():
                         other_chat_subscription = ChChatSubscription.objects.get(
                             chat=chat, profile__public_name=other_profile_public_name)
-                        if other_chat_subscription.deleted:
-                            other_chat_subscription.deleted = False
+                        if other_chat_subscription.subscription_state == 'deleted':
+                            other_chat_subscription.subscription_state = 'active'
                             other_chat_subscription.save()
                 except ChChatSubscription.DoesNotExist:
                     chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
@@ -1012,8 +1013,8 @@ class ChMessageList(APIView):
             try:
                 with transaction.atomic():
                     chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
-                    if chat_subscription.deleted:
-                        chat_subscription.deleted = False
+                    if chat_subscription.subscription_state == 'deleted':
+                        chat_subscription.subscription_state = 'active'
                         chat_subscription.save()
             except ChChatSubscription.DoesNotExist:
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
@@ -1075,7 +1076,7 @@ class OpenPrivateChat(APIView):
 
             # The user has to be subscribed to the hive in other to chat with other users
             try:
-                ChHiveSubscription.objects.get(profile=profile, hive=hive, deleted=False)
+                ChHiveSubscription.objects.get(profile=profile, hive=hive, subscription_state='active')
             except ChHiveSubscription:
                 return Response(status=status.HTTP_403_FORBIDDEN)
 

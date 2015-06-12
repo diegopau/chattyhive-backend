@@ -165,7 +165,7 @@ def open_private_chat(request, target_public_name):
 
             # The user has to be subscribed to the hive in other to chat with other users
             try:
-                ChHiveSubscription.objects.get(profile=profile, hive=hive, deleted=False)
+                ChHiveSubscription.objects.get(profile=profile, hive=hive, subscription_state='active')
             except ChHiveSubscription:
                 response = HttpResponse("Forbidden")
                 response.status_code = 403
@@ -209,7 +209,7 @@ def hive_chat(request, hive_slug, chat_id):
         message_data = {'profile': profile}
         # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
         try:
-            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
+            ChHiveSubscription.objects.get(hive=hive, profile=profile, subscription_state='active')
         except ChHiveSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
@@ -297,7 +297,7 @@ def hive_chat(request, hive_slug, chat_id):
     else:
         # We first check if the user is authorized to enter this chat (he must be subscribed to the hive)
         try:
-            ChHiveSubscription.objects.get(hive=hive, profile=profile, deleted=False)
+            ChHiveSubscription.objects.get(hive=hive, profile=profile, subscription_state='active')
         except ChHiveSubscription.DoesNotExist:
             response = HttpResponse("Unauthorized")
             response.status_code = 401
@@ -502,7 +502,7 @@ def explore(request):
         # Returns all the hives (subscribed and not subscribed)
 
         # We have to exclude hives that the user is subscribed (and the subscription not marked as deleted)
-        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=request.user.profile, deleted=False)
+        user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=request.user.profile, subscription_state='active')
 
         try:
             hives = ChHive.objects.all().exclude(deleted=True).exclude(subscriptions__in=user_hive_subscriptions)

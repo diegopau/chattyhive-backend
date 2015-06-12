@@ -229,7 +229,8 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
             hive.leave(self.profile)
 
         # remaining (private?) chats
-        ChChatSubscription.objects.filter(profile=self.profile, deleted=False).select_for_update().update(deleted=True)
+        ChChatSubscription.objects.filter(
+            profile=self.profile, subscription_state='active').select_for_update().update(subscription_state='deleted', )
 
     def delete_account(self):
 
@@ -504,7 +505,7 @@ class ChProfile(models.Model):
     def hives(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChHiveSubscription.objects.filter(profile=self, deleted=False)
+            subscriptions = ChHiveSubscription.objects.filter(profile=self, subscription_state='active')
             hives = []
             for subscription in subscriptions:
                 if subscription.hive:
@@ -517,7 +518,7 @@ class ChProfile(models.Model):
     def chats(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChChatSubscription.objects.filter(profile=self, deleted=False)
+            subscriptions = ChChatSubscription.objects.filter(profile=self, subscription_state='active')
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
@@ -564,7 +565,8 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive
         """
-        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False,
+        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self,
+                                                                                    subscription_state='active',
                                                                                     expelled=False)
         users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
         return users_list
@@ -613,7 +615,7 @@ class ChHive(models.Model):
         :return: profiles of users near to the user, prioritizing first city, then region, then country
         """
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False).exclude(profile=profile)
+            hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
         users_in_same_city = None
         users_in_same_region = None
@@ -637,7 +639,7 @@ class ChHive(models.Model):
     def get_users_recently_join(self, profile):
 
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False).exclude(profile=profile)
+            hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
         users_recently_join = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
@@ -649,7 +651,7 @@ class ChHive(models.Model):
         :return: profiles of users joining the hive in the country specified
         """
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False).exclude(profile=profile)
+            hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
         users_recently_online = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-last_activity')
@@ -662,11 +664,11 @@ class ChHive(models.Model):
         :return: profiles of users joining the hive in the country specified
         """
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False, profile__country=profile.country).exclude(profile=profile)
+            hive=self, subscription_state='active', expelled=False, profile__country=profile.country).exclude(profile=profile)
         users_list_near = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country).exclude(profile=profile)
+            hive=self, subscription_state='active', expelled=False).exclude(profile__country=profile.country).exclude(profile=profile)
         users_list_far = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
@@ -687,7 +689,7 @@ class ChHive(models.Model):
     def get_hives_by_subscriptions_number(cls, profile, tags, include_subscribed):
         user_hive_subscriptions = ChHiveSubscription.objects.none()
         if not include_subscribed:
-            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
         hives = \
             cls.objects.filter(deleted=False).exclude(
                 subscriptions__in=user_hive_subscriptions).annotate(
@@ -702,7 +704,7 @@ class ChHive(models.Model):
     def get_hives_by_priority(cls, profile, tags, include_subscribed):
         user_hive_subscriptions = ChHiveSubscription.objects.none()
         if not include_subscribed:
-            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
         hives = \
             cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by('-priority')
         if tags:
@@ -715,7 +717,7 @@ class ChHive(models.Model):
     def get_hives_by_proximity_or_location(cls, profile, location, tags, include_subscribed):
         user_hive_subscriptions = ChHiveSubscription.objects.none()
         if not include_subscribed:
-            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
         hives_precise = ChHive.objects.none()  # This is the recommended way to create an empty queryset
         hives_city = ChHive.objects.none()
         hives_region = ChHive.objects.none()
@@ -756,7 +758,7 @@ class ChHive(models.Model):
     def get_hives_by_age(cls, profile, tags, include_subscribed):
         user_hive_subscriptions = ChHiveSubscription.objects.none()
         if not include_subscribed:
-            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
         hives = cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by(
             '-creation_date')
         if tags:
@@ -787,7 +789,7 @@ class ChHive(models.Model):
     def get_hives_containing(cls, profile, search_string, include_subscribed):
         user_hive_subscriptions = ChHiveSubscription.objects.none()
         if not include_subscribed:
-            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, deleted=False)
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
         hives_containing = cls.objects.filter(deleted=False, name__icontains=search_string).exclude(
             subscriptions__in=user_hive_subscriptions).order_by('-creation_date')
         return hives_containing
@@ -800,8 +802,8 @@ class ChHive(models.Model):
         try:
             hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
             # If he has been previously subscribed to the hive...
-            if hive_subscription.deleted:
-                hive_subscription.deleted = False
+            if hive_subscription.subscription_state == 'deleted':
+                hive_subscription.subscription_state = 'active'
                 hive_subscription.creation_date = timezone.now()
                 hive_subscription.save()
                 if hive_subscription.expelled:
@@ -824,12 +826,12 @@ class ChHive(models.Model):
         :return: void
         """
         try:
-            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self, deleted=False)
-            hive_subscription.deleted = True
+            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self, subscription_state='active')
+            hive_subscription.subscription_state = 'deleted'
             hive_subscription.save()
             chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
             for subscription in chat_subscriptions:
-                subscription.deleted = True
+                subscription.subscription_state = 'deleted'
                 subscription.save()
                 if subscription.chat.public_chat_extra_info is None:
                     chat = subscription.chat
@@ -837,7 +839,7 @@ class ChHive(models.Model):
                     # (we won't count the subscription that the user is using and we won't count the
                     # subscriptions that are marked as deleted either)
                     others_subscriptions = ChChatSubscription.objects.filter(
-                        chat=chat).exclude(profile=profile).exclude(deleted=True)
+                        chat=chat).exclude(profile=profile).exclude(subscription_state='deleted')
                     if not others_subscriptions:
                         chat.deleted = True
                         chat.save()
@@ -846,7 +848,7 @@ class ChHive(models.Model):
             # Now we check if there are more users subscribed to this hive or community
             # (hive subscriptions marked as deleted don't count)
             others_hive_subscriptions = ChHiveSubscription.objects.filter(
-                hive=self).exclude(profile=profile).exclude(deleted=True)
+                hive=self).exclude(profile=profile).exclude(subscription_state='deleted')
             if not others_hive_subscriptions:
                 # If not other users are subscribed to the hive, we mark as deleted the public chats, the hive and
                 # the community (if its a community)
@@ -883,14 +885,22 @@ class ChHive(models.Model):
 
 
 class ChHiveSubscription(models.Model):
+    SUBSCRIPTION_STATES = (
+        ('active', 'Active'),
+        ('disabled', 'Disabled'),
+        ('deleted', 'Deleted'),
+    )
+
     # Subscription object which relates Profiles with Hives
     profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='subscriptions')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
-    deleted = models.BooleanField(default=False)
+    subscription_state = models.CharField(max_length=10, choices=SUBSCRIPTION_STATES, default='active')
+    last_deleted_or_disabled = models.DateTimeField(null=True, blank=True)
+
     expelled = models.BooleanField(default=False)
-    expulsion_due_date = models.DateTimeField(null=True)
+    expulsion_due_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return "links " + self.profile.public_name + " with hive " + self.hive.name
@@ -989,7 +999,7 @@ class ChChat(models.Model):
     def check_permissions(self, profile):
 
         try:
-            ChChatSubscription.objects.get(profile=profile, chat=self, deleted=False, expelled=False)
+            ChChatSubscription.objects.get(profile=profile, chat=self, subscription_state='active', expelled=False)
         except ChChatSubscription.DoesNotExist:
             raise UnauthorizedException("User isn't part of this chat")
 
@@ -1061,7 +1071,7 @@ class ChChat(models.Model):
         for chat in json.loads(json_chats_array):
             try:
                 chat_object = ChChat.objects.get(chat_id=chat['CHANNEL'])
-                ChChatSubscription.objects.get(chat=chat_object, profile=profile, deleted=False, expelled=False)
+                ChChatSubscription.objects.get(chat=chat_object, profile=profile, subscription_state='active', expelled=False)
             except ChChat.DoesNotExist:
                 raise
             except ChChatSubscription.DoesNotExist:
@@ -1084,14 +1094,21 @@ class ChChat(models.Model):
 
 
 class ChChatSubscription(models.Model):
+    SUBSCRIPTION_STATES = (
+        ('active', 'Active'),
+        ('disabled', 'Disabled'),
+        ('deleted', 'Deleted'),
+    )
+
     # Subscription object which relates Profiles with Chats
     profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='subscriptions')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
-    deleted = models.BooleanField(default=False)
+    subscription_state = models.CharField(max_length=10, choices=SUBSCRIPTION_STATES, default='active')
+    last_deleted_or_disabled = models.DateTimeField(null=True, blank=True)
     expelled = models.BooleanField(default=False)
-    expulsion_due_date = models.DateTimeField(null=True)
+    expulsion_due_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return "links " + self.profile.public_name + " with chat " + self.chat.chat_id
