@@ -3,7 +3,7 @@
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
 from django.db.models import Count
 from django import forms
 from django.utils.http import urlquote
@@ -224,17 +224,28 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
 
     def deactivate_account(self):
 
+        # TODO: this method is uncomplete
+
         hives = self.profile.hives
         for hive in hives:
-            hive.leave(self.profile)
+            hive.leave(self.profile, only_disable=True)
 
-        # remaining (private?) chats
+        # remaining (private with friends and group) chats
         ChChatSubscription.objects.filter(
-            profile=self.profile, subscription_state='active').select_for_update().update(subscription_state='deleted', )
+            profile=self.profile, subscription_state='active').select_for_update().update(
+            subscription_state='disabled', last_deleted_or_disabled=timezone.now())
 
     def delete_account(self):
 
-        self.deactivate_account()
+        hives = self.profile.hives
+        for hive in hives:
+            hive.leave(self.profile, only_disable=False)
+
+        # remaining (private with friends and group) chats
+        ChChatSubscription.objects.filter(
+            profile=self.profile, subscription_state='active').select_for_update().update(
+            subscription_state='deleted', last_deleted_or_disabled=timezone.now())
+
         self.profile.erase_info()
 
     @property
@@ -565,10 +576,10 @@ class ChHive(models.Model):
         """
         :return: profiles of users joining the hive
         """
-        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self,
+        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self,
                                                                                     subscription_state='active',
                                                                                     expelled=False)
-        users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
+        users_list = ChProfile.objects.filter(id__in=subscriptions.values('profile')).select_related()
         return users_list
 
     @property
@@ -802,15 +813,16 @@ class ChHive(models.Model):
         try:
             hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
             # If he has been previously subscribed to the hive...
-            if hive_subscription.subscription_state == 'deleted':
+            if (hive_subscription.subscription_state == 'deleted') or (hive_subscription.subscription_state == 'disabled'):
+                if hive_subscription.subscription_state == 'deleted':
+                    hive_subscription.creation_date = timezone.now()
                 hive_subscription.subscription_state = 'active'
-                hive_subscription.creation_date = timezone.now()
                 hive_subscription.save()
                 if hive_subscription.expelled:
                     if hive_subscription.expulsion_due_date < timezone.now():
                         hive_subscription.expelled = False
                     else:
-                        raise UnauthorizedException("The user was expelled, he Join the hive but won't be able to chat")
+                        raise UnauthorizedException("The user was expelled, he Joined the hive but won't be able to chat")
             else:
                 raise IntegrityError("ChHiveSubscription already exists")
         except ChHiveSubscription.DoesNotExist:
@@ -818,7 +830,7 @@ class ChHive(models.Model):
             hive_subscription = ChHiveSubscription(hive=self, profile=profile)
             hive_subscription.save()
 
-    def leave(self, profile):
+    def leave(self, profile, only_disable=False):
         """Marks the Hive Subscription as deleted, then takes every private chat subscription of the user
            related with this hive and will mark it as deleted too
 
@@ -826,52 +838,54 @@ class ChHive(models.Model):
         :return: void
         """
         try:
-            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self, subscription_state='active')
-            hive_subscription.subscription_state = 'deleted'
-            hive_subscription.save()
-            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
-            for subscription in chat_subscriptions:
-                subscription.subscription_state = 'deleted'
-                subscription.save()
-                if subscription.chat.public_chat_extra_info is None:
-                    chat = subscription.chat
-                    # This is just to know if there is any other subscriptions to this chat
-                    # (we won't count the subscription that the user is using and we won't count the
-                    # subscriptions that are marked as deleted either)
-                    others_subscriptions = ChChatSubscription.objects.filter(
-                        chat=chat).exclude(profile=profile).exclude(subscription_state='deleted')
-                    if not others_subscriptions:
-                        chat.deleted = True
-                        chat.save()
+            with transaction.atomic():
+                hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self, subscription_state='active')
+                if only_disable:
+                    hive_subscription.subscription_state = 'disabled'
                 else:
+                    hive_subscription.subscription_state = 'deleted'
+                unsubscription_datetime = timezone.now()
+                hive_subscription.last_deleted_or_disabled = unsubscription_datetime
+                hive_subscription.save()
+                chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
+                for subscription in chat_subscriptions:
+                    if only_disable:
+                        subscription.subscription_state = 'disabled'
+                    else:
+                        subscription.subscription_state = 'deleted'
+                    subscription.last_deleted_or_disabled = unsubscription_datetime
+                    if not only_disable:
+                        if subscription.chat.public_chat_extra_info is None:
+                            chat = subscription.chat
+                            # This is just to know if there is any other subscriptions to this chat
+                            # (we won't count the subscription that the user is using and we won't count the
+                            # subscriptions that are marked as deleted) If a subscription is marked as disabled, the chat
+                            # can't be marked as removal unless the hive itself is marked for removal.
+                            # If no remaining subscriptions for this chat it means this private chat can be deleted.
+                            others_subscriptions = ChChatSubscription.objects.filter(
+                                chat=chat).exclude(profile=profile).exclude(subscription_state='deleted')
+                            if not others_subscriptions:
+                                chat.deleted = True
+                                chat.save()
                     subscription.save()
-            # Now we check if there are more users subscribed to this hive or community
-            # (hive subscriptions marked as deleted don't count)
-            others_hive_subscriptions = ChHiveSubscription.objects.filter(
-                hive=self).exclude(profile=profile).exclude(subscription_state='deleted')
-            if not others_hive_subscriptions:
-                # If not other users are subscribed to the hive, we mark as deleted the public chats, the hive and
-                # the community (if its a community)
-                if self.type == 'Community':
-                    self.community.deleted = True
-                    self.community.save()
-                    if self.community_public_chats is not None:
-                        for community_public_chat in self.community_public_chats.all():
-                            community_public_chat.deleted = True
-                            community_public_chat.save()
-                            community_public_chat.chat.deleted = True
-                            community_public_chat.chat.save()
-                        else:
-                            # TODO: the community doesn't have any public chat, this would be weird, but I don't
-                            # think it should stop the request from being completed,  what should be done with this?
-                            pass
-                else:
-                    self.public_chat.deleted = True
-                    self.public_chat.save()
-                    self.public_chat.chat.deleted = True
-                    self.public_chat.chat.save()
-                self.deleted = True
-                self.save()
+                # Now we check if there are more users subscribed to this hive or community
+                # (hive subscriptions marked as deleted don't count)
+                others_hive_subscriptions = ChHiveSubscription.objects.filter(
+                    hive=self).exclude(profile=profile).exclude(subscription_state='deleted')
+                if not others_hive_subscriptions:
+                    # If not other users are subscribed to the hive, we mark as deleted the public chats, the hive and
+                    # the community (if its a community)
+                    if self.type == 'Community':
+                        # We never delete communities, the owner will do it.
+                        pass
+                    else:
+                        for chat in self.chats.all():
+                            chat.deleted = True
+                            chat.save()
+                        self.public_chat.chat.deleted = True
+                        self.public_chat.chat.save()
+                        self.deleted = True
+                    self.save()
 
         except ChHiveSubscription.DoesNotExist:
             raise IntegrityError("User have not joined the hive")
@@ -913,6 +927,11 @@ class ChCommunity(models.Model):
     admins = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='administrates')
     # todo: administrative info?
     deleted = models.BooleanField(_('The owner has deleted it'), default=False)
+
+    def delete_community(self):
+        # TODO: Here we have to still decide what to do with the private chats the users have inside this community
+        # to suddenly remove them just doesn't feel right!...
+        pass
 
     def new_public_chat(self, name, public_chat_slug_ending, description):
         chat = ChChat(hive=self.hive, type='public')
@@ -1140,6 +1159,10 @@ class ChCommunityPublicChat(models.Model):
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
     rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
+
+    def delete_public_chat(self):
+        # TODO: delete_public_chat method.
+        pass
 
     def save(self, *args, **kwargs):
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
