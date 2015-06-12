@@ -967,7 +967,7 @@ class ChMessageList(APIView):
                     except ChChat.DoesNotExist:
                         chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
                         chat.save()
-            else:
+            else:  # new_chat == False
                 try:
                     with transaction.atomic():
                         # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
@@ -1020,21 +1020,31 @@ class ChMessageList(APIView):
                 chat_subscription_profile.save()
 
             msg_content = request.data.get("content")
-            client_timestamp = request.data.get("client_timestamp")
             message = chat.new_message(profile=profile,
                                        content_type='text',
                                        content=msg_content,
                                        client_timestamp=client_timestamp)
             chat.save()
             message_data['socket_id'] = socket_id
-            message_data['json_message'] = json.dumps({"public_name": profile.public_name,
+
+            if new_chat.lower() == 'true':
+                message_chat_id = chat_slug
+            else:
+                message_chat_id = chat_id
+
+            message_data['json_message'] = json.dumps({"chat_id": message_chat_id,
+                                                       "message_id": message.id,
+                                                       "public_name": profile.public_name,
                                                        "content": msg_content,
-                                                       "client_timestamp": client_timestamp,
                                                        "server_time": message.created.astimezone()},
                                                       cls=DjangoJSONEncoder)
 
             data_dict = {'message_id': message.id, 'server_timestamp': message.created}
+
             chat.send_message(message_data)
+
+            if new_chat.lower() == 'true':
+                data_dict['chat_id'] = chat_id
             return Response(data_dict, status=status.HTTP_200_OK)
         else:
             print("serializer errors: ", serializer.errors)

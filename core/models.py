@@ -1162,8 +1162,6 @@ class ChMessage(models.Model):
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
 
-    # TODO: this should be saved as DateTime, but for this we have to establish a valid format the client should follow
-    client_timestamp = models.CharField(max_length=30)
     received = models.BooleanField(default=False)
 
     # Content of the message

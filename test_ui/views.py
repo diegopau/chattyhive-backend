@@ -269,17 +269,21 @@ def hive_chat(request, hive_slug, chat_id):
             chat_subscription_profile.save()
 
         msg = request.POST.get("message")
-        client_timestamp = request.POST.get("timestamp")
         message = chat.new_message(profile=profile,
                                    content_type='text',
                                    content=msg,
                                    client_timestamp=client_timestamp)
         chat.save()
         message_data['socket_id'] = request.POST.get("socket_id")
-        message_data['json_message'] = json.dumps({"username": user.username,
+        if new_chat.lower() == 'true':
+            message_chat_id = chat_slug
+        else:
+            message_chat_id = chat_id
+
+        message_data['json_message'] = json.dumps({"chat_id": message_chat_id,
+                                                   "message_id": message.id,
                                                    "public_name": profile.public_name,
-                                                   "message": msg,
-                                                   "client_timestamp": client_timestamp,
+                                                   "content": msg,
                                                    "server_time": message.created.astimezone()},
                                                   cls=DjangoJSONEncoder)
 

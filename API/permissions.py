@@ -28,11 +28,20 @@ class CanGetChatMessages(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         try:
-            ChChatSubscription.objects.get(chat=obj, profile=request.user.profile, deleted=False)
-        except ChChatSubscription.DoesNotExist:
+            ChHiveSubscription.objects.get(hive=obj.hive, profile=request.user.profile, deleted=False)
+        except ChHiveSubscription.DoesNotExist:
             return False
         else:
-            return True
+            if obj.type == 'public':  # If it is a public chat it will be enough to check the user is subscribed to the hive
+                return True
+            else:
+                try:  # For group and private chats we need the user to be or have been subscribed to this chat.
+                    ChChatSubscription.objects.get(chat=obj, profile=request.user.profile)
+                except ChChatSubscription.DoesNotExist:
+                    return False
+                else:
+                    # TODO: We should add additional checks here, (blocked?, expelled from a group?)
+                    return True
 
 
 class CanGetHiveUsers(BasePermission):

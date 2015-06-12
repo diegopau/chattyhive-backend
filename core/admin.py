@@ -52,7 +52,7 @@ class ChHiveAdmin(admin.ModelAdmin):
 
 @admin.register(ChMessage)
 class ChMessageAdmin(admin.ModelAdmin):
-    list_display = ('chat', '_count', 'client_timestamp', 'content', 'content_type', 'created', 'profile', 'received')
+    list_display = ('chat', '_count', 'content', 'content_type', 'created', 'profile', 'received')
 
 
 @admin.register(Device)
