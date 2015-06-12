@@ -1,10 +1,11 @@
 from rest_framework import serializers, status
 from rest_framework.response import Response
+from rest_framework.fields import SkipField
 from core.models import *
 from django.utils.translation import ugettext_lazy as _
 from django.core.validators import RegexValidator, ValidationError
 import re
-
+from collections import OrderedDict
 
 # ============================================================ #
 #                      Support Classes                         #
@@ -19,7 +20,27 @@ class URLParamsError(Exception):
         # Now for your custom code...
         self.errors = errors
 
+class NonNullModelSerializer(serializers.ModelSerializer):
+    """ Classes of serializers inheriting from this one will not include null fields in the HTTP response.
+    """
 
+    def to_representation(self, instance):
+        """
+        Object instance -> Dict of primitive datatypes.
+        """
+        ret = OrderedDict()
+        fields = [field for field in self.fields.values() if not field.write_only]
+
+        for field in fields:
+            try:
+                attribute = field.get_attribute(instance)
+            except SkipField:
+                continue
+
+            if attribute is not None:
+                ret[field.field_name] = field.to_representation(attribute)
+
+        return ret
 # ================================================================================== #
 #                     Session & 3rd-party services serializers                       #
 # ================================================================================== #
@@ -388,7 +409,7 @@ class ChPublicChatLevel4Serializer(serializers.ModelSerializer):
 
 
 class ChHiveLevel1Serializer(serializers.ModelSerializer):
-    """Used by the following API methods: GET hive list, ChProfileSerializer
+    """Used by the following API methods: GET hive list, ChProfileSerializer, ChHiveSubscriptionListLevel3Serializer
 
     """
     category = serializers.SlugRelatedField(read_only=True, slug_field='code')
@@ -403,23 +424,37 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
 
     subscribed_users_count = serializers.IntegerField(source='get_subscribed_users_count', read_only=True)
 
-    def __init__(self, *args, **kwargs):
-        # Don't pass the 'fields' arg up to the superclass
-
-        fields_to_remove = kwargs.pop('fields_to_remove', None)
-
-        # Instantiate the superclass normally
-        super(ChHiveLevel1Serializer, self).__init__(*args, **kwargs)
-
-        if fields_to_remove is not None:
-            # Drop fields that are specified in the `fields` argument.
-            for field_name in fields_to_remove:
-                self.fields.pop(field_name)
+    # def __init__(self, *args, **kwargs):
+    #     # Don't pass the 'fields' arg up to the superclass
+    #
+    #     fields_to_remove = kwargs.pop('fields_to_remove', None)
+    #
+    #     # Instantiate the superclass normally
+    #     super(ChHiveLevel1Serializer, self).__init__(*args, **kwargs)
+    #
+    #     if fields_to_remove is not None:
+    #         # Drop fields that are specified in the `fields` argument.
+    #         for field_name in fields_to_remove:
+    #             self.fields.pop(field_name)
 
     class Meta:
         model = ChHive
         fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'type', 'category', 'languages',
                   'creator', 'tags', 'subscribed_users_count', 'public_chat', 'community_public_chats',)
+
+
+class ChHiveSubscriptionListLevel3Serializer(NonNullModelSerializer):
+    """Used by the following API methods: GET user hive list,
+
+    """
+
+    hive = ChHiveLevel1Serializer(read_only=True)
+    expulsion_due_date = serializers.DateTimeField(source='get_expulsion_due_date', read_only=True)
+    profile_last_activity = serializers.DateTimeField(source='get_profile_last_activity', read_only=True)
+
+    class Meta:
+        model = ChHiveSubscription
+        fields = ('creation_date', 'expulsion_due_date', 'profile_last_activity', 'hive')
 
 
 class ChChatListLevel2Serializer(serializers.ModelSerializer):
@@ -431,6 +466,17 @@ class ChChatListLevel2Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChChat
         fields = ('chat_id', 'slug', 'type', 'last_message')
+
+
+class ChChatSubscriptionListLevel4Serializer(NonNullModelSerializer):
+
+    chat = ChChatListLevel2Serializer(read_only=True)
+    expulsion_due_date = serializers.DateTimeField(source='get_expulsion_due_date', read_only=True)
+    profile_last_activity = serializers.DateTimeField(source='get_profile_last_activity', read_only=True)
+
+    class Meta:
+        model = ChChatSubscription
+        fields = ('creation_date', 'expulsion_due_date', 'profile_last_activity', 'chat')
 
 
 class ChHiveSerializer(serializers.ModelSerializer):

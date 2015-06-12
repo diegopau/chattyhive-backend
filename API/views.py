@@ -628,10 +628,9 @@ class ChProfileHiveList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        hives = profile.hives
+        hive_subscriptions = profile.hive_subscriptions
 
-        fields_to_remove = ('priority',)
-        serializer = serializers.ChHiveLevel1Serializer(hives, fields_to_remove=fields_to_remove, many=True)
+        serializer = serializers.ChHiveSubscriptionListLevel3Serializer(hive_subscriptions, many=True)
         return Response(serializer.data)
 
     def post(self, request, public_name, format=None):
@@ -730,9 +729,8 @@ class ChProfileChatList(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         except NotAuthenticated:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        chats = profile.chats
-        # En fields se le pasa el campo a eliminar del serializador
-        serializer = serializers.ChChatListLevel2Serializer(chats, many=True)
+        chat_subscriptions = profile.chat_subscriptions
+        serializer = serializers.ChChatSubscriptionListLevel4Serializer(chat_subscriptions, many=True)
         return Response(serializer.data)
 
 
@@ -955,7 +953,7 @@ class ChMessageList(APIView):
                     # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                     try:
                         with transaction.atomic():
-                            ChHiveSubscription.objects.select_related().get(
+                            hive_subscription = ChHiveSubscription.objects.select_related().get(
                                 hive=hive, profile=profile, subscription_state='active')
                     except ChHiveSubscription.DoesNotExist:
                         return Response(status=status.HTTP_403_FORBIDDEN)
@@ -984,7 +982,7 @@ class ChMessageList(APIView):
                             # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                             try:
                                 with transaction.atomic():
-                                    ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
+                                    hive_subscription = ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
                                                                                     subscription_state='active')
                             except ChHiveSubscription.DoesNotExist:
                                 return Response(status=status.HTTP_403_FORBIDDEN)
@@ -1012,10 +1010,10 @@ class ChMessageList(APIView):
                     chat_subscription_other_profile.save()
             try:
                 with transaction.atomic():
-                    chat_subscription = ChChatSubscription.objects.get(chat=chat, profile=profile)
-                    if chat_subscription.subscription_state == 'deleted':
-                        chat_subscription.subscription_state = 'active'
-                        chat_subscription.save()
+                    chat_subscription_profile = ChChatSubscription.objects.get(chat=chat, profile=profile)
+                    if chat_subscription_profile.subscription_state == 'deleted':
+                        chat_subscription_profile.subscription_state = 'active'
+                        chat_subscription_profile.save()
             except ChChatSubscription.DoesNotExist:
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription_profile.save()
@@ -1023,9 +1021,13 @@ class ChMessageList(APIView):
             msg_content = request.data.get("content")
             message = chat.new_message(profile=profile,
                                        content_type='text',
-                                       content=msg_content,
-                                       client_timestamp=client_timestamp)
+                                       content=msg_content,)
             chat.save()
+            chat_subscription_profile.profile_last_activity = timezone.now()
+            chat_subscription_profile.save()
+            if chat.type == 'public':
+                hive_subscription.profile_last_activity = timezone.now()
+                hive_subscription.save()
             message_data['socket_id'] = socket_id
 
             if new_chat.lower() == 'true':

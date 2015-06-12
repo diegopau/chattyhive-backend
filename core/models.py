@@ -906,7 +906,7 @@ class ChHiveSubscription(models.Model):
     )
 
     # Subscription object which relates Profiles with Hives
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscriptions')
     hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='subscriptions')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
@@ -915,6 +915,20 @@ class ChHiveSubscription(models.Model):
 
     expelled = models.BooleanField(default=False)
     expulsion_due_date = models.DateTimeField(null=True, blank=True)
+
+    profile_last_activity = models.DateTimeField(null=True, blank=True)
+
+    def get_profile_last_activity(self):
+        if self.profile_last_activity:
+            return self.profile_last_activity
+        else:
+            return None
+
+    def get_expulsion_due_date(self):
+        if self.expelled:
+            return self.expulsion_due_date
+        else:
+            return None
 
     def __str__(self):
         return "links " + self.profile.public_name + " with hive " + self.hive.name
@@ -1120,7 +1134,7 @@ class ChChatSubscription(models.Model):
     )
 
     # Subscription object which relates Profiles with Chats
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscriptions')
     chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='subscriptions')
     creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
 
@@ -1128,6 +1142,20 @@ class ChChatSubscription(models.Model):
     last_deleted_or_disabled = models.DateTimeField(null=True, blank=True)
     expelled = models.BooleanField(default=False)
     expulsion_due_date = models.DateTimeField(null=True, blank=True)
+
+    profile_last_activity = models.DateTimeField(null=True, blank=True)
+
+    def get_profile_last_activity(self):
+        if self.profile_last_activity:
+            return self.profile_last_activity
+        else:
+            return None
+
+    def get_expulsion_due_date(self):
+        if (self.chat.type == 'public') and self.expelled:
+            return self.expulsion_due_date
+        else:
+            return None
 
     def __str__(self):
         return "links " + self.profile.public_name + " with chat " + self.chat.chat_id
