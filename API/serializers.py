@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.core.validators import RegexValidator, ValidationError
 import re
 from collections import OrderedDict
+from chattyhive_project.settings import common_settings
 
 # ============================================================ #
 #                      Support Classes                         #
@@ -130,7 +131,7 @@ class LoginCredentialsSerializer(serializers.Serializer):
                 if 'app' in service:
                     if service['app'] == "":
                         raise ValidationError("app field for gcm can not be empty", code="400")
-                    elif service['app'] not in settings.ALLOWED_GCM_APP_IDS:
+                    elif service['app'] not in common_settings.ALLOWED_GCM_APP_IDS:
                         raise ValidationError("app id for gcm not allowed", code="400")
                 else:
                     raise ValidationError("app id is missing for gcm service", code="400")
@@ -179,7 +180,7 @@ class CheckAsyncServices(serializers.Serializer):
                 if 'app' in service:
                     if service['app'] == "":
                         raise ValidationError("app field for gcm can not be empty", code="400")
-                    elif service['app'] not in settings.ALLOWED_GCM_APP_IDS:
+                    elif service['app'] not in common_settings.ALLOWED_GCM_APP_IDS:
                         raise ValidationError("app id for gcm not allowed", code="400")
                 else:
                     raise ValidationError("app id is missing for gcm service", code="400")

@@ -15,7 +15,7 @@ from django.utils import timezone
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
-from chattyhive_project import settings
+from chattyhive_project.settings import common_settings
 from core.google_ccs import send_gcm_message
 import json
 from pusher import Pusher
@@ -1089,9 +1089,9 @@ class ChChat(models.Model):
                 if len(gcm_response) > 0:
                     print("The following issues had happened while sending the message through GCM: ", gcm_response)
         else:
-            pusher_object = Pusher(app_id=getattr(settings, 'PUSHER_APP_ID', None),
-                                   key=getattr(settings, 'PUSHER_APP_KEY', None),
-                                   secret=getattr(settings, 'PUSHER_SECRET', None),
+            pusher_object = Pusher(app_id=getattr(common_settings, 'PUSHER_APP_ID', None),
+                                   key=getattr(common_settings, 'PUSHER_APP_KEY', None),
+                                   secret=getattr(common_settings, 'PUSHER_SECRET', None),
                                    json_encoder=DjangoJSONEncoder,
                                    ssl=True)
             event = 'msg'

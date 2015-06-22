@@ -3,6 +3,7 @@ __author__ = 'xurxo'
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.conf import settings
+from chattyhive_project.settings import common_settings
 
 # admin.autodiscover() ### this is no longer needed with Django 1.7
 
@@ -35,7 +36,7 @@ urlpatterns = patterns('',
     ######################
     # browser test views #
     ######################
-    url(r'^' + settings.TEST_UI_BASE_URL + '/', include('test_ui.urls')),
+    url(r'^' + common_settings.TEST_UI_BASE_URL + '/', include('test_ui.urls')),
 
 
     ######################

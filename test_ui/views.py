@@ -7,6 +7,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from slugify import slugify
 from django.db import transaction
 from django.db.models import Q
+from chattyhive_project.settings import common_settings
 
 @login_required
 def create_hive(request):
@@ -62,13 +63,13 @@ def create_hive(request):
                 hive_subscription.save()
 
             # return HttpResponseRedirect("/create_hive/create/")
-            return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
+            return HttpResponseRedirect("/{base_url}/home/".format(base_url=common_settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
     else:
         formHive = CreateHiveForm(prefix="formHive")
         formTags = TagForm(prefix="formTags")
-        return render(request, "{app_name}/create_hive.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/create_hive.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'formHive': formHive,
             'formTags': formTags,
             'profile': request.user.profile,
@@ -127,7 +128,7 @@ def create_community(request):
 
             # return HttpResponseRedirect("/create_hive/create/")
             # transaction.set_autocommit(True)
-            return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
+            return HttpResponseRedirect("/{base_url}/home/".format(base_url=common_settings.TEST_UI_BASE_URL))
         else:
             print("errores formulario community:", formCommunity.errors)
             print(formCommunityTags.errors)
@@ -135,7 +136,7 @@ def create_community(request):
     else:
         formHive = CreateHiveForm(prefix="formHive")
         formTags = TagForm(prefix="formTags")
-        return render(request, "{app_name}/create_community.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/create_community.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'formHive': formHive,
             'formTags': formTags,
             'profile': request.user.profile,
@@ -180,12 +181,12 @@ def open_private_chat(request, target_public_name):
                 # If the chat doesn't exist we give a provisional chat_id and redirect:
                 chat_id = ChChat.get_chat_id()
                 chat_id += slug_ends_with
-                return HttpResponseRedirect("/{base_url}/hive_chat/".format(base_url=settings.TEST_UI_BASE_URL)
+                return HttpResponseRedirect("/{base_url}/hive_chat/".format(base_url=common_settings.TEST_UI_BASE_URL)
                                             + hive.slug + "/" + chat_id + "?new_chat=True")
 
             # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
             return HttpResponseRedirect("/{base_url}/hive_chat/".format(
-                base_url=settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id + "?new_chat=False")
+                base_url=common_settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id + "?new_chat=False")
 
 
 @login_required
@@ -351,7 +352,7 @@ def hive_chat(request, hive_slug, chat_id):
                 return response
 
         form = MsgForm()
-        return render(request, "{app_name}/chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/chat.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'user': user.profile.public_name,
             'hive': hive,
             'app_key': app_key,
@@ -432,13 +433,13 @@ def create_public_chat(request, hive_slug):
             public_chat_slug_ending = slugify(form.cleaned_data['name'], translate=None, to_lower=True, separator='-', capitalize=False,
                                               max_length=250)
             community.new_public_chat(form.cleaned_data['name'], public_chat_slug_ending, form.cleaned_data['description'])
-            return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
+            return HttpResponseRedirect("/{base_url}/home/".format(base_url=common_settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
     else:
         form = CreateCommunityPublicChatForm
         hive = ChHive.objects.get(slug=hive_slug)
-        return render(request, "{app_name}/create_public_chat.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/create_public_chat.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'form': form,
             'hive': hive,
             'profile': request.user.profile,
@@ -460,7 +461,7 @@ def join(request, hive_slug):
 
         hive_joining.join(profile)
 
-        return HttpResponseRedirect('/{base_url}/home/'.format(base_url=settings.TEST_UI_BASE_URL))
+        return HttpResponseRedirect('/{base_url}/home/'.format(base_url=common_settings.TEST_UI_BASE_URL))
     else:
         raise Http404
 
@@ -481,7 +482,7 @@ def leave(request, hive_slug):
 
         hive_leaving.leave(profile)
 
-        return HttpResponseRedirect('/{base_url}/home/'.format(base_url=settings.TEST_UI_BASE_URL))
+        return HttpResponseRedirect('/{base_url}/home/'.format(base_url=common_settings.TEST_UI_BASE_URL))
     else:
         raise Http404
 
@@ -501,7 +502,7 @@ def hives(request):
             hives = profile.hives
         except ChHiveSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
-        return render(request, "{app_name}/home_hives.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/home_hives.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'hives': hives,
             'profile': request.user.profile,
         })
@@ -518,7 +519,7 @@ def chats(request):
         except ChChatSubscription.DoesNotExist:
             return HttpResponse("Subscription not found")
 
-        return render(request, "{app_name}/home_chats.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/home_chats.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'chats': chats,
             'profile': profile
         })
@@ -544,7 +545,7 @@ def explore(request):
         except ChHive.DoesNotExist:
             hives = None
 
-        return render(request, "{app_name}/explore.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/explore.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'hives': hives
         })
 
@@ -582,7 +583,7 @@ def profile(request, public_name, private):
                         "allowed": allowed
                         }
                 languages = profile.languages
-                return render(request, "{app_name}/private_profile.html".format(app_name=settings.TEST_UI_APP_NAME), {
+                return render(request, "{app_name}/private_profile.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
                     "profile": data,
                     "languages": languages
                 })
@@ -593,7 +594,7 @@ def profile(request, public_name, private):
                         "allowed": allowed
                         }
                 languages = profile.languages
-                return render(request, "{app_name}/public_profile.html".format(app_name=settings.TEST_UI_APP_NAME), {
+                return render(request, "{app_name}/public_profile.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
                     "profile": data,
                     "languages": languages
                 })
@@ -618,7 +619,7 @@ def hive(request, hive_slug):
         try:
             ChHiveSubscription.objects.get(hive=hive, profile=profile)
             chats = ChChat.objects.filter(hive=hive, type='public')
-            return render(request, "{app_name}/hive.html".format(app_name=settings.TEST_UI_APP_NAME), {
+            return render(request, "{app_name}/hive.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
                 'hive': hive,
                 'chats': chats,
             })
@@ -661,7 +662,7 @@ def hive_description(request, hive_slug):
         except ChHiveSubscription.DoesNotExist:
             pass
 
-        return render(request, "{app_name}/hive_description.html".format(app_name=settings.TEST_UI_APP_NAME), {
+        return render(request, "{app_name}/hive_description.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
             'hive': hive,
             'subscribed': subscribed,
             'owner': owner,
@@ -703,7 +704,7 @@ def get_hive_users(request, hive_slug, init, interval):
 
 
 def android_test(request):
-    return render(request, "{app_name}/android_test.html".format(app_name=settings.TEST_UI_APP_NAME))
+    return render(request, "{app_name}/android_test.html".format(app_name=common_settings.TEST_UI_APP_NAME))
 
 
 def test(request):

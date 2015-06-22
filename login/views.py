@@ -5,7 +5,6 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from core.models import *
 from login.models import *
-from chattyhive_project import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from social.backends.google import GooglePlusAuth
@@ -16,13 +15,13 @@ from django.core.serializers.json import DjangoJSONEncoder
 import pusher
 from django.db import IntegrityError
 from email_confirmation.models import EmailAddress, EmailConfirmation
-from chattyhive_project import settings
+from chattyhive_project.settings import common_settings
 
 
 def login_view(request):
-    print("directorios staticos:", settings.STATICFILES_DIRS)
+    print("directorios staticos:", common_settings.STATICFILES_DIRS)
     if request.user.is_authenticated():
-        return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
+        return HttpResponseRedirect("/{base_url}/home".format(base_url=common_settings.TEST_UI_BASE_URL))
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -54,7 +53,7 @@ def login_view(request):
                                 EmailAddress.objects.check_confirmation(email_address)
                             else:
                                 return HttpResponseRedirect("/email_warning/")
-                    return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
+                    return HttpResponseRedirect("/{base_url}/home".format(base_url=common_settings.TEST_UI_BASE_URL))
                 else:
                     # user.delete()
                     # TODO set an html to resend confirmation
@@ -73,7 +72,7 @@ def login_view(request):
 
 def create_user_view(request):
     if request.user.is_authenticated():
-        return HttpResponseRedirect("/{base_url}/home".format(base_url=settings.TEST_UI_BASE_URL))
+        return HttpResponseRedirect("/{base_url}/home".format(base_url=common_settings.TEST_UI_BASE_URL))
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
@@ -110,13 +109,13 @@ def create_user_view(request):
                     return HttpResponse("UNKNOWN ERROR")
 
                 return HttpResponseRedirect(
-                    "/{base_url}/create_user/register1/".format(base_url=settings.TEST_UI_BASE_URL))
+                    "/{base_url}/create_user/register1/".format(base_url=common_settings.TEST_UI_BASE_URL))
 
             # if the email is already used
             except IntegrityError:
                 form = CreateUserForm()
                 return render(request, "login/create_user.html", {
-                    'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
+                    'plus_id': getattr(common_settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
                     'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
                     'form': form,
                     'error': 'email',
@@ -127,7 +126,7 @@ def create_user_view(request):
     else:
         form = CreateUserForm()
         return render(request, "login/create_user.html", {
-            'plus_id': getattr(settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
+            'plus_id': getattr(common_settings, 'SOCIAL_AUTH_GOOGLE_PLUS_KEY', None),
             'plus_scope': ' '.join(GooglePlusAuth.DEFAULT_SCOPE),
             'form': form
         })
@@ -148,7 +147,7 @@ def register_one(request):
         form = RegistrationFormOne(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect("/{base_url}/create_user/register2/".format(base_url=settings.TEST_UI_BASE_URL))
+            return HttpResponseRedirect("/{base_url}/create_user/register2/".format(base_url=common_settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
     else:
@@ -175,7 +174,7 @@ def register_two(request):
         if form.is_valid():
             form.save()
 
-            return HttpResponseRedirect("/{base_url}/create_user/register3/".format(base_url=settings.TEST_UI_BASE_URL))
+            return HttpResponseRedirect("/{base_url}/create_user/register3/".format(base_url=common_settings.TEST_UI_BASE_URL))
         else:
             return HttpResponse("ERROR, invalid form")
     else:
@@ -239,7 +238,7 @@ def register_three(request):
                     'error': 'password',
                 })
 
-            return HttpResponseRedirect("/{base_url}/home/".format(base_url=settings.TEST_UI_BASE_URL))
+            return HttpResponseRedirect("/{base_url}/home/".format(base_url=common_settings.TEST_UI_BASE_URL))
 
         else:
             return HttpResponse("ERROR, invalid form")
@@ -295,9 +294,9 @@ def chat_auth(request):
         }
 
         pusher_object = pusher.Pusher(
-            app_id=settings.PUSHER_APP_ID,
-            key=settings.PUSHER_APP_KEY,
-            secret=settings.PUSHER_SECRET,
+            app_id=common_settings.PUSHER_APP_ID,
+            key=common_settings.PUSHER_APP_KEY,
+            secret=common_settings.PUSHER_SECRET,
             encoder=DjangoJSONEncoder,
         )
 

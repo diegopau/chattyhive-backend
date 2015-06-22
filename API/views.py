@@ -18,7 +18,7 @@ from API import permissions
 from email_confirmation import email_info
 import datetime
 from django.contrib.auth import authenticate, login, logout
-from chattyhive_project import settings
+from chattyhive_project.settings import common_settings
 from django.db import IntegrityError, transaction
 from core.models import UnauthorizedException
 
@@ -162,7 +162,7 @@ class UserLogin(APIView):
 
                     # We now build a json with the server response that will include info the client might need
                     # about asyn services
-                    services = [{'name': 'pusher', 'app': settings.PUSHER_APP_KEY, 'reg_id': ''}]
+                    services = [{'name': 'pusher', 'app': common_settings.PUSHER_APP_KEY, 'reg_id': ''}]
                     data_dict['services'] = services
 
                     email_address = EmailAddress.objects.get(email=user.email)
@@ -370,7 +370,7 @@ class CheckAsynchronousServices(APIView):
 
             # We now build a json with the server response that will include info the client might need
             # about async services
-            services = [{'name': 'pusher', 'app': settings.PUSHER_APP_KEY, 'reg_id': ''}]
+            services = [{'name': 'pusher', 'app': common_settings.PUSHER_APP_KEY, 'reg_id': ''}]
             response_data['services'] = services
 
             return Response(response_data, status=status.HTTP_200_OK)
@@ -410,9 +410,9 @@ def asynchronous_authentication(request):
             }
 
             pusher_object = pusher.Pusher(
-                app_id=settings.PUSHER_APP_ID,
-                key=settings.PUSHER_APP_KEY,
-                secret=settings.PUSHER_SECRET,
+                app_id=common_settings.PUSHER_APP_ID,
+                key=common_settings.PUSHER_APP_KEY,
+                secret=common_settings.PUSHER_SECRET,
             )
 
             auth_response = pusher_object.authenticate(

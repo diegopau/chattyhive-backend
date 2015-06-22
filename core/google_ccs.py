@@ -1,12 +1,12 @@
 from django.core.exceptions import ImproperlyConfigured
 import requests
 import json
-from chattyhive_project import settings
+from chattyhive_project.settings import common_settings
 
 
 def send_gcm_message(regs_id, data, collapse_key=None):
 
-    api_key = getattr(settings, 'GCM_APIKEY', None)
+    api_key = getattr(common_settings, 'GCM_APIKEY', None)
     if not api_key:
         raise ImproperlyConfigured("You haven't set the 'GCM_APIKEY' setting yet.")
 

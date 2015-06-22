@@ -1,52 +1,123 @@
 # Django settings for clean_project project.
 # -*- encoding: utf-8 -*-
 import os
-from django.utils.translation import ugettext_lazy as _ 
+from urllib import parse
+from django.utils.translation import ugettext_lazy as _
 
-DEBUG = True
-TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# This is the base URL for all test user interface app (test_ui)
-TEST_UI_BASE_URL = 'test-ui'
-# and this is the name of the app for the test user interface
-TEST_UI_APP_NAME = 'test_ui'
 
+
+# django-environ initial configuration
+# -----------------------------
+import environ
+
+ROOT_DIR = environ.Path(__file__) - 3  # (/a/b/myfile.py - 3 = /)
+env = environ.Env()
+
+
+
+# CHATTYHIVE SERVICE SETTINGS
+# ------------------------------------------------------------------------------
 DISABLED_ACCOUNT_PERIOD = 365
 MAX_INACTIVITY_PERIOD = 90
 AFTER_WARNING_PERIOD = 3
 
-ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
+
+
+# DEBUG
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
+DEBUG = env.bool("DJANGO_DEBUG", False)
+
+
+
+# APPS CONFIGURATION
+# ---------------------------------
+DJANGO_APPS = (
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.postgres',
+    # Uncomment the next line to enable the admin:
+    'django.contrib.admin',
+    # Uncomment the next line to enable admin documentation:
+    # 'django.contrib.admindocs',
 )
 
-MANAGERS = ADMINS
+THIRD_PARTY_APPS = (
+    'social.apps.django_app.default',  # social_auth app
+    'API',
+    'core',
+    'email_confirmation',
+    'login',
+    'colorful',
+    'cities_light',
+    'rest_framework',
+    'rest_framework_swagger',
+    'test_ui',
+    'docs',
+    'datetimewidget',
+    'pusher',
+    # Uncomment the next line to enable the django_extensions package -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    # 'django_extensions',
+    # Uncomment the next line to enable silk (performance monitoring, profiling)
+    #  -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    # 'silk',
+    # Uncomment the next line to enable the debug_toolbar -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    # 'debug_toolbar',
+)
 
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS
+
+
+
+# MIDDLEWARE CONFIGURATION
+# ------------------------------------------------------------------------------
+MIDDLEWARE_CLASSES = (
+    # 'django.middleware.cache.UpdateCacheMiddleware',    # Cache, must first
+    'django.middleware.common.CommonMiddleware',
+    # 'silk.middleware.SilkyMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'chattyhive_project.admin-middleware.AdminLocaleMiddleware',
+    # 'django.middleware.cache.FetchFromCacheMiddleware',  # Cache, must last
+    # Uncomment the next line for simple click jacking protection:
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+)
+
+
+
+# DATABASE CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'chattytestdb', # Or path to database file if using sqlite3.
-        # The following settings are not used with sqlite3:
-        'USER': 'chattytestuser',
-        'PASSWORD': 'chattytestpass',
-        'HOST': '',  # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'PORT': '',  # Set to empty string for default.
+    # Raises ImproperlyConfigured exception if DATABASE_URL not in os.environ
+    'default': env.db("DATABASE_URL", default="postgres://chattytestuser:chattytestpass@localhost/chattytestdb"),
+}
+
+redis_url = parse.urlparse(os.environ.get('REDIS_URL'))
+CACHES = {
+    "default": {
+         "BACKEND": "redis_cache.RedisCache",
+         "LOCATION": "{0}:{1}".format(redis_url.hostname, redis_url.port),
+         "OPTIONS": {
+             "PASSWORD": redis_url.password,
+             "DB": 0,
+         }
     }
 }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': '/var/run/redis/redis.sock',
-    },
-}
 
-# Hosts/domain names that are valid for this site; required if DEBUG is False
-# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = [
-    '.chattyhive.com',
-    '.herokuapp.com',
-]
 
+# GENERAL CONFIGURATION
+# ------------------------------------------------------------------------------
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -71,7 +142,7 @@ USE_I18N = True
 # calendars according to the current locale.
 USE_L10N = True
 
-
+# List of languages supported by the server
 LANGUAGES = (
     ('af', _('Afrikaans')),
     ('ar', _('Arabic')),
@@ -151,44 +222,15 @@ LANGUAGES = (
 )
 
 
-# Absolute filesystem path to the directory that will hold user-uploaded files.
-# Example: "/var/www/example.com/media/"
-MEDIA_ROOT = ''
 
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash.
-# Examples: "http://example.com/media/", "http://media.example.com/"
-MEDIA_URL = ''
-
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-STATIC_PATH = os.path.join(BASE_DIR, 'static')
-
-STATICFILES_DIRS = (
-    STATIC_PATH,
-)
-
-# URL prefix for static files.
-# Example: "http://example.com/static/", "http://static.example.com/"
-STATIC_URL = '/static/'
-
-# List of finder classes that know how to find static files in
-# various locations.
-STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
-)
-
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'f9g4g)3h#j5!!utp0xvgpx6-&-h(ats@1l_j79wz4peaj)%qw1'
-
+# TEMPLATE CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#templates
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, '..', 'templates')
+            os.path.join(BASE_DIR, '../../', 'templates')
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -207,68 +249,105 @@ TEMPLATES = [
     },
 ]
 
-MIDDLEWARE_CLASSES = (
-    # 'django.middleware.cache.UpdateCacheMiddleware',    # Cache, must first
-    'django.middleware.common.CommonMiddleware',
-    # 'silk.middleware.SilkyMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'chattyhive_project.admin-middleware.AdminLocaleMiddleware',
-    # 'django.middleware.cache.FetchFromCacheMiddleware',  # Cache, must last
-    # Uncomment the next line for simple click jacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+
+# STATIC FILE CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#static-root
+STATIC_PATH = os.path.join(BASE_DIR, '../static')
+
+STATICFILES_DIRS = (
+    STATIC_PATH,
 )
 
+# URL prefix for static files.
+# Example: "http://example.com/static/", "http://static.example.com/"
+STATIC_URL = '/static/'
+
+# List of finder classes that know how to find static files in
+# various locations.
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+)
+
+
+
+# MEDIA CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#media-root
+# Absolute filesystem path to the directory that will hold user-uploaded files.
+# Example: "/var/www/example.com/media/"
+MEDIA_ROOT = ''
+
+# URL that handles the media served from MEDIA_ROOT. Make sure to use a
+# trailing slash.
+# Examples: "http://example.com/media/", "http://media.example.com/"
+MEDIA_URL = ''
+
+
+
+# URL Configuration
+# ------------------------------------------------------------------------------
 ROOT_URLCONF = 'chattyhive_project.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = 'chattyhive_project.wsgi.application'
 
-INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.postgres',
-    'social.apps.django_app.default',  # social_auth app
-    'API',
-    'core',
-    'email_confirmation',
-    'login',
-    'colorful',
-    'cities_light',
-    # Uncomment the next line to enable the admin:
-    'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
-    'rest_framework',
-    'rest_framework_swagger',
-    'test_ui',
-    'docs',
-    'datetimewidget',
-    'pusher',
-    # Uncomment the next line to enable the django_extensions package -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
-    # 'django_extensions',
-    # Uncomment the next line to enable silk (performance monitoring, profiling)
-    #  -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
-    # 'silk',
-    # Uncomment the next line to enable the debug_toolbar -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
-    # 'debug_toolbar',
+
+
+
+
+
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
+# This is the base URL for all test user interface app (test_ui)
+TEST_UI_BASE_URL = 'test-ui'
+# and this is the name of the app for the test user interface
+TEST_UI_APP_NAME = 'test_ui'
+
+
+ADMINS = (
+    # ('Your Name', 'your_email@example.com'),
 )
+
+MANAGERS = ADMINS
+
+
+# Hosts/domain names that are valid for this site; required if DEBUG is False
+# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = [
+    '.chattyhive.com',
+    '.herokuapp.com',
+]
+
+
+
+
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = 'f9g4g)3h#j5!!utp0xvgpx6-&-h(ats@1l_j79wz4peaj)%qw1'
+
+
+
+
+
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_COOKIE_AGE = 1209600
 SESSION_SAVE_EVERY_REQUEST = True
 
 
-# ### ========================================================== ###
-# ###                          AWS S3                            ###
-# ### ========================================================== ###
+
+
+
+# ## ======================================================== ###
+# ##                EXTERNAL SERVICES SETTINGS                ###
+# ## ======================================================== ###
+
+# AWS S3
+# ----------------------------------------------------------------
 # S3_ENDPOINT =
 # S3_ACCESS_ID =
 # S3_ACCESS_KEY =
@@ -277,11 +356,8 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 
 
-
-
-# ### ======================================================== ###
-# ###                          GCM                             ###
-# ### ======================================================== ###
+# GCM
+# ----------------------------------------------------------------
 GCM_SENDER_ID = 549771636005
 GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
 ALLOWED_GCM_APP_IDS = ('com.chattyhive.chattyhive', )
@@ -403,28 +479,11 @@ LOGGING = {
     }
 }
 
-# Parse database configuration from $DATABASE_URL
-import dj_database_url
-#DATABASES['default'] =  dj_database_url.config()
-DATABASES = {
-    'default': dj_database_url.config(default='postgres://chattytestuser:chattytestpass@localhost/chattytestdb')}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
-# ================================ #
-#            SMTP Email            #
-# ================================ #
-
-
-
-# ================================ #
-#            Android               #
-# ================================ #
-ANDROID_STATUS = {
-
-}
 
 # ## ======================================================== ###
 # ##       Django Rest Framework & Django Rest Swagger        ###
