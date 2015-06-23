@@ -50,15 +50,10 @@ DJANGO_APPS = (
 
 THIRD_PARTY_APPS = (
     'social.apps.django_app.default',  # social_auth app
-    'API',
-    'core',
-    'email_confirmation',
-    'login',
     'colorful',
     'cities_light',
     'rest_framework',
     'rest_framework_swagger',
-    'test_ui',
     'docs',
     'datetimewidget',
     'pusher',
@@ -71,7 +66,15 @@ THIRD_PARTY_APPS = (
     # 'debug_toolbar',
 )
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS
+LOCAL_APPS = (
+    'API',
+    'core',
+    'login',
+    'email_confirmation',
+    'test_ui',
+)
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 
 
@@ -113,6 +116,19 @@ CACHES = {
          }
     }
 }
+
+
+
+# SECURITY
+# ------------------------------------------------------------------------------
+# Honor the 'X-Forwarded-Proto' header for request.is_secure()
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Hosts/domain names that are valid for this site; required if DEBUG is False
+# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = [
+    '.chattyhive.com',
+    '.herokuapp.com',
+]
 
 
 
@@ -298,45 +314,58 @@ WSGI_APPLICATION = 'chattyhive_project.wsgi.application'
 
 
 
+# Session Configuration
+# ------------------------------------------------------------------------------
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
+SESSION_COOKIE_AGE = 1209600
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 
-TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+# LOGGING CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#logging
+# A sample logging configuration. The only tangible logging
+# performed by this configuration is to send an email to
+# the site admins on every HTTP 500 error when DEBUG=False.
+# See http://docs.djangoproject.com/en/dev/topics/logging for
+# more details on how to customize your logging configuration.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        }
+    },
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        }
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    }
+}
 
-# This is the base URL for all test user interface app (test_ui)
-TEST_UI_BASE_URL = 'test-ui'
-# and this is the name of the app for the test user interface
-TEST_UI_APP_NAME = 'test_ui'
 
 
+# MANAGER & ADMIN CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#admins
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS
 
-
-# Hosts/domain names that are valid for this site; required if DEBUG is False
-# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = [
-    '.chattyhive.com',
-    '.herokuapp.com',
-]
-
-
-
-
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'f9g4g)3h#j5!!utp0xvgpx6-&-h(ats@1l_j79wz4peaj)%qw1'
-
-
-
-
-
-
-SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
-SESSION_COOKIE_AGE = 1209600
-SESSION_SAVE_EVERY_REQUEST = True
+ADMIN_LANGUAGE_CODE = 'en-US'
 
 
 
@@ -362,25 +391,46 @@ GCM_SENDER_ID = 549771636005
 GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
 ALLOWED_GCM_APP_IDS = ('com.chattyhive.chattyhive', )
 
-# ### ======================================================== ###
-# ###                         Pusher                           ###
-# ### ======================================================== ###
 
+
+# Pusher
+# ----------------------------------------------------------------
 PUSHER_APP_ID = "55129"
 PUSHER_APP_KEY = 'f073ebb6f5d1b918e59e'
 PUSHER_SECRET = '360b346d88ee47d4c230'
 
-# ### ======================================================== ###
-# ###                      Cities Light                        ###
-# ### ======================================================== ###
+
+
+
+
+# ## ======================================================== ###
+# ##                   LOCAL APPs SETTINGS                    ###
+# ## ======================================================== ###
+# Test UI
+# ---------------------------------------------------------------
+# This is the base URL for all test user interface app (test_ui)
+TEST_UI_BASE_URL = 'test-ui'
+# and this is the name of the app for the test user interface
+TEST_UI_APP_NAME = 'test_ui'
+
+
+
+
+
+# ## ======================================================== ###
+# ##                       3RD PARTY APPs                     ###
+# ## ======================================================== ###
+
+# Cities Light
+# https://github.com/yourlabs/django-cities-light
+# --------------------------------------------------------------
 
 CITIES_LIGHT_CITY_SOURCES = ['http://download.geonames.org/export/dump/cities5000.zip']
 
 
-# ### ======================================================== ###
-# ###                       Social Auth                        ###
-# ### ======================================================== ###
-
+# Social Auth
+# https://github.com/omab/python-social-auth
+# --------------------------------------------------------------
 AUTHENTICATION_BACKENDS = (
     'login.ch_social_auth.ChGooglePlusAuth',
     'login.ch_social_auth.ChTwitterOAuth',
@@ -448,47 +498,10 @@ SOCIAL_AUTH_USER_MODEL = 'core.ChUser'
 AUTH_USER_MODEL = 'core.ChUser'
 AUTH_PROFILE_MODULE = 'core.ChProfile'
 
-    ### ======================================================== ###
-
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
-        }
-    },
-    'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
-    },
-    'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-    }
-}
 
 
-# Honor the 'X-Forwarded-Proto' header for request.is_secure()
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-
-
-# ## ======================================================== ###
-# ##       Django Rest Framework & Django Rest Swagger        ###
-# ## ======================================================== ###
-
+# Django Rest Framework & Django Rest Swagger
+# -----------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
@@ -499,14 +512,8 @@ SWAGGER_SETTINGS = {
     'api_path': '/',
 }
 
-# ## ======================================================== ###
-# ##                           Silk                           ###
-# ## ======================================================== ###
 
+
+# Silk
+# -----------------------------------------------------------------------
 SILKY_PYTHON_PROFILER = False
-
-# ## ======================================================== ###
-# ##                      Admin settings                      ###
-# ## ======================================================== ###
-
-ADMIN_LANGUAGE_CODE = 'en-US'
