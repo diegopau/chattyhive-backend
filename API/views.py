@@ -15,7 +15,6 @@ import pusher
 from email_confirmation.models import EmailAddress, EmailConfirmation
 from API import serializers
 from API import permissions
-from email_confirmation import email_info
 import datetime
 from django.contrib.auth import authenticate, login, logout
 from chattyhive_project.settings import common_settings
@@ -206,7 +205,7 @@ class UserLogin(APIView):
                                         data_dict['public_name'] = user.profile.public_name
                                     data_dict['expiration_date'] = \
                                         user_email_confirmation.warned_day + datetime.timedelta(
-                                            days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                            days=common_settings.EMAIL_AFTER_WARNING_DAYS)
 
                                     # We update last_login date
                                     user.profile.last_activity = timezone.now()
@@ -244,7 +243,7 @@ class UserLogin(APIView):
                                     data_dict['email_verification'] = 'warn'
                                     data_dict['expiration_date'] = \
                                         user_email_confirmation.warned_day + datetime.timedelta(
-                                            days=email_info.EMAIL_AFTER_WARNING_DAYS)
+                                            days=common_settings.EMAIL_AFTER_WARNING_DAYS)
 
                                     # We update last_login date
                                     user.profile.last_activity = timezone.now()
@@ -276,7 +275,7 @@ class UserLogin(APIView):
                                         data_dict['public_name'] = user.profile.public_name
                                     data_dict['email_verification'] = 'unverified'
                                     data_dict['expiration_date'] = user_email_confirmation.sent + datetime.timedelta(
-                                        days=email_info.EMAIL_CONFIRMATION_DAYS)
+                                        days=common_settings.EMAIL_CONFIRMATION_DAYS)
 
                                     # We update last_login date
                                     user.profile.last_activity = timezone.now()

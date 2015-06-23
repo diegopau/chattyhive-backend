@@ -17,7 +17,8 @@ from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 
 from email_confirmation.signals import email_confirmed, email_confirmation_sent
-from email_confirmation.email_info import DEFAULT_FROM_EMAIL, SITE, EMAIL_CONFIRMATION_DAYS, EMAIL_AFTER_WARNING_DAYS
+from chattyhive_project.settings.common_settings import DEFAULT_FROM_EMAIL, SITE, EMAIL_CONFIRMATION_DAYS,\
+    EMAIL_AFTER_WARNING_DAYS
 # from core.models import ChUser
 
 # this code based in-part on django-registration

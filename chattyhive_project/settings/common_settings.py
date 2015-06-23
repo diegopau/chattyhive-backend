@@ -25,6 +25,20 @@ AFTER_WARNING_PERIOD = 3
 
 
 
+# EMAIL SETTINGS
+# ------------------------------------------------------------------------------
+
+DEFAULT_FROM_EMAIL = 'chattyhive@chattyhive.com'
+# SITE = 'chattyhive.com'  # Production
+SITE = 'test3.chattyhive.com'  # ChTest3 Heroku app
+# SITE = 'test2.chattyhive.com'  # ChTest2 Heroku app
+# SITE = 'test1.chattyhive.com'  # ChTest1 Heroku app
+# SITE = '127.0.0.1:8000'  # Local Develop
+EMAIL_CONFIRMATION_DAYS = 3
+EMAIL_AFTER_WARNING_DAYS = 1
+
+
+
 # DEBUG
 # ------------------------------------------------------------------------------
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
@@ -57,13 +71,6 @@ THIRD_PARTY_APPS = (
     'docs',
     'datetimewidget',
     'pusher',
-    # Uncomment the next line to enable the django_extensions package -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
-    # 'django_extensions',
-    # Uncomment the next line to enable silk (performance monitoring, profiling)
-    #  -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
-    # 'silk',
-    # Uncomment the next line to enable the debug_toolbar -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
-    # 'debug_toolbar',
 )
 
 LOCAL_APPS = (
