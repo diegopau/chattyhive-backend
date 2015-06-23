@@ -27,13 +27,15 @@ AFTER_WARNING_PERIOD = 3
 
 # EMAIL SETTINGS
 # ------------------------------------------------------------------------------
+DEFAULT_FROM_EMAIL = env('DJANGO_DEFAULT_FROM_EMAIL', default='noreply@chattyhive.com')
+SITE = env('ROOT_SITE_ADDRESS', default='127.0.0.1:8000')
 
-DEFAULT_FROM_EMAIL = 'chattyhive@chattyhive.com'
-# SITE = 'chattyhive.com'  # Production
-SITE = 'test3.chattyhive.com'  # ChTest3 Heroku app
-# SITE = 'test2.chattyhive.com'  # ChTest2 Heroku app
-# SITE = 'test1.chattyhive.com'  # ChTest1 Heroku app
-# SITE = '127.0.0.1:8000'  # Local Develop
+# In Heroku the following config vars can be set depending on the Heroku app used:
+# ROOT_SITE_ADDRESS = 'chattyhive.com'  # Production
+# ROOT_SITE_ADDRESS = 'test3.chattyhive.com'  # ChTest3 Heroku app
+# ROOT_SITE_ADDRESS = 'test2.chattyhive.com'  # ChTest2 Heroku app
+# ROOT_SITE_ADDRESS = 'test1.chattyhive.com'  # ChTest1 Heroku app
+
 EMAIL_CONFIRMATION_DAYS = 3
 EMAIL_AFTER_WARNING_DAYS = 1
 
@@ -394,18 +396,17 @@ ADMIN_LANGUAGE_CODE = 'en-US'
 
 # GCM
 # ----------------------------------------------------------------
-GCM_SENDER_ID = 549771636005
-GCM_APIKEY = "AIzaSyAWzoLO2TwGnaDKIuu5jZJ59i3IskwSQ1w"
+GCM_SENDER_ID = env('GCM_SENDER_ID')
+GCM_APIKEY = env('GCM_APIKEY')
 ALLOWED_GCM_APP_IDS = ('com.chattyhive.chattyhive', )
 
 
 
 # Pusher
 # ----------------------------------------------------------------
-PUSHER_APP_ID = "55129"
-PUSHER_APP_KEY = 'f073ebb6f5d1b918e59e'
-PUSHER_SECRET = '360b346d88ee47d4c230'
-
+PUSHER_APP_ID = env('PUSHER_APP_ID')
+PUSHER_APP_KEY = env('PUSHER_APP_KEY')
+PUSHER_SECRET = env('PUSHER_SECRET')
 
 
 
@@ -487,16 +488,16 @@ SOCIAL_AUTH_SANITIZE_REDIRECTS = True
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False   # change when https is implemented
 
 #GOOGLE
-SOCIAL_AUTH_GOOGLE_PLUS_KEY = '549771636005.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_PLUS_SECRET = '3zNxgzsvtSOsSFdAwelCOE2S'
+SOCIAL_AUTH_GOOGLE_PLUS_KEY = env('SOCIAL_AUTH_GOOGLE_PLUS_KEY')
+SOCIAL_AUTH_GOOGLE_PLUS_SECRET = env('SOCIAL_AUTH_GOOGLE_PLUS_SECRET')
 # scopes?
 #TWITTER
-SOCIAL_AUTH_TWITTER_KEY = 'hmhyd92hqifYUHchpr8yBA'
-SOCIAL_AUTH_TWITTER_SECRET = 'vPpk6F54ej80ej8jT7LvFp6FcQdUJHg4tHLFMM0FVw'
+SOCIAL_AUTH_TWITTER_KEY = env('SOCIAL_AUTH_TWITTER_KEY')
+SOCIAL_AUTH_TWITTER_SECRET = env('SOCIAL_AUTH_TWITTER_SECRET')
 # scopes?
 #FACEBOOK
-SOCIAL_AUTH_FACEBOOK_KEY = '1430000390551335'
-SOCIAL_AUTH_FACEBOOK_SECRET = 'eed2aa4e2ded3c4ad4c0ed7516acceae'
+SOCIAL_AUTH_FACEBOOK_KEY = env('SOCIAL_AUTH_FACEBOOK_KEY')
+SOCIAL_AUTH_FACEBOOK_SECRET = env('SOCIAL_AUTH_FACEBOOK_SECRET')
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_birthday', 'user_location']
 
 LOGIN_URL = '/' + TEST_UI_BASE_URL + '/'

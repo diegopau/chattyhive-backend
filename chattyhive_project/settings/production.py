@@ -17,10 +17,14 @@ from .common_settings import *
 DEBUG = env.bool('DJANGO_DEBUG', default=False)
 
 
+
 # EMAIL SETTINGS
 # ------------------------------------------------------------------------------
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_HOST_USER = 'app19648202@heroku.com'
-EMAIL_HOST_PASSWORD = 'atxh2rh47945'
-EMAIL_PORT = 587
+DEFAULT_FROM_EMAIL = env('DJANGO_DEFAULT_FROM_EMAIL', default='noreply@chattyhive.com')
+EMAIL_HOST = env("DJANGO_EMAIL_HOST", default='smtp.sendgrid.com')
+EMAIL_HOST_PASSWORD = env("SENDGRID_PASSWORD")
+EMAIL_HOST_USER = env('SENDGRID_USERNAME')
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_SUBJECT_PREFIX = env("EMAIL_SUBJECT_PREFIX", default='chattyhive team')
 EMAIL_USE_TLS = True
+SERVER_EMAIL = EMAIL_HOST_USER
