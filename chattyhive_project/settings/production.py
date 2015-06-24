@@ -10,14 +10,16 @@ __author__ = 'diego'
 
 from .common_settings import *
 
-print("yes! I loaded the production settings :)")
-
-
 
 # DEBUG
 # ------------------------------------------------------------------------------
 DEBUG = env.bool('DJANGO_DEBUG', default=False)
 
+
+# SECRET CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 
 # EMAIL SETTINGS
