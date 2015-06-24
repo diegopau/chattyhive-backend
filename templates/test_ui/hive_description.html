@@ -1,16 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Hive</title>
-    <title></title>
-    <script src="http://code.jquery.com//jquery-2.0.3.min.js" type="text/javascript"></script>
-    <script src="http://cdn.jsdelivr.net/jquery.cookie/1.4.0/jquery.cookie.js" type="text/javascript"></script>
-    <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
-</head>
-<body>
-    <div align="right">
-        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
-    </div>
+{% extends "base_test_ui.html" %}
+{% block title %}Hive description{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
+
     <a href="/test-ui/home/">Home</a><br />
     <br />
     {% if subscribed %}
@@ -25,10 +22,16 @@
              {{ tag }},
         {% endfor %}
     </div>
+    <div>Languages:
+        {% for language in hive.languages %}
+             {{ language }},
+        {% endfor %}
+    </div>
     {% if owner or admin %}
         <div><a href="/test-ui/create_public_chat/{{ hive.slug }}">New public chat</a></div>
 {#         TODO: crear enlace para eliminar la comunidad#}
     {% endif %}
+{% endblock %}
 
-</body>
-</html>
+{% block body_extra_scripts %}
+{% endblock %}

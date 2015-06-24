@@ -1,19 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>CHAT</title>
-    <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
-    <script src="http://code.jquery.com//jquery-2.0.3.min.js" type="text/javascript"></script>
-    <script src="http://cdn.jsdelivr.net/jquery.cookie/1.4.0/jquery.cookie.js" type="text/javascript"></script>
-{#    <script type="text/javascript" src="{{STATIC_URL}}js/chat.js"></script>#}
-</head>
-<body>
-    <div align="right">
-        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
-    </div>
+{% extends "base_test_ui.html" %}
+{% block title %}Chat{% endblock %}
+{% block more_scripts %}
+    <script src="//js.pusher.com/3.0/pusher.min.js"></script>{% endblock %}
+{% block public_name %}{{ user }}{%  endblock %}
+
+{% block content %}
+
     <a href="/test-ui/home/chats/">Home</a>
     <br />
-    Welcome, {{ user }}!  Hive: {{ hive }}
+    Welcome, {{ user }}!  Hive: {{ hive.slug }}
     <br />
     <br /><br /><button type="button" id="btn_load" style="text-align: right">Load previous messages</button>
         <p id="chat_field">
@@ -24,16 +19,22 @@
     <button type="button" id="btn_send">Send</button>
     <p id="time"></p>
     <p id="status"></p>
-    <script type="text/javascript">
+
+{% endblock %}
+
+{% block body_extra_scripts %}
+
+ <script type="text/javascript">
 
         var num_rep=0;
         var user="{{ user }}";
         var key="{{ key }}";
-        var hive = "{{ hive }}";
+        var hive = "{{ hive.slug }}";
         var channel_name="{{ channel }}";
         var event_name="{{ event }}";
         var chat="{{ chat_field }}";
-        var csrftoken = $.cookie('csrftoken');
+        var new_chat="{{ new_chat }}";
+        var csrftoken = Cookies.get('csrftoken');
 
         // Connecting to pusher
         var pusher = new Pusher(key, {  authEndpoint: '/test-ui/chat_auth/',
@@ -43,7 +44,7 @@
                                     });
 
         //channel_name = channel_name.replace("ñ", "__nh__");
-        var channel = pusher.subscribe(channel_name);
+        var channel = pusher.subscribe("presence-".concat(channel_name));
 
         // Listening to the channel
         channel.bind(event_name, function(data) {
@@ -109,9 +110,9 @@
                 var timestamp_server = null;
                 $.ajax({
                     type: "POST",
-                    url: "/test-ui/chat/" + channel_name + "/",
+                    url: "/test-ui/hive_chat/" + hive + '/' + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server},
+                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat, socket_id:pusher.connection.socket_id},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);
@@ -124,7 +125,7 @@
                         alert(errMsg);
                     }
                 });
-                write(user, text_sent, timestamp, timestamp_server);
+               // write(user, text_sent, timestamp, timestamp_server);
                 return false;
             });
 
@@ -166,29 +167,8 @@
                 });
                 return false;
             });
-
-            // Button logout behaviour when clicked
-            $('#btn_logout').on('click', function()
-            {
-                var csrftoken = $.cookie('csrftoken');
-                $.ajax({
-                    type: "POST",
-                    url: "/test-ui/logout/",
-                    headers: {"X-CSRFToken":csrftoken},
-                    data: "",
-                    success: function(newData){
-                        alert(newData);
-                        //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/test-ui/";
-                    },
-                    failure: function(errMsg) {
-                        alert(errMsg);
-                    }
-                });
-                return false;
-            });
         });
 
     </script>
-</body>
-</html>
+
+{% endblock %}

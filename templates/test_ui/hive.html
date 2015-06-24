@@ -1,22 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Hive</title>
-    <title></title>
-    <script src="http://code.jquery.com//jquery-2.0.3.min.js" type="text/javascript"></script>
-    <script src="http://cdn.jsdelivr.net/jquery.cookie/1.4.0/jquery.cookie.js" type="text/javascript"></script>
-    <script src="http://js.pusher.com/2.1/pusher.min.js" type="text/javascript"></script>
-</head>
-<body>
-    <div align="right">
-        <button type="button" id="btn_logout" style="text-align: right">Logout</button>
-    </div>
+{% extends "base_test_ui.html" %}
+{% block title %}Hive{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
     <a href="/test-ui/home/">Home</a><br />
     <br />
     <div>
         :{{ hive.name }} -- <a href="/test-ui/hive_description/{{ hive.slug }}">Description</a> <br />
         {% for chat in chats %}
-            <a href="/test-ui/chat/{{ chat.channel_unicode }}"> public chat</a><br />
+            <a href="/test-ui/hive_chat/{{ hive.slug }}/{{ chat.chat_id }}"> public chat</a><br />
         {% endfor %}
     </div>
     <br />
@@ -24,12 +20,15 @@
     <p id="profiles_list">
     </p>
     <button type="button" id="btn_more" style="text-align: right">Load more</button>
+{% endblock %}
+
+{% block body_extra_scripts %}
 
     <script type="text/javascript">
         // Buttons behaviour
         $(document).ready(function() {
             var hive_slug="{{ hive.slug }}";
-            var csrftoken = $.cookie('csrftoken');
+            var csrftoken = Cookies.get('csrftoken');
             var last=0;
             $.ajax({
                 type: "GET",
@@ -48,13 +47,13 @@
             // AJAX method to reload users on screen
             function reload(users) {
                 var profile = users[0];
-                $('#profiles_list').html('<a href="/test-ui/create_chat/' + hive_slug + '/' + profile.public_name + '">@' +
+                $('#profiles_list').html('<a href="/test-ui/open_private_chat/' + profile.public_name + '?hive_slug=' + hive_slug + '">@' +
                                           profile.public_name + '</a>  (<a href="/test-ui/profile/' + profile.public_name +
                                           '/public">profile</a>)<br />');
                 for(i = 1; i < users.length; i++){
                     profile = users[i]
                     $('#profiles_list').html($('#profiles_list').html() +
-                        '<a href="/test-ui/create_chat/' + hive_slug + '/' + profile.public_name + '">@' + profile.public_name +
+                        '<a href="/test-ui/open_private_chat/' + profile.public_name + '?hive_slug=' + hive_slug + '">@' + profile.public_name +
                         '</a>  (<a href="/test-ui/profile/' + profile.public_name + '/public">profile</a>)<br />'
                     );
                 }
@@ -100,29 +99,7 @@
                 return false;
             });
 
-
-
-            // Button logout behaviour when clicked
-           $('#btn_logout').on('click', function()
-            {
-                var csrftoken = $.cookie('csrftoken');
-                $.ajax({
-                    type: "POST",
-                    url: "/test-ui/logout/",
-                    headers: {"X-CSRFToken":csrftoken},
-                    data: "",
-                    success: function(newData){
-                        alert(newData);
-                        //$.removeCookie(); TODO toggle to remove browser cookies
-                        location.href="/test-ui/";
-                    },
-                    failure: function(errMsg) {
-                        alert(errMsg);
-                    }
-                });
-                return false;
-            });
         });
     </script>
-</body>
-</html>
+
+{% endblock %}

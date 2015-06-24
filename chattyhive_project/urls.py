@@ -3,6 +3,7 @@ __author__ = 'xurxo'
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.conf import settings
+from chattyhive_project.settings import common_settings
 
 # admin.autodiscover() ### this is no longer needed with Django 1.7
 
@@ -10,10 +11,18 @@ from django.conf import settings
 urlpatterns = patterns('',
 
     ##################################
-    #         Welcome screen         #
+    #          Project docs          #
     ##################################
 
-    url(r'^$', 'core.views.welcome_screen', name='welcome_dev'),
+    url(r'^', include('docs.urls')),
+
+
+    #########################
+    #          Core         #
+    #########################
+
+    url(r'^', include('core.urls')),
+
 
     ########################
     #          API         #
@@ -27,7 +36,7 @@ urlpatterns = patterns('',
     ######################
     # browser test views #
     ######################
-    url(r'^' + settings.TEST_UI_BASE_URL + '/', include('test_ui.urls')),
+    url(r'^' + common_settings.TEST_UI_BASE_URL + '/', include('test_ui.urls')),
 
 
     ######################
@@ -65,7 +74,14 @@ urlpatterns = patterns('',
     # ###                  Cities_light - URLS                     ###
     # ### ======================================================== ###
 
-    url(r'^location/', include('cities_light.contrib.restframework3')),
+    url(r'^locations/', include('cities_light.contrib.restframework3')),
+
+
+    # ### ======================================================== ###
+    # ###                    Silk profiling app                    ###
+    # ### ======================================================== ###
+
+    url(r'^silk/', include('silk.urls', namespace='silk')),
 
     #
     # ### ======================================================== ###

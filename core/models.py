@@ -3,7 +3,8 @@
 __author__ = 'lorenzo'
 
 from django.contrib.auth.models import AbstractUser, UserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
+from django.db.models import Count
 from django import forms
 from django.utils.http import urlquote
 from django.conf.global_settings import LANGUAGES
@@ -14,12 +15,112 @@ from django.utils import timezone
 from colorful.fields import RGBColorField
 from cities_light.models import Country, Region, City
 from django.core.serializers.json import DjangoJSONEncoder
-from chattyhive_project import settings
+from chattyhive_project.settings import common_settings
 from core.google_ccs import send_gcm_message
 import json
-import pusher
+from pusher import Pusher
 import hashlib
 import re
+from slugify import Slugify
+
+
+class LanguageModel(models.Model):
+    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
+
+    def __str__(self):
+        return self.language
+
+
+class TagModel(models.Model):
+    tag = models.CharField(max_length=32, unique=True, validators=[RegexValidator(re.compile('^([a-zA-Z0-9]|([a-zA-Z0-9][\w]*[a-zA-Z0-9]))$'))])
+    slug = models.CharField(max_length=32, default='', blank=True)
+
+    my_slugify = Slugify()
+    my_slugify.separator = '-'
+    my_slugify.pretranslate = {'&': 'and'}
+    my_slugify.to_lower = True
+    my_slugify.max_length = None
+    my_slugify.capitalize = False
+    my_slugify.safe_chars = ''
+
+    def save(self, *args, **kwargs):
+
+        # We first pre-proccess the string, if capital letters are found (except the first char) then it will converted
+        # to '_' + char.to_lower. Also if found several capital together, only for the first one we will add the '_'
+        # before, this is to avoid to separate initials
+        last_was_upper = True  # This way the first char will be considered as upper
+        pre_slug = ''
+        for c in self.tag:
+            if c == '_':
+                last_was_upper = True
+                pre_slug += c
+            elif c.isupper():
+                if last_was_upper:
+                    pre_slug += c
+                else:
+                    pre_slug = pre_slug + '_' + c.lower()
+                    last_was_upper = True
+            else:
+                pre_slug += c
+                last_was_upper = False
+
+        self.slug = self.my_slugify(pre_slug)
+        super(TagModel, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.tag
+
+
+class GuidelinesModel(models.Model):
+    name = models.CharField(max_length=150, unique=True, default='')
+    text = models.TextField(max_length=2000, default='')
+    editors = models.ManyToManyField('ChUser', related_name='chat_guidelines', null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class ChCategory(models.Model):
+    # Groups definitions
+    GROUPS = (
+        ('Art & Cultural events', 'Art & Cultural events'),
+        ('Books & Comics', 'Books & Comics'),
+        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
+        ('Education', 'Education'),
+        ('Family, Home & Pets', 'Family, Home & Pets'),
+        ('Free time', 'Free time'),
+        ('Health & Fitness', 'Health & Fitness'),
+        ('Internet', 'Internet'),
+        ('Lifestyle', 'Lifestyle'),
+        ('Love & Friendship', 'Love & Friendship'),
+        ('Meet new people', 'Meet new people'),
+        ('Movies & TV', 'Movies & TV'),
+        ('Music', 'Music'),
+        ('Natural sciences', 'Natural sciences'),
+        ('News & Current affairs', 'News & Current affairs'),
+        ('Places, Companies & Brands', 'Places, Companies & Brands'),
+        ('Politics & Activism', 'Politics & Activism'),
+        ('Shopping & Market', 'Shopping & Market'),
+        ('Social sciences', 'Social sciences'),
+        ('Sports', 'Sports'),
+        ('Technology & Computers', 'Technology & Computers'),
+        ('Trips & Places', 'Trips & Places'),
+        ('Video games', 'Video games'),
+        ('Work & Business', 'Work & Business'),
+    )
+
+    name = models.CharField(max_length=64, unique=True)
+    description = models.CharField(max_length=140)
+    code = models.CharField(max_length=8, unique=True)
+    slug = models.CharField(max_length=255, unique=True, default='')
+    group = models.CharField(max_length=32, choices=GROUPS)
+
+    @classmethod
+    def get_group_names(cls):
+        return cls.GROUPS
+
+    def __str__(self):
+        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
 
 
 class ChUserManager(UserManager):
@@ -37,13 +138,13 @@ class ChUserManager(UserManager):
         """
 
         """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
-        hex_username = uuid4().hex    # 16^30 values low collision probabilities
+        hex_username = uuid4().hex    # 16^32 values low collision probabilities
 
         while True:
             try:
                 # if the email is already used
                 ChUser.objects.get(username=hex_username)
-                hex_username = uuid4().hex    # 16^30 values low collision probabilities
+                hex_username = uuid4().hex    # 16^32 values low collision probabilities
             except ChUser.DoesNotExist:
                 break
 
@@ -75,11 +176,17 @@ class ChUserManager(UserManager):
 class ChUser(AbstractBaseUser, PermissionsMixin):
     """Provides the fields and attributes of the ChUser model
     """
+
+    # We use a simple RegexValidator for now even if the right validator would have the
+    # following regex: re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I)
+    # This is because with this precise regex we wouldn't be able to register superusers with a "human-readable"
+    # username using the python manage.py createsuperuser command (it wouldn't pass the validation).
+    # This could be fixed in the future.
     username = models.CharField(_('username'), max_length=32, unique=True,
                                 help_text=_('Required. 32 characters or fewer. Letters, numbers and '
                                             '@/./+/-/_ characters'),
                                 validators=[RegexValidator(
-                                    re.compile('[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}\Z', re.I),
+                                    re.compile('^[\w-]+$'),
                                     _('Enter a valid username.'), 'invalid')])
     email = models.EmailField(_('email address'), unique=True, blank=True)
     is_staff = models.BooleanField(_('staff status'), default=False,
@@ -117,16 +224,28 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
 
     def deactivate_account(self):
 
+        # TODO: this method is uncomplete
+
         hives = self.profile.hives
         for hive in hives:
-            hive.leave(self.profile)
+            hive.leave(self.profile, only_disable=True)
 
-        # remaining (private?) chats
-        ChChatSubscription.objects.filter(profile=self.profile, deleted=False).select_for_update().update(deleted=True)
+        # remaining (private with friends and group) chats
+        ChChatSubscription.objects.filter(
+            profile=self.profile, subscription_state='active').select_for_update().update(
+            subscription_state='disabled', last_deleted_or_disabled=timezone.now())
 
     def delete_account(self):
 
-        self.deactivate_account()
+        hives = self.profile.hives
+        for hive in hives:
+            hive.leave(self.profile, only_disable=False)
+
+        # remaining (private with friends and group) chats
+        ChChatSubscription.objects.filter(
+            profile=self.profile, subscription_state='active').select_for_update().update(
+            subscription_state='deleted', last_deleted_or_disabled=timezone.now())
+
         self.profile.erase_info()
 
     @property
@@ -134,8 +253,8 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
         return ChProfile.objects.get(user=self)
 
     @property
-    def device(self):
-        return Device.objects.get(user=self)
+    def devices(self):
+        return Device.objects.filter(user=self)
 
     def __str__(self):
         try:
@@ -145,57 +264,69 @@ class ChUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Device(models.Model):
-    user = models.ForeignKey(ChUser, unique=True, related_name='related_device')
-    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"))
-    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"))  # Tablet, Smartphone, Desktop, etc.
-    dev_id = models.CharField(max_length=50, verbose_name=_("Device ID"), unique=True)
+
+    DEV_OS_CHOICES = (
+        ('android', 'Android'),
+        ('ios', 'iOS'),
+        ('wp', 'Windows Phone'),
+        ('browser', 'Web Browser'),
+        ('windows', 'Windows desktop OS'),
+        ('linux', 'Linux'),
+        ('mac', 'Mac OS')
+    )
+
+    DEV_TYPE_CHOICES = (
+        ('smartphone', 'smartphone up to 6 inch'),
+        ('6_8tablet', '6 to 8 inch tablet'),
+        ('big_tablet', 'More than 8 inch tablet'),
+        ('netbook', 'less than 15 inch screen'),
+        ('laptop', 'between 15 and 17 inch screen'),
+        ('desktop', 'less than 21 inch screen'),
+        ('big_screen_desktop', 'more than 21 inch screen'),
+        ('tv', 'TV device, big seen from long distance')
+    )
+
+    user = models.ForeignKey(ChUser, related_name='related_device')
+    dev_os = models.CharField(max_length=20, verbose_name=_("Device Operating System"), choices=DEV_OS_CHOICES)
+    dev_type = models.CharField(max_length=20, verbose_name=_("Device Type"), choices=DEV_TYPE_CHOICES)
+
+    # This id can be re-constructed from info that are persistent for the client (dev_os, dev_type, device identifier
+    # (which we call dev_code in the API))
+    # It is known that some devices (because of a bug) could report the same dev_code, also if a device have no dev_code
+    # will be stored without the last part of the chain (dev_code=''), in this
+    # case two real devices could share the same dev_id, this means that when the server sends messages through
+    # gcm it will only send it to the reg_id of this device, but is a weird condition and we could look in the future
+    # for better solutions
+
+    dev_alternative_id = models.CharField(unique=True, max_length=255,
+                                          verbose_name=_("public_name + dev_os + dev_type + dev_cod"))
+    dev_id = models.CharField(max_length=32, verbose_name=_("Device ID"), unique=True,
+                              validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     reg_id = models.CharField(max_length=255, verbose_name=_("Registration ID"), unique=True)
-    active = models.BooleanField(default=True)
-    last_login = models.DateTimeField(default=timezone.now())
+    active = models.BooleanField(default=False)
+    last_activity = models.DateTimeField(default=timezone.now())
 
-    def send_message(self, msg, collapse_key="message"):
-        json_response = send_gcm_message(regs_id=[self.reg_id],
-                                         data={'msg': msg},
-                                         collapse_key=collapse_key)
-
-        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
-            return 'Ok'
-        else:
-            for result in json_response['results']:
-                if result['message_id'] and result['registration_id']:
-                    self.reg_id = result['registration_id']
-                    return 'Reg Updated'
-                else:
-                    if result['error'] == 'Unavailable':
-                        return 'Not sent'
-                    elif result['error'] == 'NotRegistered':
-                        self.active = False
-                        return 'Unregistered'
-                    else:
-                        self.active = False
-                        return 'Unknown'
+    @classmethod
+    def get_dev_id(cls):
+        hex_dev_id = uuid4().hex   # 16^32 values low collision probabilities
+        while True:
+            try:
+                # if the email is already used
+                Device.objects.get(dev_id=hex_dev_id)
+                hex_dev_id = uuid4().hex    # 16^32 values low collision probabilities
+            except Device.DoesNotExist:
+                break
+        return hex_dev_id
 
     def __unicode__(self):
         return self.dev_id
 
 
-class LanguageModel(models.Model):
-    language = models.CharField(max_length=8, choices=LANGUAGES, default='es-es', unique=True)
-
-    def __str__(self):
-        return self.language
-
-
-class TagModel(models.Model):
-    tag = models.CharField(max_length=32, unique=True)
-
-    def __str__(self):
-        return self.tag
-
-
 class ChProfile(models.Model):
     # Here it's defined the relation between profiles & users
     user = models.OneToOneField(ChUser, unique=True, related_name='profile')
+    created = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateTimeField(auto_now=True)
     last_activity = models.DateTimeField(default=timezone.now())
 
     # Here are the choices definitions
@@ -215,7 +346,6 @@ class ChProfile(models.Model):
     birth_date = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
     # language is a multi value field now, related_name='languages'
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
-    timezone = models.DateField(auto_now=True, auto_now_add=True)
 
     # location = models.TextField(null=True, blank=True)  # todo location
     country = models.ForeignKey(Country, null=True, blank=True)
@@ -226,8 +356,8 @@ class ChProfile(models.Model):
     public_status = models.CharField(max_length=140, blank=True, null=True)
     personal_color = RGBColorField()
     # image fields
-    photo = models.URLField(null=True)
-    avatar = models.URLField(null=True)
+    picture = models.URLField(null=True, blank=True)
+    avatar = models.URLField(null=True, blank=True)
 
     private_show_age = models.BooleanField(default=False)
     private_show_location = models.BooleanField(default=True)
@@ -240,8 +370,8 @@ class ChProfile(models.Model):
     # Many-to-Many fields through the intermediate models (the subscriptions)
     # IMPORTANTE, se meten los modelos entre comillas por necesidad (por estar declaradas las clases para ambos
     # modelos después de esta clase, pero ese no es el modo habitual de hacer esto!
-    hive_subscriptions = models.ManyToManyField('ChHive', through='ChHiveSubscription')
-    chat_subscriptions = models.ManyToManyField('ChChat', through='ChChatSubscription')
+    hives = models.ManyToManyField('ChHive', through='ChHiveSubscription')
+    chats = models.ManyToManyField('ChChat', through='ChChatSubscription')
 
     # methods
     def add_language(self, char_language):
@@ -272,6 +402,13 @@ class ChProfile(models.Model):
             self.language.remove(lang)
         except LanguageModel.DoesNotExist:
             return
+
+    def get_coordinates(self):
+        if self.city:
+            coordinates = str(self.city.latitude) + ' ' + str(self.city.longitude)
+        else:
+            coordinates = 'not_set'
+        return coordinates
 
     def set_approximate_location(self, text_location):
         """
@@ -321,9 +458,37 @@ class ChProfile(models.Model):
         self.public_show_age = None
         self.public_show_location = False
         self.public_show_sex = False
-        self.photo = None
+        self.picture = None
         self.avatar = None
 
+    def display_location(self):
+        """
+        :return: string representation of an user location
+        """
+        if self.city:
+            location = self.city.name
+            if self.region:
+                location = location + ', ' + self.region.name
+                if self.country:
+                    location = location + ', ' + self.country.name
+                else:
+                    location = 'No location set'
+            elif self.country:
+                location = self.country.name
+            else:
+                location = 'No location set'
+        elif self.region:
+            location = self.region.name
+            if self.country:
+                location = location + ', ' + self.country.name
+            else:
+                location = 'No location set'
+        elif self.country:
+            location = self.country.name
+        else:
+            location = 'No location set'
+
+        return location
 
     # properties (fake fields)
     @property
@@ -351,7 +516,7 @@ class ChProfile(models.Model):
     def hives(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChHiveSubscription.objects.filter(profile=self, deleted=False)
+            subscriptions = ChHiveSubscription.objects.filter(profile=self, subscription_state='active')
             hives = []
             for subscription in subscriptions:
                 if subscription.hive:
@@ -364,7 +529,7 @@ class ChProfile(models.Model):
     def chats(self):
         # Trying to get all the subscriptions of this profile
         try:
-            subscriptions = ChChatSubscription.objects.filter(profile=self, deleted=False)
+            subscriptions = ChChatSubscription.objects.filter(profile=self, subscription_state='active')
             chats = []
             for subscription in subscriptions:
                 if subscription.chat:
@@ -384,48 +549,6 @@ class ChProfile(models.Model):
         return '@' + self.public_name + ', Personal profile'
 
 
-class ChCategory(models.Model):
-    # Groups definitions
-    GROUPS = (
-        ('Art & Cultural events', 'Art & Cultural events'),
-        ('Books & Comics', 'Books & Comics'),
-        ('Cars, Motorbikes & Others', 'Cars, Motorbikes & Others'),
-        ('Education', 'Education'),
-        ('Family, Home & Pets', 'Family, Home & Pets'),
-        ('Free time', 'Free time'),
-        ('Health & Fitness', 'Health & Fitness'),
-        ('Internet', 'Internet'),
-        ('Lifestyle', 'Lifestyle'),
-        ('Love & Friendship', 'Love & Friendship'),
-        ('Meet new people', 'Meet new people'),
-        ('Movies & TV', 'Movies & TV'),
-        ('Music', 'Music'),
-        ('Natural sciences', 'Natural sciences'),
-        ('News & Current affairs', 'News & Current affairs'),
-        ('Places, Companies & Brands', 'Places, Companies & Brands'),
-        ('Politics & Activism', 'Politics & Activism'),
-        ('Shopping & Market', 'Shopping & Market'),
-        ('Social sciences', 'Social sciences'),
-        ('Sports', 'Sports'),
-        ('Technology & Computers', 'Technology & Computers'),
-        ('Trips & Places', 'Trips & Places'),
-        ('Video games', 'Video games'),
-        ('Work & Business', 'Work & Business'),
-    )
-
-    name = models.CharField(max_length=64, unique=True)
-    description = models.CharField(max_length=140)
-    code = models.CharField(max_length=8, unique=True)
-    group = models.CharField(max_length=32, choices=GROUPS)
-
-    @classmethod
-    def get_group_names(cls):
-        return cls.GROUPS
-
-    def __str__(self):
-        return self.group + ': ' + self.name + ' (code: ' + self.code + ')'
-
-
 class ChHive(models.Model):
     TYPES = (
         ('Hive', 'Hive'),
@@ -435,18 +558,51 @@ class ChHive(models.Model):
     # Attributes of the Hive
     name = models.CharField(max_length=80, unique=True)
     slug = models.CharField(max_length=250, unique=True, default='')
-    description = models.TextField(max_length=2048)
+    description = models.TextField(max_length=400)
     category = models.ForeignKey(ChCategory)
     _languages = models.ManyToManyField(LanguageModel, null=True, blank=True)
-    creator = models.ForeignKey(ChProfile, null=True)  # on_delete=models.SET_NULL, we will allow deleting profiles?
-    creation_date = models.DateField(auto_now=True)
+    creator = models.ForeignKey(ChProfile, null=True, related_name='created_hives')
+    creation_date = models.DateTimeField(auto_now=False, auto_now_add=False)
     tags = models.ManyToManyField(TagModel, null=True)
-
-    # TODO: Add validator to ensure that this field has a value from 1 to 100
-    priority = models.IntegerField(default=50)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
+    picture = models.URLField(null=True, blank=True)
+    priority = models.IntegerField(default=50, validators=[RegexValidator(r'^(?:100|[1-9]?[0-9])$',
+                                                                          'Only integers between 0 - 100 allowed')])
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
-
     deleted = models.BooleanField(default=False)
+
+    @property
+    def users(self):
+        """
+        :return: profiles of users joining the hive
+        """
+        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self,
+                                                                                    subscription_state='active',
+                                                                                    expelled=False)
+        users_list = ChProfile.objects.filter(id__in=subscriptions.values('profile')).select_related()
+        return users_list
+
+    @property
+    def languages(self):
+        """
+        :return: hive's languages QuerySet
+        """
+        return self._languages.all
+
+    @property
+    def creator_location(self):
+        """
+        :return: hive's creator location string
+        """
+        return self.creator.display_location()
+
+    @languages.setter
+    def languages(self, languages):
+        """
+        :return: profile's languages QuerySet
+        """
+        for language in languages:
+            self._languages.add(language)
 
     def set_tags(self, tags_array):
         for stag in tags_array:
@@ -459,33 +615,195 @@ class ChHive(models.Model):
         """
         return self.tags.all
 
-    def get_users_by_country(self, country):
+    def get_subscribed_users_count(self):
         """
-        :return: profiles of users joining the hive in the country specified
+        :return: hive's subscribers total number
         """
-        return self.users.filter(country=country)
+        return self.subscriptions.count()
 
-    def get_users_recently_online(self):
+    def get_users_near(self, profile):
+        """
+        :return: profiles of users near to the user, prioritizing first city, then region, then country
+        """
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
+
+        users_in_same_city = None
+        users_in_same_region = None
+
+        if profile.city is not None:
+            users_in_same_city = ChProfile.objects.filter(
+                hive_subscription__in=hive_subscriptions, city=profile.city).order_by('-last_activity')
+
+        if profile.region is not None:
+            users_in_same_region = ChProfile.objects.filter(
+                hive_subscription__in=hive_subscriptions, region=profile.region).order_by('-last_activity')
+
+        if profile.country is not None:
+            users_in_same_country = ChProfile.objects.filter(
+                hive_subscription__in=hive_subscriptions, country=profile.country).order_by('-last_activity')
+        else:
+            raise IntegrityError("User has no country assigned")
+
+        return users_in_same_city | users_in_same_region | users_in_same_country
+
+    def get_users_recently_join(self, profile):
+
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
+
+        users_recently_join = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+            '-hive_subscription__creation_date')
+
+        return users_recently_join
+
+    def get_users_recently_online(self, profile):
         """
         :return: profiles of users joining the hive in the country specified
         """
-        return self.users.order_by('-last_activity')
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
+
+        users_recently_online = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+            '-last_activity')
+
+        return users_recently_online
 
     def get_users_recommended(self, profile):
         """
         :param profile: profile for the users are recommended for
         :return: profiles of users joining the hive in the country specified
         """
-        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False, profile__country=profile.country)
-        users_list_near = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by(
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, subscription_state='active', expelled=False, profile__country=profile.country).exclude(profile=profile)
+        users_list_near = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
-        subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
-            hive=self, deleted=False, expelled=False).exclude(profile__country=profile.country)
-        users_list_far = ChProfile.objects.filter(id__in=subscriptions.values('profile')).order_by(
+        hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
+            hive=self, subscription_state='active', expelled=False).exclude(profile__country=profile.country).exclude(profile=profile)
+        users_list_far = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
+
+    @classmethod
+    def get_hives_by_tags(cls, tags=[], hives=None):
+
+        hives_by_tags = ChHive.objects.none()
+
+        if not tags:
+            return hives
+        else:
+            hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags)
+            return hives_by_tags
+
+    @classmethod
+    def get_hives_by_subscriptions_number(cls, profile, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
+        hives = \
+            cls.objects.filter(deleted=False).exclude(
+                subscriptions__in=user_hive_subscriptions).annotate(
+                subscribers_count=Count('subscriptions')).order_by('-subscribers_count')
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives)
+            return final_hives
+        else:
+            return hives
+
+    @classmethod
+    def get_hives_by_priority(cls, profile, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
+        hives = \
+            cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by('-priority')
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives)
+            return final_hives
+        else:
+            return hives
+
+    @classmethod
+    def get_hives_by_proximity_or_location(cls, profile, location, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
+        hives_precise = ChHive.objects.none()  # This is the recommended way to create an empty queryset
+        hives_city = ChHive.objects.none()
+        hives_region = ChHive.objects.none()
+        hives_country = ChHive.objects.none()
+        if location:
+            if 'coordinates' in location and location['coordinates'] != '':
+                # hives_precise = ...
+                pass  # This can be used in the future for more precise location
+            else:
+                if 'city' in location and location['city'] != '':
+                    hives_city = cls.objects.filter(
+                        deleted=False, creator__city__name=location['city']).order_by('-creation_date')
+                if 'region' in location and location['region'] != '':
+                    hives_region = cls.objects.filter(
+                        deleted=False, creator__region__name=location['region']).order_by('-creation_date')
+                hives_country = cls.objects.filter(
+                    deleted=False, creator__country__code2=location['country'].upper()).order_by('-creation_date')
+        else:
+            # We use the location of the user making the request. This could be improved in the future using coordinates
+            if profile.city:
+                hives_city = cls.objects.filter(
+                    deleted=False, creator__city=profile.city).order_by('-creation_date')
+            if profile.region:
+                hives_region = cls.objects.filter(
+                    deleted=False, creator__region=profile.region).order_by('-creation_date')
+            hives_country = cls.objects.filter(
+                deleted=False, creator__country=profile.country).order_by('-creation_date')
+
+        hives = hives_precise | hives_city | hives_region | hives_country
+        hives_not_subscribed = hives.exclude(subscriptions__in=user_hive_subscriptions)
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives_not_subscribed)
+            return final_hives
+        else:
+            return hives_not_subscribed
+
+    @classmethod
+    def get_hives_by_age(cls, profile, tags, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
+        hives = cls.objects.filter(deleted=False).exclude(subscriptions__in=user_hive_subscriptions).order_by(
+            '-creation_date')
+        if tags:
+            final_hives = cls.get_hives_by_tags(tags=tags, hives=hives)
+            return final_hives
+        else:
+            return hives
+
+    @classmethod
+    def get_hives_by_category(cls, profile, category, location, tags, include_subscribed):
+        # We give higher priority to those created by someone in the same country than the user requesting them
+        # and we order them by age
+        # tags are also filtered in get_hives_by_proximity_or_location
+        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location, tags, include_subscribed)
+        hives_by_category = hives_by_age_and_location.filter(category=category)
+        return hives_by_category
+
+    @classmethod
+    def get_communities(cls, profile, location, tags, include_subscribed):
+        # We give higher priority to those created by someone in the same country than the user requesting them
+        # and we order them by age
+        # tags are also filtered in get_hives_by_proximity_or_location
+        hives_by_age_and_location = cls.get_hives_by_proximity_or_location(profile, location, tags, include_subscribed)
+        communities = hives_by_age_and_location.filter(type='Community')
+        return communities
+
+    @classmethod
+    def get_hives_containing(cls, profile, search_string, include_subscribed):
+        user_hive_subscriptions = ChHiveSubscription.objects.none()
+        if not include_subscribed:
+            user_hive_subscriptions = ChHiveSubscription.objects.filter(profile=profile, subscription_state='active')
+        hives_containing = cls.objects.filter(deleted=False, name__icontains=search_string).exclude(
+            subscriptions__in=user_hive_subscriptions).order_by('-creation_date')
+        return hives_containing
 
     def join(self, profile):
         """
@@ -495,15 +813,16 @@ class ChHive(models.Model):
         try:
             hive_subscription = ChHiveSubscription.objects.get(hive=self, profile=profile)
             # If he has been previously subscribed to the hive...
-            if hive_subscription.deleted:
-                hive_subscription.deleted = False
-                hive_subscription.creation_date = timezone.now()
+            if (hive_subscription.subscription_state == 'deleted') or (hive_subscription.subscription_state == 'disabled'):
+                if hive_subscription.subscription_state == 'deleted':
+                    hive_subscription.creation_date = timezone.now()
+                hive_subscription.subscription_state = 'active'
                 hive_subscription.save()
                 if hive_subscription.expelled:
                     if hive_subscription.expulsion_due_date < timezone.now():
                         hive_subscription.expelled = False
                     else:
-                        raise UnauthorizedException("The user was expelled, he Join the hive but won't be able to chat")
+                        raise UnauthorizedException("The user was expelled, he Joined the hive but won't be able to chat")
             else:
                 raise IntegrityError("ChHiveSubscription already exists")
         except ChHiveSubscription.DoesNotExist:
@@ -511,7 +830,7 @@ class ChHive(models.Model):
             hive_subscription = ChHiveSubscription(hive=self, profile=profile)
             hive_subscription.save()
 
-    def leave(self, profile):
+    def leave(self, profile, only_disable=False):
         """Marks the Hive Subscription as deleted, then takes every private chat subscription of the user
            related with this hive and will mark it as deleted too
 
@@ -519,50 +838,54 @@ class ChHive(models.Model):
         :return: void
         """
         try:
-            hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self)
-            hive_subscription.deleted = True
-            hive_subscription.save()
-            chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
-            for subscription in chat_subscriptions:
-                subscription.deleted = True
-                subscription.save()
-                if subscription.chat.public_chat_extra_info is None:
-                    chat = subscription.chat
-                    # This is just to know if there is any other subscriptions to this chat
-                    # (we won't count the subscription that the user is using and we won't count the
-                    # subscriptions that are marked as deleted either)
-                    others_subscriptions = ChChatSubscription.objects.filter(
-                        chat=chat).exclude(profile=profile).exclude(deleted=True)
-                    if not others_subscriptions:
-                        chat.deleted = True
-                        chat.save()
+            with transaction.atomic():
+                hive_subscription = ChHiveSubscription.objects.get(profile=profile, hive=self, subscription_state='active')
+                if only_disable:
+                    hive_subscription.subscription_state = 'disabled'
                 else:
+                    hive_subscription.subscription_state = 'deleted'
+                unsubscription_datetime = timezone.now()
+                hive_subscription.last_deleted_or_disabled = unsubscription_datetime
+                hive_subscription.save()
+                chat_subscriptions = ChChatSubscription.objects.filter(profile=profile, chat__hive=self)
+                for subscription in chat_subscriptions:
+                    if only_disable:
+                        subscription.subscription_state = 'disabled'
+                    else:
+                        subscription.subscription_state = 'deleted'
+                    subscription.last_deleted_or_disabled = unsubscription_datetime
+                    if not only_disable:
+                        if subscription.chat.public_chat_extra_info is None:
+                            chat = subscription.chat
+                            # This is just to know if there is any other subscriptions to this chat
+                            # (we won't count the subscription that the user is using and we won't count the
+                            # subscriptions that are marked as deleted) If a subscription is marked as disabled, the chat
+                            # can't be marked as removal unless the hive itself is marked for removal.
+                            # If no remaining subscriptions for this chat it means this private chat can be deleted.
+                            others_subscriptions = ChChatSubscription.objects.filter(
+                                chat=chat).exclude(profile=profile).exclude(subscription_state='deleted')
+                            if not others_subscriptions:
+                                chat.deleted = True
+                                chat.save()
                     subscription.save()
-            # Now we check if there are more users subscribed to this hive or community
-            # (hive subscriptions marked as deleted don't count)
-            others_hive_subscriptions = ChHiveSubscription.objects.filter(
-                hive=self).exclude(profile=profile).exclude(deleted=True)
-            if not others_hive_subscriptions:
-                # If not other users are subscribed to the hive, we mark as deleted the public chats, the hive and
-                # the community (if its a community)
-                if self.type == 'Community':
-                    self.community.deleted = True
-                    self.community.save()
-                    if self.community_public_chats is not None:
-                        for community_public_chat in self.community_public_chats.all():
-                            community_public_chat.deleted = True
-                            community_public_chat.save()
-                            community_public_chat.chat.deleted = True
-                            community_public_chat.chat.save()
-                        else:
-                            raise IntegrityError("This community does not have any public chats")
-                else:
-                    self.public_chat.deleted = True
-                    self.public_chat.save()
-                    self.public_chat.chat.deleted = True
-                    self.public_chat.chat.save()
-                self.deleted = True
-                self.save()
+                # Now we check if there are more users subscribed to this hive or community
+                # (hive subscriptions marked as deleted don't count)
+                others_hive_subscriptions = ChHiveSubscription.objects.filter(
+                    hive=self).exclude(profile=profile).exclude(subscription_state='deleted')
+                if not others_hive_subscriptions:
+                    # If not other users are subscribed to the hive, we mark as deleted the public chats, the hive and
+                    # the community (if its a community)
+                    if self.type == 'Community':
+                        # We never delete communities, the owner will do it.
+                        pass
+                    else:
+                        for chat in self.chats.all():
+                            chat.deleted = True
+                            chat.save()
+                        self.public_chat.chat.deleted = True
+                        self.public_chat.chat.save()
+                        self.deleted = True
+                    self.save()
 
         except ChHiveSubscription.DoesNotExist:
             raise IntegrityError("User have not joined the hive")
@@ -571,24 +894,44 @@ class ChHive(models.Model):
         return u'{"name": "%s", "slug": "%s", "description": "%s", "category": "%s", "creation_date": "%s"}' \
                % (self.name, self.slug, self.description, self.category, self.creation_date)
 
-    @property
-    def users(self):
-        """
-        :return: profiles of users joining the hive
-        """
-        Subscriptions = ChHiveSubscription.objects.select_related('profile').filter(hive=self, deleted=False, expelled=False)
-        users_list = ChProfile.objects.filter(id__in=Subscriptions.values('profile')).select_related()
-        return users_list
-
-    @property
-    def languages(self):
-        """
-        :return: profile's languages QuerySet
-        """
-        return self._languages.all
-
     def __str__(self):
         return self.name
+
+
+class ChHiveSubscription(models.Model):
+    SUBSCRIPTION_STATES = (
+        ('active', 'Active'),
+        ('disabled', 'Disabled'),
+        ('deleted', 'Deleted'),
+    )
+
+    # Subscription object which relates Profiles with Hives
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscriptions')
+    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='subscriptions')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    subscription_state = models.CharField(max_length=10, choices=SUBSCRIPTION_STATES, default='active')
+    last_deleted_or_disabled = models.DateTimeField(null=True, blank=True)
+
+    expelled = models.BooleanField(default=False)
+    expulsion_due_date = models.DateTimeField(null=True, blank=True)
+
+    profile_last_activity = models.DateTimeField(null=True, blank=True)
+
+    def get_profile_last_activity(self):
+        if self.profile_last_activity:
+            return self.profile_last_activity
+        else:
+            return None
+
+    def get_expulsion_due_date(self):
+        if self.expelled:
+            return self.expulsion_due_date
+        else:
+            return None
+
+    def __str__(self):
+        return "links " + self.profile.public_name + " with hive " + self.hive.name
 
 
 class ChCommunity(models.Model):
@@ -599,9 +942,15 @@ class ChCommunity(models.Model):
     # todo: administrative info?
     deleted = models.BooleanField(_('The owner has deleted it'), default=False)
 
-    def new_public_chat(self, name, description):
+    def delete_community(self):
+        # TODO: Here we have to still decide what to do with the private chats the users have inside this community
+        # to suddenly remove them just doesn't feel right!...
+        pass
+
+    def new_public_chat(self, name, public_chat_slug_ending, description):
         chat = ChChat(hive=self.hive, type='public')
-        chat.channel = replace_unicode(name)
+        chat.chat_id = ChChat.get_chat_id()
+        chat.slug = chat.chat_id + '-' + public_chat_slug_ending
         chat.save()
         chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
         chat_extension.save()
@@ -612,78 +961,150 @@ class ChChat(models.Model):
     # Chat TYPE definitions
     TYPE = (
         ('public', 'public'),
-        ('private', 'private'),
-        ('group', 'group')
+        ('mate_private', 'mate_private'),
+        ('friend_private', 'friend_private'),
+        ('mates_group', 'mates_group'),
+        ('friends_group', 'friends_group')
     )
 
+    # Attributes of the Chat
+    created = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateField(auto_now=True)
 
     # Relation between chat and hive
     count = models.PositiveIntegerField(blank=False, null=False, default=0)
     # Even though we now have a ChPublicChat model, we leave the field type because sometimes it is more convenient
     # for database queries to use this type field
-    type = models.CharField(max_length=32, choices=TYPE, default='private')
+    type = models.CharField(max_length=32, choices=TYPE, default='mate_private')
     hive = models.ForeignKey(ChHive, related_name="chats", null=True, blank=True)
-    channel_unicode = models.CharField(max_length=60, unique=True)
+    chat_id = models.CharField(max_length=32, unique=True,
+                               validators=[RegexValidator(re.compile('^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$'))])
     deleted = models.BooleanField(default=False)
 
-    # Attributes of the Chat
-    date = models.DateTimeField(auto_now=True)
+    # In the case of the chat the slug won't be necessarely unique. That's because public chats in different communities
+    # could have the same name and slug.
+    slug = models.CharField(max_length=250, default='')
 
     @property
     def channel(self):
         """
         :return: Pusher id for this chat
         """
-        return self.channel_unicode
+        if self.type == 'public':
+            return 'presence-' + self.chat_id
+        else:
+            return self.chat_id
 
-    @channel.setter
-    def channel(self, channel_unicode):
+    @classmethod
+    def get_chat_id(cls):
+        hex_channel_unicode = uuid4().hex   # 16^32 values low collision probabilities
+        while True:
+            try:
+                # if the email is already used
+                ChChat.objects.get(chat_id=hex_channel_unicode)
+                hex_channel_unicode = uuid4().hex    # 16^32 values low collision probabilities
+            except ChChat.DoesNotExist:
+                break
+        return hex_channel_unicode
+
+    def get_other_public_name(self, profile):
+        public_name = profile.public_name
+        slug_ends_with = self.slug[self.slug.find('--') + 2:len(self.slug)]
+        other_public_name = slug_ends_with.replace(public_name, '').replace('-', '')
+        return other_public_name
+
+    def public_names(self):
+        slug_ends_with = self.slug[self.slug.find('--') + 2:len(self.slug)]
+        public_name_a = slug_ends_with[0:slug_ends_with.find('-')]
+        public_name_b = slug_ends_with[slug_ends_with.find('-') + 1:len(slug_ends_with)]
+        return public_name_a + ', ' + public_name_b
+
+    def last_message(self):
         """
-        :param channel_unicode: Pusher id for this chat
+        :return: The most recent ChMessage related to the chat or None if there isn't any
         """
-        self.channel_unicode = 'presence-' + channel_unicode
+        try:
+            last = self.messages.latest('created')
+            return last
+        except ChMessage.DoesNotExist:
+            return None
 
     def check_permissions(self, profile):
 
         try:
-            ChChatSubscription.objects.get(profile=profile, chat=self, deleted=False, expelled=False)
+            ChChatSubscription.objects.get(profile=profile, chat=self, subscription_state='active', expelled=False)
         except ChChatSubscription.DoesNotExist:
             raise UnauthorizedException("User isn't part of this chat")
 
-    def new_message(self, profile, content_type, content, timestamp):
-
+    def new_message(self, profile, content_type, content, client_timestamp):
         self.check_permissions(profile)
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
         message.datetime = timezone.now()
-        message.client_datetime = timestamp
+        message.client_timestamp = client_timestamp
         message.content_type = content_type
         message.content = content
         message.save()
         return message
 
-    def send_message(self, profile, json_message):
-
-        self.check_permissions(profile)
-        if self.type == 'private':
-            subscription = ChChatSubscription.objects.filter(chat=self).exclude(profile=profile).select_related()[0]
-            device = subscription.profile.user.device
-            device.send_message(msg=json_message, collapse_key='')
+    def send_gcm_message(self, msg, reg_ids, devices, collapse_key="message"):
+        json_response = send_gcm_message(regs_id=reg_ids,
+                                         data={'msg': msg},
+                                         collapse_key=collapse_key)
+        gcm_response = []
+        if json_response['failure'] == 0 and json_response['canonical_ids'] == 0:
+            return gcm_response
         else:
-            pusher_object = pusher.Pusher(app_id=getattr(settings, 'PUSHER_APP_KEY', None),
-                                          key=getattr(settings, 'PUSHER_KEY', None),
-                                          secret=getattr(settings, 'PUSHER_SECRET', None),
-                                          encoder=DjangoJSONEncoder)
+            for result, device in zip(json_response['results'], devices):
+                message = ''
+                if 'message_id' in result:
+                    if result['message_id'] and result['registration_id']:
+                        device.reg_id = result['registration_id']
+                        message = 'Reg Updated'
+                else:
+                    if result['error'] == 'Unavailable':
+                        message = 'Not sent'
+                    elif result['error'] == 'NotRegistered':
+                        self.active = False
+                        message = 'Unregistered'
+                    else:
+                        self.active = False
+                        message = 'error'
+                gcm_response.append(message)
+            return gcm_response
+
+    def send_message(self, message_data):
+        self.check_permissions(message_data['profile'])
+        if self.type.endswith('private'):
+            devices = Device.objects.filter(user=message_data['other_profile'].user, dev_os='android', active=True)
+            reg_ids = []
+            for device in devices:
+                # We can send just one message from server to gcm cloud and indicate several reg_ids so gcm will send
+                # it to several devices.
+                if device.reg_id != '':
+                    reg_ids.append(device.reg_id)
+            if len(reg_ids) > 0:
+                gcm_response = self.send_gcm_message(msg=message_data['json_message'], reg_ids=reg_ids, devices=devices,
+                                                     collapse_key='')
+                if len(gcm_response) > 0:
+                    print("The following issues had happened while sending the message through GCM: ", gcm_response)
+        else:
+            pusher_object = Pusher(app_id=getattr(common_settings, 'PUSHER_APP_ID', None),
+                                   key=getattr(common_settings, 'PUSHER_APP_KEY', None),
+                                   secret=getattr(common_settings, 'PUSHER_SECRET', None),
+                                   json_encoder=DjangoJSONEncoder,
+                                   ssl=True)
             event = 'msg'
-            pusher_object[self.channel_unicode].trigger(event, json.loads(json_message))
+            socket_id_to_exclude = message_data['socket_id']
+            pusher_channel = 'presence-' + self.chat_id
+            pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']), socket_id_to_exclude)
 
     @staticmethod
     def confirm_messages(json_chats_array, profile):
-
         for chat in json.loads(json_chats_array):
             try:
-                chat_object = ChChat.objects.get(channel_unicode=chat['CHANNEL'])
-                ChChatSubscription.objects.get(chat=chat_object, profile=profile, deleted=False, expelled=False)
+                chat_object = ChChat.objects.get(chat_id=chat['CHANNEL'])
+                ChChatSubscription.objects.get(chat=chat_object, profile=profile, subscription_state='active', expelled=False)
             except ChChat.DoesNotExist:
                 raise
             except ChChatSubscription.DoesNotExist:
@@ -694,20 +1115,50 @@ class ChChat(models.Model):
             except ChMessage.DoesNotExist:
                 raise
 
-    def save(self, *args, **kwargs):
+    def __str__(self):
+        slug_ends_with = ''
+        if self.type == 'mate_private':
+            slug_ends_with = ' - between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ')
+        if self.type == 'friend_private':
+            slug_ends_with = ' - between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
+        if self.type == 'public':
+            slug_ends_with = ''
+        return self.hive.name + '(' + self.type + ')' + slug_ends_with
 
-        hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
-        while True:
-            try:
-                # if the email is already used
-                ChChat.objects.get(channel_unicode=hex_channel_unicode)
-                hex_channel_unicode = uuid4().hex[:60]     # 16^60 values low collision probabilities
-            except ChChat.DoesNotExist:
-                break
-        super(ChChat, self).save(*args, **kwargs)
+
+class ChChatSubscription(models.Model):
+    SUBSCRIPTION_STATES = (
+        ('active', 'Active'),
+        ('disabled', 'Disabled'),
+        ('deleted', 'Deleted'),
+    )
+
+    # Subscription object which relates Profiles with Chats
+    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscriptions')
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='subscriptions')
+    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    subscription_state = models.CharField(max_length=10, choices=SUBSCRIPTION_STATES, default='active')
+    last_deleted_or_disabled = models.DateTimeField(null=True, blank=True)
+    expelled = models.BooleanField(default=False)
+    expulsion_due_date = models.DateTimeField(null=True, blank=True)
+
+    profile_last_activity = models.DateTimeField(null=True, blank=True)
+
+    def get_profile_last_activity(self):
+        if self.profile_last_activity:
+            return self.profile_last_activity
+        else:
+            return None
+
+    def get_expulsion_due_date(self):
+        if (self.chat.type == 'public') and self.expelled:
+            return self.expulsion_due_date
+        else:
+            return None
 
     def __str__(self):
-        return self.hive.name + '(' + self.type + ')'
+        return "links " + self.profile.public_name + " with chat " + self.chat.chat_id
 
 
 class ChFriendsGroupChat(models.Model):
@@ -722,7 +1173,7 @@ class ChHivematesGroupChat(models.Model):
 
 class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
-    hive = models.OneToOneField(ChHive, related_name="public_chat", null=True, blank=True)
+    hive = models.OneToOneField(ChHive, related_name='public_chat', null=True, blank=True)
     deleted = models.BooleanField(default=False)
 
 
@@ -730,10 +1181,16 @@ class ChCommunityPublicChat(models.Model):
     moderators = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='moderates')
     chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
-    photo = models.CharField(max_length=200)
+    # slug = models.CharField(max_length=250, unique=True, default='')
+    picture = models.CharField(max_length=200)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
+    rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
+
+    def delete_public_chat(self):
+        # TODO: delete_public_chat method.
+        pass
 
     def save(self, *args, **kwargs):
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
@@ -764,14 +1221,15 @@ class ChMessage(models.Model):
     _id = models.AutoField(primary_key=True)
     _count = models.PositiveIntegerField(null=False, blank=False)
 
+    created = models.DateTimeField(auto_now_add=True)
+
     # Relations of a message. It belongs to a hive and to a profile at the same time
     profile = models.ForeignKey(ChProfile)
-    chat = models.ForeignKey(ChChat, null=True, blank=True)
+    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name="messages")
 
     # Attributes of the message
     content_type = models.CharField(max_length=20, choices=CONTENTS)
-    datetime = models.DateTimeField()
-    client_datetime = models.CharField(max_length=30)
+
     received = models.BooleanField(default=False)
 
     # Content of the message
@@ -793,38 +1251,10 @@ class ChMessage(models.Model):
         return self.profile.public_name + " said: " + self.content
 
 
-class ChChatSubscription(models.Model):
-    # Subscription object which relates Profiles with Chats
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='chat_subscription')
-    chat = models.ForeignKey(ChChat, null=True, blank=True, related_name='chat_subscribers')
-    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
-
-    deleted = models.BooleanField(default=False)
-    expelled = models.BooleanField(default=False)
-    expulsion_due_date = models.DateTimeField(null=True)
-
-    def __str__(self):
-        return self.profile.first_name + " links with"
-
-
-class ChHiveSubscription(models.Model):
-    # Subscription object which relates Profiles with Hives
-    profile = models.ForeignKey(ChProfile, unique=False, related_name='hive_subscription')
-    hive = models.ForeignKey(ChHive, null=True, blank=True, related_name='hive_subscribers')
-    creation_date = models.DateTimeField(_('date joined'), default=timezone.now)
-
-    deleted = models.BooleanField(default=False)
-    expelled = models.BooleanField(default=False)
-    expulsion_due_date = models.DateTimeField(null=True)
-
-    def __str__(self):
-        return self.profile.first_name + " links with"
-
-
 class UserReports(models.Model):
 
     REASONS = (
-#the first value of each pair is the value set on the model, the second value is a human-readable name.
+        # the first value of each pair is the value set on the model, the second value is a human-readable name.
         ('TROLL', 'TROLL'),
         ('SPAM', 'SPAM'),
         ('FLOOD', 'FLOOD'),
@@ -844,9 +1274,9 @@ class UserReports(models.Model):
 
 
 # TODO: Forms should be moved to its own file (forms.py) and to test_ui app
-### ==========================================================
-###                          FORMS
-### ==========================================================
+# ==========================================================
+#                          FORMS
+# ==========================================================
 
 class TagForm(forms.Form):
     tags = forms.CharField(max_length=128)
@@ -874,9 +1304,9 @@ class PrivateProfileForm(forms.Form):
         fields = ('first_name', 'surname', 'birth_date', 'language', 'sex')
 
 
-### ==========================================================
-###                          METHODS
-### ==========================================================
+# ==========================================================
+#                          METHODS
+# ==========================================================
 
 def replace_unicode(string):
     string = urlquote(string)
@@ -892,9 +1322,9 @@ def get_or_new_tag(stag):
         tag.save()
     return tag
 
-### ==========================================================
-###                        EXCEPTIONS
-### ==========================================================
+# ==========================================================
+#                        EXCEPTIONS
+# ==========================================================
 
 
 class UnauthorizedException(Exception):
