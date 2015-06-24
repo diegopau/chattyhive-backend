@@ -20,6 +20,8 @@ from django.contrib.auth import authenticate, login, logout
 from chattyhive_project.settings import common_settings
 from django.db import IntegrityError, transaction
 from core.models import UnauthorizedException
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -36,7 +38,7 @@ from rest_framework.exceptions import APIException, PermissionDenied, Validation
 
 
 # ============================================================ #
-#                     Sessions & sync                          #
+#               Sessions & 3rd-party services                  #
 # ============================================================ #
 
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
@@ -377,8 +379,8 @@ class CheckAsynchronousServices(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-# TODO: This permission should be set, but is giving problems
-# @permission_classes(permissions.IsAuthenticated,)
+# TODO: This permission should be set, but is giving problems (TRY AGAIN TO UNCOMMENT IT! I HAVE MADE SOME CHANGES)
+# @permission_classes((permissions.IsAuthenticated,))
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
@@ -422,6 +424,33 @@ def asynchronous_authentication(request):
 
             return Response(auth_response, status=status.HTTP_200_OK)
 
+
+
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+# TODO: This permission should be set, but is giving problems
+@permission_classes((permissions.IsAuthenticated,))
+def request_upload(request, format=None):
+    """Returns a temporal url for the client where it can upload a file
+    """
+    if request.method == 'GET':
+
+        s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+
+        # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+        temp_bucket = s3_connection.get_bucket('temp-eu.chattyhive.com', validate=False)
+        s3_object1 = Key(temp_bucket)
+
+        #TESTING
+        import random
+        s3_object1.key = "pruebilla" + str(random.randint(1, 10))
+        s3_object1.set_contents_from_string('This is a test of S3-')
+        s3_object2 = Key(temp_bucket)
+        s3_object2.key = "pruebilla" + str(random.randint(1, 10))
+        s3_object2.set_contents_from_string('This another test of S3-')
+        #----------------
+
+        return Response(status=status.HTTP_200_OK)
 
 # ============================================================ #
 #                          Explore                             #

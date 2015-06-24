@@ -1,5 +1,6 @@
 autopep8==1.1.1
 awesome-slugify==1.6.5
+boto==2.38.0
 certifi==2015.4.28
 cffi==1.1.2
 click==4.0
@@ -10,7 +11,7 @@ dj-static==0.0.6
 Django==1.8.2
 django-autoslug==1.8.0
 django-cities-light==3.1.2
-django-colorful==1.0.1
+django-colorful==1.1.0
 django-datetime-widget==0.9.3
 django-filter==0.10.0
 django-import-export==0.2.7
@@ -33,9 +34,9 @@ msgpack-python==0.4.6
 ndg-httpsclient==0.4.0
 oauthlib==0.7.2
 pep8==1.6.2
-psycopg2==2.6
-pusher==1.2.1
-pyasn1==0.1.7
+psycopg2==2.6.1
+pusher==1.2.3
+pyasn1==0.1.8
 pycparser==2.14
 Pygments==2.0.2
 pyOpenSSL==0.15.1

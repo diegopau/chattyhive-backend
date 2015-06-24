@@ -51,15 +51,17 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # APPS CONFIGURATION
 # ---------------------------------
 DJANGO_APPS = (
+    # Uncomment the next line to enable the admin:
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+
+    # 'django.contrib.sessions',  #  This is for database-backed sessions (instead of cached sessions)
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres',
-    # Uncomment the next line to enable the admin:
-    'django.contrib.admin',
+
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
@@ -91,17 +93,18 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ------------------------------------------------------------------------------
 MIDDLEWARE_CLASSES = (
     # 'django.middleware.cache.UpdateCacheMiddleware',    # Cache, must first
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     # 'silk.middleware.SilkyMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'chattyhive_project.admin-middleware.AdminLocaleMiddleware',
-    # 'django.middleware.cache.FetchFromCacheMiddleware',  # Cache, must last
     # Uncomment the next line for simple click jacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.cache.FetchFromCacheMiddleware',  # Cache, must last
 )
 
 
@@ -114,11 +117,10 @@ DATABASES = {
     'default': env.db("DATABASE_URL", default="postgres://chattytestuser:chattytestpass@localhost/chattytestdb"),
 }
 
-redis_url = parse.urlparse(os.environ.get('REDIS_URL'))
 CACHES = {
     "default": {  # This is used as key-value store, for different purposes
          "BACKEND": "django_redis.cache.RedisCache",
-         "LOCATION": env.cache_url("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+         "LOCATION": env("REDIS_URL_1", default="redis://127.0.0.1:6379/1"),
          "TIMEOUT": None,
          "OPTIONS": {
              "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -128,7 +130,7 @@ CACHES = {
     },
     "requests": {  # This will be used as cache for incoming requests, it has a short time out (in seconds)
          "BACKEND": "django_redis.cache.RedisCache",
-         "LOCATION": env.cache_url("REDIS_URL", default="redis://127.0.0.1:6379/2"),
+         "LOCATION": env("REDIS_URL_2", default="redis://127.0.0.1:6379/2"),
          "TIMEOUT": 300,
          "OPTIONS": {
              "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -143,7 +145,7 @@ CACHES = {
     },
     "sessions": {
          "BACKEND": "django_redis.cache.RedisCache",
-         "LOCATION": env.cache_url("REDIS_URL", default="redis://127.0.0.1:6379/3"),
+         "LOCATION": env("REDIS_URL_3", default="redis://127.0.0.1:6379/3"),
          "TIMEOUT": None,
          "OPTIONS": {
              "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -357,8 +359,9 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_COOKIE_AGE = 1209600
 SESSION_SAVE_EVERY_REQUEST = True
 
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "sessions"
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
 
 
 
@@ -415,6 +418,10 @@ ADMIN_LANGUAGE_CODE = 'en-US'
 # ## ======================================================== ###
 # ##                EXTERNAL SERVICES SETTINGS                ###
 # ## ======================================================== ###
+
+# AWS
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
 
 # AWS S3
 # ----------------------------------------------------------------
@@ -545,7 +552,7 @@ AUTH_PROFILE_MODULE = 'core.ChProfile'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
-    )
+    ),
 }
 
 SWAGGER_SETTINGS = {
