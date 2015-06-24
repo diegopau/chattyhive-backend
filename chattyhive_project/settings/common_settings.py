@@ -106,7 +106,7 @@ MIDDLEWARE_CLASSES = (
 
 
 
-# DATABASE CONFIGURATION
+# DATABASE & CACHES CONFIGURATION
 # ------------------------------------------------------------------------------
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
@@ -116,14 +116,42 @@ DATABASES = {
 
 redis_url = parse.urlparse(os.environ.get('REDIS_URL'))
 CACHES = {
-    "default": {
-         "BACKEND": "redis_cache.RedisCache",
-         "LOCATION": "{0}:{1}".format(redis_url.hostname, redis_url.port),
+    "default": {  # This is used as key-value store, for different purposes
+         "BACKEND": "django_redis.cache.RedisCache",
+         "LOCATION": env.cache_url("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+         "TIMEOUT": None,
          "OPTIONS": {
-             "PASSWORD": redis_url.password,
-             "DB": 0,
+             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+             "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
+             "SOCKET_TIMEOUT": 5,  # in seconds
+         }
+    },
+    "requests": {  # This will be used as cache for incoming requests, it has a short time out (in seconds)
+         "BACKEND": "django_redis.cache.RedisCache",
+         "LOCATION": env.cache_url("REDIS_URL", default="redis://127.0.0.1:6379/2"),
+         "TIMEOUT": 300,
+         "OPTIONS": {
+             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+             "MAX_ENTRIES": 2000,
+             "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
+             "SOCKET_TIMEOUT": 5,  # in seconds
+             # In some situations, when Redis is only used for cache, you do not want exceptions when Redis is down.
+             # This is default behavior in the memcached backend and it can be emulated in django-redis setting
+             # IGNORE_EXCEPTIONS
+             "IGNORE_EXCEPTIONS": True,
+         }
+    },
+    "sessions": {
+         "BACKEND": "django_redis.cache.RedisCache",
+         "LOCATION": env.cache_url("REDIS_URL", default="redis://127.0.0.1:6379/3"),
+         "TIMEOUT": None,
+         "OPTIONS": {
+             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+             "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
+             "SOCKET_TIMEOUT": 5,  # in seconds
          }
     }
+
 }
 
 
@@ -328,6 +356,10 @@ WSGI_APPLICATION = 'chattyhive_project.wsgi.application'
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_COOKIE_AGE = 1209600
 SESSION_SAVE_EVERY_REQUEST = True
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "sessions"
+
 
 
 
