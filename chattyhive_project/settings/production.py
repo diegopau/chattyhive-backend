@@ -10,6 +10,8 @@ __author__ = 'diego'
 
 from .common_settings import *
 
+print("yes! I loaded the production settings :)")
+
 
 
 # DEBUG
