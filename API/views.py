@@ -22,6 +22,8 @@ from django.db import IntegrityError, transaction
 from core.models import UnauthorizedException
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
+from uuid import uuid4
+from django.core.cache import cache
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -428,7 +430,6 @@ def asynchronous_authentication(request):
 
 @api_view(['GET'])
 @parser_classes((JSONParser,))
-# TODO: This permission should be set, but is giving problems
 @permission_classes((permissions.IsAuthenticated,))
 def request_upload(request, format=None):
     """Returns a temporal url for the client where it can upload a file
@@ -439,18 +440,23 @@ def request_upload(request, format=None):
 
         # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
         temp_bucket = s3_connection.get_bucket('temp-eu.chattyhive.com', validate=False)
-        s3_object1 = Key(temp_bucket)
+        s3_object = Key(temp_bucket)  # With this object with can create either folders or files
 
-        #TESTING
-        import random
-        s3_object1.key = "pruebilla" + str(random.randint(1, 10))
-        s3_object1.set_contents_from_string('This is a test of S3-')
-        s3_object2 = Key(temp_bucket)
-        s3_object2.key = "pruebilla" + str(random.randint(1, 10))
-        s3_object2.set_contents_from_string('This another test of S3-')
-        #----------------
+        """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
+        hex_folder_name = uuid4().hex    # 16^32 values low collision probabilities
 
-        return Response(status=status.HTTP_200_OK)
+        while True:
+            if cache.add("s3_temp_dir:" + hex_folder_name, request.user.profile.public_name, 300):
+                break
+            else:
+                hex_folder_name = uuid4().hex    # 16^32 values low collision probabilities
+
+        s3_object.key = hex_folder_name + '/'
+        s3_object.set_metadata('ch_public_name', request.user.profile.public_name)
+        s3_object.set_contents_from_string('')
+
+        return Response({"url": hex_folder_name}, status=status.HTTP_200_OK)
+
 
 # ============================================================ #
 #                          Explore                             #
