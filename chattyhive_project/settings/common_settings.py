@@ -427,8 +427,15 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
 # ----------------------------------------------------------------
 S3_PREFIX = 's3'
 S3_REGION = 'eu-west-1'
-S3_BUCKET = 'temp-eu.chattyhive.com'
-
+S3_PRIVATE_BUCKET = 'private-eu.chattyhive.com'
+S3_PUBLIC_BUCKET = 'public-eu.chattyhive.com'
+S3_TEMP_BUCKET = 'temp-eu.chattyhive.com'
+ALLOWED_IMAGE_EXTENSIONS = (
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+)
 
 # GCM
 # ----------------------------------------------------------------

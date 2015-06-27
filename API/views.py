@@ -456,7 +456,7 @@ def request_upload(request, format=None):
         s3_object.set_contents_from_string('')
 
         url = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/'\
-              + common_settings.S3_BUCKET + '/' + hex_folder_name + '/'
+              + common_settings.S3_TEMP_BUCKET + '/' + hex_folder_name + '/'
 
         return Response({"url": url}, status=status.HTTP_200_OK)
 
@@ -928,6 +928,15 @@ class ChMessageList(APIView):
         except ChChat.DoesNotExist:
             raise Http404
 
+    def check_file_extension(self, folder_plus_file_URL):
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                return
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def get(self, request, chat_id, format=None):
         chat = self.get_chat(chat_id)
         try:
@@ -958,6 +967,68 @@ class ChMessageList(APIView):
             new_chat = request.data.get("new_chat", "False")
             profile = request.user.profile
             socket_id = serializer.validated_data['socket_id']
+            content_type = serializer.validated_data['content_type']
+            msg_content = serializer.validated_data['content']
+
+            # If the message is an image then we have to check if we have a correlation between this user,
+            # the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
+            # folder the client was allowed to upload for this user.
+            # TODO: this should be moved to a separated method
+            if content_type == 'image':
+                if ('http://' in msg_content) or ('https://' in msg_content):
+                    if 'amazonaws.com' in msg_content:
+                        s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                        '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                        if s3_URL_prefix in msg_content:
+                            folder_plus_file_URL = msg_content[len(s3_URL_prefix):len(content_type)]
+                            self.check_file_extension(folder_plus_file_URL)
+                            if folder_plus_file_URL.count('/') == 1:
+                                temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                                if cache.get('s3_temp_dir:' + temp_folder) == profile.public_name:
+                                    # We check now if all files exist in S3
+                                    s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                    # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                    temp_bucket = s3_connection.get_bucket('temp-eu.chattyhive.com', validate=False)
+                                    s3_object_key = Key(temp_bucket)
+                                    s3_object_key.key = msg_content
+                                    k1 = s3_object_key.exists()
+                                    file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find(')')]
+                                    file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                                    file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'), len(folder_plus_file_URL)]
+                                    URL_without_extension = msg_content[0:len(msg_content)-len(file_extension)]
+                                    s3_object_key.key = URL_without_extension + '_xlarge' + file_extension
+                                    k2 = s3_object_key.exists()
+                                    s3_object_key.key = URL_without_extension + '_medium' + file_extension
+                                    k3 = s3_object_key.exists()
+
+                                    if not (k1 and k2 and k3):
+                                        return Response({'error_message': 'Files not uploaded correctly'},
+                                                        status=status.HTTP_403_FORBIDDEN)
+
+                                    # We check everything is correct, but we won't actually move the file from the
+                                    # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                    # So we move the file at the end of the method
+
+                                else:
+                                    return Response({'error_message': 'Upload not allowed'},
+                                                    status=status.HTTP_403_FORBIDDEN)
+                            else:
+                               return Response({'error_message': 'Bad S3 temp folder URL'},
+                                               status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            return Response({'error_message': 'We only accept images hosted in ' +
+                                                              common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'Content type is image but no URL is present'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                cache.get('')
+            elif not content_type == 'text':
+                # TODO: This is a temporal check because for now we only allow text or images
+                return Response({'error_message': 'Wrong content_type'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Initialization of the message to be sent
             message_data = {'profile': profile}
@@ -1019,8 +1090,10 @@ class ChMessageList(APIView):
                             # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                             try:
                                 with transaction.atomic():
-                                    hive_subscription = ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
-                                                                                    subscription_state='active')
+                                    hive_subscription = \
+                                        ChHiveSubscription.objects.select_related().get(hive=hive,
+                                                                                        profile=profile,
+                                                                                        subscription_state='active')
                             except ChHiveSubscription.DoesNotExist:
                                 return Response(status=status.HTTP_403_FORBIDDEN)
                 except ChChat.DoesNotExist:
@@ -1055,10 +1128,54 @@ class ChMessageList(APIView):
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription_profile.save()
 
-            msg_content = request.data.get("content")
+            if content_type == 'image':
+                # We move the file from temp bucket to destination bucket
+                if chat.type == 'public':
+                    destination_bucket = common_settings.S3_PUBLIC_BUCKET
+                else:
+                    destination_bucket = common_settings.S3_PRIVATE_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket)
+
+                # We need to move 3 images
+                # 1 file size
+                s3_object_to_move.key = folder_plus_file_URL
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'https://' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' \
+                                             + 'images' + '/' + 'file' + '/' + file_name_and_extension
+                dest_bucket.copy_key(destination_object_key, temp_bucket, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder + '/' + file_name + '_xlarge' + file_extension
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'https://' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' \
+                                             + 'images' + '/' + 'xlarge' + '/' + file_name_and_extension
+                dest_bucket.copy_key(destination_object_key, temp_bucket, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder + '/' + file_name + '_xlarge' + file_extension
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'https://' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' \
+                                             + 'images' + '/' + 'medium' + '/' + file_name_and_extension
+                dest_bucket.copy_key(destination_object_key, temp_bucket, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # We also delete the folder
+                folder_to_remove = folder_plus_file_URL[0:folder_plus_file_URL.find('/') + 1]
+                s3_object_to_remove = Key(temp_bucket)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # We need to modify the message content with the new URL
+                msg_content = 'https://' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
+                              '/' + 'file' + '/' + file_name_and_extension
+
             message = chat.new_message(profile=profile,
                                        content_type='text',
                                        content=msg_content,)
+
             chat.save()
             chat_subscription_profile.profile_last_activity = timezone.now()
             chat_subscription_profile.save()
