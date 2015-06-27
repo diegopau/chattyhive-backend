@@ -425,12 +425,9 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
 
 # AWS S3
 # ----------------------------------------------------------------
-# S3_ENDPOINT =
-# S3_ACCESS_ID =
-# S3_ACCESS_KEY =
-# S3_REGION =
-# S3_SERVICE =
-
+S3_PREFIX = 's3'
+S3_REGION = 'eu-west-1'
+S3_BUCKET = 'temp-eu.chattyhive.com'
 
 
 # GCM

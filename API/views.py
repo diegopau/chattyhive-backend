@@ -446,7 +446,7 @@ def request_upload(request, format=None):
         hex_folder_name = uuid4().hex    # 16^32 values low collision probabilities
 
         while True:
-            if cache.add("s3_temp_dir:" + hex_folder_name, request.user.profile.public_name, 300):
+            if cache.add("s3_temp_dir:" + hex_folder_name, request.user.profile.public_name, 1800):
                 break
             else:
                 hex_folder_name = uuid4().hex    # 16^32 values low collision probabilities
@@ -455,7 +455,10 @@ def request_upload(request, format=None):
         s3_object.set_metadata('ch_public_name', request.user.profile.public_name)
         s3_object.set_contents_from_string('')
 
-        return Response({"url": hex_folder_name}, status=status.HTTP_200_OK)
+        url = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/'\
+              + common_settings.S3_BUCKET + '/' + hex_folder_name + '/'
+
+        return Response({"url": url}, status=status.HTTP_200_OK)
 
 
 # ============================================================ #
