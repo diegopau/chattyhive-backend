@@ -980,10 +980,14 @@ class ChMessageList(APIView):
                         s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
                                         '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
                         if s3_URL_prefix in msg_content:
-                            folder_plus_file_URL = msg_content[len(s3_URL_prefix):len(content_type)]
+                            folder_plus_file_URL = msg_content[len(s3_URL_prefix):len(msg_content)]
                             self.check_file_extension(folder_plus_file_URL)
                             if folder_plus_file_URL.count('/') == 1:
                                 temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                                print("cache: ")
+                                borrar = cache.keys('s3*')
+                                for key in borrar:
+                                    print(key)
                                 if cache.get('s3_temp_dir:' + temp_folder) == profile.public_name:
                                     # We check now if all files exist in S3
                                     s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
@@ -994,7 +998,7 @@ class ChMessageList(APIView):
                                     k1 = s3_object_key.exists()
                                     file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find(')')]
                                     file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
-                                    file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'), len(folder_plus_file_URL)]
+                                    file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
                                     URL_without_extension = msg_content[0:len(msg_content)-len(file_extension)]
                                     s3_object_key.key = URL_without_extension + '_xlarge' + file_extension
                                     k2 = s3_object_key.exists()
@@ -1049,9 +1053,9 @@ class ChMessageList(APIView):
                 if chat_slug.find('-') == -1:  # new_chat == True and a chat_id without a slug format shouldn't happen
                     return Response(status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    if chat_slug.find('+'):  # This is a chat between friends
+                    if chat_slug.find('+') != -1:  # This is a chat between friends
                         pass  # TODO
-                    elif chat_slug.find('--'):  # This is a chat between hivemates inside a hive
+                    elif chat_slug.find('--') != -1:  # This is a chat between hivemates inside a hive
                         slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
                         chat_id = chat_slug[0:chat_slug.find('-')]
                         hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
@@ -1083,9 +1087,9 @@ class ChMessageList(APIView):
                     with transaction.atomic():
                         # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
                         chat = ChChat.objects.get(chat_id=chat_id)
-                        if chat.slug.find('+'):  # This is a chat between friends
+                        if chat.slug.find('+') != -1:  # This is a chat between friends
                             pass  # TODO
-                        elif chat.slug.find('--'):  # This is a chat between hivemates inside a hive
+                        elif chat.slug.find('--') != -1:  # This is a chat between hivemates inside a hive
                             slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
                             hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
                             other_profile_public_name = \
