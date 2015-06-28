@@ -1048,46 +1048,60 @@ class ChMessageList(APIView):
                 chat_slug = chat_id
                 if chat_slug.find('-') == -1:  # new_chat == True and a chat_id without a slug format shouldn't happen
                     return Response(status=status.HTTP_400_BAD_REQUEST)
-                if chat_slug.find('--') == -1:  # This is a chat between friends
-                    pass  # TODO
-                else:  # This is a chat between hivemates inside a hive
-                    slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
-                    chat_id = chat_slug[0:chat_slug.find('-')]
-                    hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
-                    other_profile_public_name = \
-                        slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                else:
+                    if chat_slug.find('+'):  # This is a chat between friends
+                        pass  # TODO
+                    elif chat_slug.find('--'):  # This is a chat between hivemates inside a hive
+                        slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
+                        chat_id = chat_slug[0:chat_slug.find('-')]
+                        hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+                        other_profile_public_name = \
+                            slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
 
-                    hive = ChHive.objects.get(slug=hive_slug)
-                    # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
-                    try:
-                        with transaction.atomic():
-                            hive_subscription = ChHiveSubscription.objects.select_related().get(
-                                hive=hive, profile=profile, subscription_state='active')
-                    except ChHiveSubscription.DoesNotExist:
-                        return Response(status=status.HTTP_403_FORBIDDEN)
+                        hive = ChHive.objects.get(slug=hive_slug)
+                        # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                        try:
+                            with transaction.atomic():
+                                hive_subscription = ChHiveSubscription.objects.select_related().get(
+                                    hive=hive, profile=profile, subscription_state='active')
+                        except ChHiveSubscription.DoesNotExist:
+                            return Response(status=status.HTTP_403_FORBIDDEN)
 
-                    # We search for any other ChChat object with the same ending. Just in case the other profile was also
-                    # starting a new chat (he/she would have a different temporal chat_id assigned).
-                    try:
-                        with transaction.atomic():
-                            chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
-                    except ChChat.DoesNotExist:
-                        chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
-                        chat.save()
+                        # We search for any other ChChat object with the same ending. Just in case the other profile was also
+                        # starting a new chat (he/she would have a different temporal chat_id assigned).
+                        try:
+                            with transaction.atomic():
+                                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+                        except ChChat.DoesNotExist:
+                            chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
+                            chat.save()
+                    else:  # This could be a public chat
+                        return Response({"error_message": "Wrong slug, or public chat and new=True incompatible"},
+                                        status=status.HTTP_400_BAD_REQUEST)
             else:  # new_chat == False
                 try:
                     with transaction.atomic():
                         # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
                         chat = ChChat.objects.get(chat_id=chat_id)
-                        if chat.slug.find('--') == -1:  # This is a chat between friends
+                        if chat.slug.find('+'):  # This is a chat between friends
                             pass  # TODO
-                        else:  # This is a chat between hivemates inside a hive
+                        elif chat.slug.find('--'):  # This is a chat between hivemates inside a hive
                             slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
                             hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
                             other_profile_public_name = \
                                 slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
                             hive = ChHive.objects.get(slug=hive_slug)
                             # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                            try:
+                                with transaction.atomic():
+                                    hive_subscription = \
+                                        ChHiveSubscription.objects.select_related().get(hive=hive,
+                                                                                        profile=profile,
+                                                                                        subscription_state='active')
+                            except ChHiveSubscription.DoesNotExist:
+                                return Response(status=status.HTTP_403_FORBIDDEN)
+                        else:  # This is a public chat
+                            hive = chat.hive
                             try:
                                 with transaction.atomic():
                                     hive_subscription = \
