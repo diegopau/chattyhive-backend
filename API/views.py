@@ -20,6 +20,10 @@ from django.contrib.auth import authenticate, login, logout
 from chattyhive_project.settings import common_settings
 from django.db import IntegrityError, transaction
 from core.models import UnauthorizedException
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
+from uuid import uuid4
+from django.core.cache import cache
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -36,7 +40,7 @@ from rest_framework.exceptions import APIException, PermissionDenied, Validation
 
 
 # ============================================================ #
-#                     Sessions & sync                          #
+#               Sessions & 3rd-party services                  #
 # ============================================================ #
 
 # TODO: este método podría no ser ni necesario, en principio no está claro que una app para Android necesite csrf.
@@ -377,8 +381,8 @@ class CheckAsynchronousServices(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-# TODO: This permission should be set, but is giving problems
-# @permission_classes(permissions.IsAuthenticated,)
+# TODO: This permission should be set, but is giving problems (TRY AGAIN TO UNCOMMENT IT! I HAVE MADE SOME CHANGES)
+# @permission_classes((permissions.IsAuthenticated,))
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
@@ -421,6 +425,40 @@ def asynchronous_authentication(request):
             )
 
             return Response(auth_response, status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+@permission_classes((permissions.IsAuthenticated,))
+def request_upload(request, format=None):
+    """Returns a temporal url for the client where it can upload a file
+    """
+    if request.method == 'GET':
+
+        s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+
+        # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists!
+        temp_bucket = s3_connection.get_bucket('temp-eu.chattyhive.com', validate=False)
+        s3_object = Key(temp_bucket)  # With this object with can create either folders or files
+
+        """We create an Universally Unique Identifier (RFC4122) using uuid4()."""
+        hex_folder_name = uuid4().hex    # 16^32 values low collision probabilities
+
+        while True:
+            if cache.add("s3_temp_dir:" + hex_folder_name, request.user.profile.public_name, 1800):
+                break
+            else:
+                hex_folder_name = uuid4().hex    # 16^32 values low collision probabilities
+
+        s3_object.key = hex_folder_name + '/'
+        s3_object.set_metadata('ch_public_name', request.user.profile.public_name)
+        s3_object.set_contents_from_string('')
+
+        url = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/'\
+              + common_settings.S3_TEMP_BUCKET + '/' + hex_folder_name + '/'
+
+        return Response({"url": url}, status=status.HTTP_200_OK)
 
 
 # ============================================================ #
@@ -890,6 +928,22 @@ class ChMessageList(APIView):
         except ChChat.DoesNotExist:
             raise Http404
 
+    def check_file_extension(self, folder_plus_file_URL):
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('_file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def get(self, request, chat_id, format=None):
         chat = self.get_chat(chat_id)
         try:
@@ -920,6 +974,68 @@ class ChMessageList(APIView):
             new_chat = request.data.get("new_chat", "False")
             profile = request.user.profile
             socket_id = serializer.validated_data['socket_id']
+            content_type = serializer.validated_data['content_type']
+            msg_content = serializer.validated_data['content']
+
+            # If the message is an image then we have to check if we have a correlation between this user,
+            # the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
+            # folder the client was allowed to upload for this user.
+            # TODO: this should be moved to a separated method
+            if content_type == 'image':
+                if ('http://' in msg_content) or ('https://' in msg_content):
+                    if 'amazonaws.com' in msg_content:
+                        s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                        '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                        if s3_URL_prefix in msg_content:
+                            folder_plus_file_URL = msg_content[len(s3_URL_prefix):len(msg_content)]
+                            self.check_file_extension(folder_plus_file_URL)
+                            if folder_plus_file_URL.count('/') == 1:
+                                temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                                if cache.get('s3_temp_dir:' + temp_folder) == profile.public_name:
+                                    file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')-len('_file')]
+                                    file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                                    file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                                    location_without_ending = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_extension)+len('_file'))]
+                                    # We check now if all files exist in S3
+                                    s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                    # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                    temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                    s3_object_key = Key(temp_bucket)
+                                    s3_object_key.key = location_without_ending + '_file' + file_extension
+                                    k1 = s3_object_key.exists()
+                                    s3_object_key.key = location_without_ending + '_xlarge' + file_extension
+                                    k2 = s3_object_key.exists()
+                                    s3_object_key.key = location_without_ending + '_medium' + file_extension
+                                    k3 = s3_object_key.exists()
+
+                                    if not (k1 and k2 and k3):
+                                        return Response({'error_message': 'Files not uploaded correctly'},
+                                                        status=status.HTTP_403_FORBIDDEN)
+
+                                    # We check everything is correct, but we won't actually move the file from the
+                                    # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                    # So we move the file at the end of the method
+
+                                else:
+                                    return Response({'error_message': 'Upload not allowed'},
+                                                    status=status.HTTP_403_FORBIDDEN)
+                            else:
+                               return Response({'error_message': 'Bad S3 temp folder URL'},
+                                               status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            return Response({'error_message': 'We only accept images hosted in ' +
+                                                              common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'Content type is image but no URL is present'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                cache.get('')
+            elif not content_type == 'text':
+                # TODO: This is a temporal check because for now we only allow text or images
+                return Response({'error_message': 'Wrong content_type'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Initialization of the message to be sent
             message_data = {'profile': profile}
@@ -939,40 +1055,44 @@ class ChMessageList(APIView):
                 chat_slug = chat_id
                 if chat_slug.find('-') == -1:  # new_chat == True and a chat_id without a slug format shouldn't happen
                     return Response(status=status.HTTP_400_BAD_REQUEST)
-                if chat_slug.find('--') == -1:  # This is a chat between friends
-                    pass  # TODO
-                else:  # This is a chat between hivemates inside a hive
-                    slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
-                    chat_id = chat_slug[0:chat_slug.find('-')]
-                    hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
-                    other_profile_public_name = \
-                        slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                else:
+                    if chat_slug.find('+') != -1:  # This is a chat between friends
+                        pass  # TODO
+                    elif chat_slug.find('--') != -1:  # This is a chat between hivemates inside a hive
+                        slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
+                        chat_id = chat_slug[0:chat_slug.find('-')]
+                        hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+                        other_profile_public_name = \
+                            slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
 
-                    hive = ChHive.objects.get(slug=hive_slug)
-                    # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
-                    try:
-                        with transaction.atomic():
-                            hive_subscription = ChHiveSubscription.objects.select_related().get(
-                                hive=hive, profile=profile, subscription_state='active')
-                    except ChHiveSubscription.DoesNotExist:
-                        return Response(status=status.HTTP_403_FORBIDDEN)
+                        hive = ChHive.objects.get(slug=hive_slug)
+                        # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                        try:
+                            with transaction.atomic():
+                                hive_subscription = ChHiveSubscription.objects.select_related().get(
+                                    hive=hive, profile=profile, subscription_state='active')
+                        except ChHiveSubscription.DoesNotExist:
+                            return Response(status=status.HTTP_403_FORBIDDEN)
 
-                    # We search for any other ChChat object with the same ending. Just in case the other profile was also
-                    # starting a new chat (he/she would have a different temporal chat_id assigned).
-                    try:
-                        with transaction.atomic():
-                            chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
-                    except ChChat.DoesNotExist:
-                        chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
-                        chat.save()
+                        # We search for any other ChChat object with the same ending. Just in case the other profile was also
+                        # starting a new chat (he/she would have a different temporal chat_id assigned).
+                        try:
+                            with transaction.atomic():
+                                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+                        except ChChat.DoesNotExist:
+                            chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
+                            chat.save()
+                    else:  # This could be a public chat
+                        return Response({"error_message": "Wrong slug, or public chat and new=True incompatible"},
+                                        status=status.HTTP_400_BAD_REQUEST)
             else:  # new_chat == False
                 try:
                     with transaction.atomic():
                         # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
                         chat = ChChat.objects.get(chat_id=chat_id)
-                        if chat.slug.find('--') == -1:  # This is a chat between friends
+                        if chat.slug.find('+') != -1:  # This is a chat between friends
                             pass  # TODO
-                        else:  # This is a chat between hivemates inside a hive
+                        elif chat.slug.find('--') != -1:  # This is a chat between hivemates inside a hive
                             slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
                             hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
                             other_profile_public_name = \
@@ -981,8 +1101,20 @@ class ChMessageList(APIView):
                             # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
                             try:
                                 with transaction.atomic():
-                                    hive_subscription = ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
-                                                                                    subscription_state='active')
+                                    hive_subscription = \
+                                        ChHiveSubscription.objects.select_related().get(hive=hive,
+                                                                                        profile=profile,
+                                                                                        subscription_state='active')
+                            except ChHiveSubscription.DoesNotExist:
+                                return Response(status=status.HTTP_403_FORBIDDEN)
+                        else:  # This is a public chat
+                            hive = chat.hive
+                            try:
+                                with transaction.atomic():
+                                    hive_subscription = \
+                                        ChHiveSubscription.objects.select_related().get(hive=hive,
+                                                                                        profile=profile,
+                                                                                        subscription_state='active')
                             except ChHiveSubscription.DoesNotExist:
                                 return Response(status=status.HTTP_403_FORBIDDEN)
                 except ChChat.DoesNotExist:
@@ -1017,10 +1149,57 @@ class ChMessageList(APIView):
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription_profile.save()
 
-            msg_content = request.data.get("content")
+            if content_type == 'image':
+                # We move the file from temp bucket to destination bucket
+                if chat.type == 'public':
+                    destination_bucket = common_settings.S3_PUBLIC_BUCKET
+                else:
+                    destination_bucket = common_settings.S3_PRIVATE_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket)
+
+                # We need to move 3 images
+                # 1 file size
+                s3_object_to_move.key = folder_plus_file_URL
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                             + 'images' + '/' + 'file' + '/' + file_name_and_extension
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder + '/' + file_name + '_xlarge' + file_extension
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                             + 'images' + '/' + 'xlarge' + '/' + file_name + '_xlarge' + file_extension
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder + '/' + file_name + '_medium' + file_extension
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                             + 'images' + '/' + 'medium' + '/' + file_name + '_medium' + file_extension
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # We also delete the folder
+                folder_to_remove = folder_plus_file_URL[0:folder_plus_file_URL.find('/') + 1]
+                s3_object_to_remove = Key(temp_bucket)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder)
+
+                # We need to modify the message content with the new URL
+                msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
+                              '/' + 'file' + '/' + file_name_and_extension
+
             message = chat.new_message(profile=profile,
                                        content_type='text',
                                        content=msg_content,)
+
             chat.save()
             chat_subscription_profile.profile_last_activity = timezone.now()
             chat_subscription_profile.save()

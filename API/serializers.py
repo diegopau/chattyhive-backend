@@ -240,7 +240,6 @@ class SendMessageSerializer(serializers.Serializer):
     """
 
     content_type = serializers.CharField(max_length=20)
-    client_timestamp = serializers.CharField(max_length=30)
     content = serializers.CharField(max_length=2048)
     new_chat = serializers.CharField(max_length=5)
     dev_id = serializers.CharField(
@@ -272,8 +271,6 @@ class SendMessageSerializer(serializers.Serializer):
                 raise ValidationError("Wrong new_chat value", code="400")
         if data['content'] == '':
             raise ValidationError("The message content is empty", code="400")
-        if data['client_timestamp'] == '':
-            raise ValidationError("No client timestamp specified", code="400")
         if data['socket_id'] == '':
             raise ValidationError("Socket_id can not be a empty string", code="400")
         return data
@@ -281,7 +278,6 @@ class SendMessageSerializer(serializers.Serializer):
     # We need a save() implementation to get an object instance from the view
     def save(self):
         content_type = self.validated_data['content_type']
-        client_timestamp = self.validated_data['client_timestamp']
         content = self.validated_data['content']
         new_chat = self.validadted_data['new_chat']
 
