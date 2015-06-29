@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="{{ STATIC_URL }}js/jquery-2.1.4.min.js"></script>
+    <title>Android</title>
+    <script type="text/javascript">
+    function process(){
+        ChangeMethod();
+        ChangeAction();
+        ChangeHeaders();
+    }
+    function ChangeMethod(){
+	    var form = document.getElementById("android");
+	    var radio_post = document.getElementById("method_post").checked;
+	    var radio_get = document.getElementById("method_get").checked;
+	    if(radio_get==true) form.method="get";
+	    else if(radio_post==true) form.method="post";
+        alert("Hola");
+    }
+    function ChangeAction(){
+    	var form = document.getElementById("android");
+    	var action = document.getElementById("action").value;
+    	form.action = "/../" + action;
+        alert(action);
+    }
+    function ChangeHeaders(){
+        $("#head").content($.getElementById("headers"));
+    }
+    </script>
+</head>
+<body>
+    <div>
+        <form id="android" method="post" action="" onsubmit="process()">{% csrf_token %}
+            <div>
+                Headers: <input type="textfield" id="headers" /><br />
+                Action:  <input type="text" id="action" name="action" onchange="ChangeAction()"/><br />
+                Content: <input type="text" id="content" /><br />
+            </div>
+            <div class="buttons">
+{#                <input type="submit"/>#}
+                <button id="send" onclick="onsubmit">Send</button>
+        	</div>
+        </form>
+    </div>
+    <div class="options">
+       	Send by:<br />
+       	Post:<input id="method_post" name="method" type="radio" checked="checked" onchange="ChangeMethod()" />
+       	Get:<input id="method_get" name="method" type="radio" onchange="ChangeMethod()" />
+    </div>
+</body>
+
+</html>
+

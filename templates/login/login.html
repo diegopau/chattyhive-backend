@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>USUARIO</title>
+</head>
+<body>
+    <div align="right">
+        <a href="/admin">Admin site</a><br />
+    </div>
+    <div align="center">
+        <br /><h2>Welcome to ChattyHive!</h2><br />
+        <form action="/test-ui/" method="post">{% csrf_token %}
+            {{ form.as_p }}
+        <input type="submit" value="Submit" />
+        </form>
+        <br /><a href="/test-ui/create_user/">Create new user</a>
+    </div>
+</body>
+</html>

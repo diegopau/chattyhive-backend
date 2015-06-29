@@ -1,0 +1,5 @@
+# This is empty for a good reason, there shouldn't be anything in production that is not also in local. There can
+# be packages that are in local but not in production, so thats why local.txt will be the one having additional files
+
+-r base.txt
+

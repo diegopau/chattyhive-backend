@@ -1,0 +1,32 @@
+{% extends "base_test_ui.html" %}
+{% block title %}Private profile{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
+    <a href="/test-ui/home/">Home</a><br />
+    Private  <a href="/test-ui/profile/{{ profile.public_name }}/public">Public</a>
+    <br />
+    {{ profile.private_status }}
+    <br />
+    <br />
+    Info
+    <br />
+    <li>First Name: {{ profile.first_name }}</li>
+    <li>Surname: {{ profile.surname }}</li>
+    <li>Birth date: {{ profile.birth_date }}</li>
+    <li>Username: {{ profile.username }}</li>
+    <li>Languages:
+        {% for language in languages %}
+            {{ language.language }},
+        {% endfor %}
+        </li>
+    <li>Sex: {{ profile.sex }}</li>
+    <li>Location: {{ profile.location }}</li>
+{% endblock %}
+
+{% block body_extra_scripts %}
+{% endblock %}

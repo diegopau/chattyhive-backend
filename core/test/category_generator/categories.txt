@@ -1,0 +1,104 @@
+Art & Cultural events:Art & Cultural events:01.01:Dummy description
+Books & Comics:Books & Comics:02.01:Dummy description
+Cars, Motorbikes & Others - General:Cars, Motorbikes & Others:03.01:Dummy description
+Cars:Cars, Motorbikes & Others:03.02:Dummy description
+Motorbikes:Cars, Motorbikes & Others:03.03:Dummy description
+Yachts:Cars, Motorbikes & Others:03.04:Dummy description
+Education - General:Education:04.01:Dummy description
+Compulsory education:Education:04.02:Dummy description
+Postgraduate studies:Education:04.03:Dummy description
+Preschool:Education:04.04:Dummy description
+University:Education:04.05:Dummy description
+Vocational training:Education:04.06:Dummy description
+Decoration & Home care:Family, Home & Pets:05.01:Dummy description
+Family:Family, Home & Pets:05.02:Dummy description
+Gardening:Family, Home & Pets:05.03:Dummy description
+Maternity & Paternity:Family, Home & Pets:05.04:Dummy description
+Pets:Family, Home & Pets:05.05:Dummy description
+Free time - General:Free time:06.01:Dummy description
+Board and role-playing games:Free time:06.02:Dummy description
+Collecting:Free time:06.03:Dummy description
+Cooking & Recipes:Free time:06.04:Dummy description
+Humor:Free time:06.05:Dummy description
+Learn languages:Free time:06.06:Dummy description
+Music production & Instruments:Free time:06.07:Dummy description
+Photography:Free time:06.08:Dummy description
+Health - General:Health & Fitness:07.01:Dummy description
+Alternative medicine:Health & Fitness:07.02:Dummy description
+Diets:Health & Fitness:07.03:Dummy description
+Disabilities:Health & Fitness:07.04:Dummy description
+Fitness:Health & Fitness:07.05:Dummy description
+Psychology & Psychiatry:Health & Fitness:07.06:Dummy description
+Internet:Internet:08.01:Dummy description
+Lifestyle - General:Lifestyle:09.01:Dummy description
+Beauty:Lifestyle:09.02:Dummy description
+Fashion:Lifestyle:09.03:Dummy description
+Geek life:Lifestyle:09.04:Dummy description
+Moods:Lifestyle:09.05:Dummy description
+Nightlife:Lifestyle:09.06:Dummy description
+Phylosophy & Spirituality:Lifestyle:09.07:Dummy description
+Subcultures:Lifestyle:09.08:Dummy description
+Friendship:Love & Friendship:10.01:Dummy description
+LGBT:Love & Friendship:10.02:Dummy description
+Love:Love & Friendship:10.03:Dummy description
+Relationship problems:Love & Friendship:10.04:Dummy description
+Sexuality:Love & Friendship:10.05:Dummy description
+Weddings & Bachelor(ette) parties:Love & Friendship:10.06:Dummy description
+Meet new people - General:Meet new people:11.01:Dummy description
+Activities:Meet new people:11.02:Dummy description
+Dating:Meet new people:11.03:Dummy description
+Events:Meet new people:11.04:Dummy description
+Meetups:Meet new people:11.05:Dummy description
+Musicians & Bands:Meet new people:11.06:Dummy description
+Movies & TV - General:Movies & TV:12.01:Dummy description
+Anime:Movies & TV:12.02:Dummy description
+Movies:Movies & TV:12.03:Dummy description
+Movies & TV - Celebrities:Movies & TV:12.04:Dummy description
+Series:Movies & TV:12.05:Dummy description
+Natural sciences - General:Natural sciences:13.01:Dummy description
+Astronomy:Natural sciences:13.02:Dummy description
+Biology:Natural sciences:13.03:Dummy description
+Chemistry:Natural sciences:13.04:Dummy description
+Physics:Natural sciences:13.05:Dummy description
+Music:Music:14.01:Dummy description
+News & Current affairs:News & Current affairs:15.01:Dummy description
+Places, Companies & Brands:Places, Companies & Brands:16.01:Dummy description
+Politics & Activism:Politics & Activism:17.01:Dummy description
+Shopping & Market:Shopping & Market:18.01:Dummy description
+Social sciences:Social sciences:19.01:Dummy description
+Sports - General:Sports:20.01:Dummy description
+Amateur sports and meetups:Sports:20.02:Dummy description
+Baseball:Sports:20.03:Dummy description
+Basketball:Sports:20.04:Dummy description
+Cricket:Sports:20.05:Dummy description
+Football:Sports:20.06:Dummy description
+Golf:Sports:20.07:Dummy description
+Hockey:Sports:20.08:Dummy description
+Motorsports:Sports:20.09:Dummy description
+Rugby & American football:Sports:20.10:Dummy description
+Table tennis:Sports:20.11:Dummy description
+Tennis:Sports:20.12:Dummy description
+Volleyball:Sports:20.13:Dummy description
+Technology & Computers - General:Technology & Computers:21.01:Dummy description
+Hacking:Technology & Computers:21.02:Dummy description
+Hardware:Technology & Computers:21.03:Dummy description
+Smartphones & Apps:Technology & Computers:21.04:Dummy description
+Software & Operating systems:Technology & Computers:21.05:Dummy description
+Software development:Technology & Computers:21.06:Dummy description
+Wearables:Technology & Computers:21.07:Dummy description
+Trips & Places - General:Trips & Places:22.01:Dummy description
+Cultures & Ethnic groups:Trips & Places:22.02:Dummy description
+Landmarks:Trips & Places:22.03:Dummy description
+Travel planning:Trips & Places:22.04:Dummy description
+Trips - destination:Trips & Places:22.05:Dummy description
+Video games - General:Video games:23.01:Dummy description
+Game consoles & Handheld:Video games:23.02:Dummy description
+Indie games:Video games:23.03:Dummy description
+PC games:Video games:23.04:Dummy description
+Smartphone games:Video games:23.05:Dummy description
+Work & Business - General:Work & Business:24.01:Dummy description
+Crowdfunding:Work & Business:24.02:Dummy description
+Entrepreneurs & Startups:Work & Business:24.03:Dummy description
+Finances:Work & Business:24.04:Dummy description
+Job vacancies:Work & Business:24.05:Dummy description
+Profession:Work & Business:24.06:Dummy description

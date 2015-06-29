@@ -1,0 +1,28 @@
+[
+  {
+    "model": "core.ChHive",
+    "pk": 1,
+    "fields": {
+      "name": "John",
+      "slug": "Lennon",
+      "description": "Lennon",
+      "category": "",
+      "_languages": {
+
+      },
+      "creator": "",
+      "creation_date": "",
+      "tags": {
+
+      }
+    }
+  },
+  {
+    "model": "core.ChHive",
+    "pk": 2,
+    "fields": {
+      "first_name": "Paul",
+      "last_name": "McCartney"
+    }
+  }
+]

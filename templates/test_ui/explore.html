@@ -1,0 +1,24 @@
+{% extends "base_test_ui.html" %}
+{% block title %}Explore{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
+    <a href="/test-ui/home/">Home</a>
+    <a href="/test-ui/create_hive/">New Hive</a>
+    <br />
+    <br />
+    Hives
+    <br />
+    {% for hive in hives %}
+        <li>
+           <a href="/test-ui/hive_description/{{ hive.slug }}">{{ hive.name }} -- <i>{{ hive.type }}</i> --</a> <b><a href="/test-ui/join/{{ hive.slug }}">join</a></b>
+        </li>
+    {% endfor %}
+{% endblock %}
+
+{% block body_extra_scripts %}
+{% endblock %}

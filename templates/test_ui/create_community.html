@@ -1,0 +1,22 @@
+{% extends "base_test_ui.html" %}
+{% block title %}Create community{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
+
+    <a href="/test-ui/home/">Home</a>
+    <br>
+    NEW COMMUNITY
+    <form action="/test-ui/create_community/" method="post">{% csrf_token %}
+            {{ formHive.as_p }}
+            {{ formTags.as_p }}
+        <input type="submit" value="Create" />
+    </form>
+{% endblock %}
+
+{% block body_extra_scripts %}
+{% endblock %}

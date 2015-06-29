@@ -1,0 +1,105 @@
+{% extends "base_test_ui.html" %}
+{% block title %}Hive{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
+    <a href="/test-ui/home/">Home</a><br />
+    <br />
+    <div>
+        :{{ hive.name }} -- <a href="/test-ui/hive_description/{{ hive.slug }}">Description</a> <br />
+        {% for chat in chats %}
+            <a href="/test-ui/hive_chat/{{ hive.slug }}/{{ chat.chat_id }}"> public chat</a><br />
+        {% endfor %}
+    </div>
+    <br />
+    <button type="button" id="btn_up" style="text-align: right">Up</button>
+    <p id="profiles_list">
+    </p>
+    <button type="button" id="btn_more" style="text-align: right">Load more</button>
+{% endblock %}
+
+{% block body_extra_scripts %}
+
+    <script type="text/javascript">
+        // Buttons behaviour
+        $(document).ready(function() {
+            var hive_slug="{{ hive.slug }}";
+            var csrftoken = Cookies.get('csrftoken');
+            var last=0;
+            $.ajax({
+                type: "GET",
+                url: "/test-ui/hive_users/" + hive_slug + "/first-5",
+                headers: {"X-CSRFToken":csrftoken},
+                data: "",
+                success: function(newData){
+                    users = JSON.parse(newData)
+                    reload(users)
+                },
+                failure: function(errMsg) {
+                    alert(errMsg);
+                }
+            });
+
+            // AJAX method to reload users on screen
+            function reload(users) {
+                var profile = users[0];
+                $('#profiles_list').html('<a href="/test-ui/open_private_chat/' + profile.public_name + '?hive_slug=' + hive_slug + '">@' +
+                                          profile.public_name + '</a>  (<a href="/test-ui/profile/' + profile.public_name +
+                                          '/public">profile</a>)<br />');
+                for(i = 1; i < users.length; i++){
+                    profile = users[i]
+                    $('#profiles_list').html($('#profiles_list').html() +
+                        '<a href="/test-ui/open_private_chat/' + profile.public_name + '?hive_slug=' + hive_slug + '">@' + profile.public_name +
+                        '</a>  (<a href="/test-ui/profile/' + profile.public_name + '/public">profile</a>)<br />'
+                    );
+                }
+            }
+
+            // Button up behaviour when clicked
+            $('#btn_up').on('click', function()
+            {
+                $.ajax({
+                    type: "GET",
+                    url: "/test-ui/hive_users/" + hive_slug + "/first-5",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        users = JSON.parse(newData)
+                        reload(users)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                last = 5;
+                return false;
+            });
+
+            // Button more behaviour when clicked
+            $('#btn_more').on('click', function()
+            {
+                $.ajax({
+                    type: "GET",
+                    url: "/test-ui/hive_users/" + hive_slug + "/" + last + "-5",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        users = JSON.parse(newData)
+                        reload(users)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                last = last + 5;
+                return false;
+            });
+
+        });
+    </script>
+
+{% endblock %}

@@ -3,4 +3,6 @@ venv
 *.pot
 *.pyc
 .idea/*
-local_settings.py
+local_private_values_never_upload.sh
+heroku_private_values_never_upload.txt
+dump.rdb

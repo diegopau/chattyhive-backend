@@ -1,0 +1,174 @@
+{% extends "base_test_ui.html" %}
+{% block title %}Chat{% endblock %}
+{% block more_scripts %}
+    <script src="//js.pusher.com/3.0/pusher.min.js"></script>{% endblock %}
+{% block public_name %}{{ user }}{%  endblock %}
+
+{% block content %}
+
+    <a href="/test-ui/home/chats/">Home</a>
+    <br />
+    Welcome, {{ user }}!  Hive: {{ hive.slug }}
+    <br />
+    <br /><br /><button type="button" id="btn_load" style="text-align: right">Load previous messages</button>
+        <p id="chat_field">
+        </p>
+    <button type="button" id="btn_recent" style="text-align: right">Load last messages</button><br /><br /><br />
+    <p id="older" hidden="true"></p>
+    <label for="msg_text"></label><input id="msg_text" type="text">
+    <button type="button" id="btn_send">Send</button>
+    <p id="time"></p>
+    <p id="status"></p>
+
+{% endblock %}
+
+{% block body_extra_scripts %}
+
+ <script type="text/javascript">
+
+        var num_rep=0;
+        var user="{{ user }}";
+        var key="{{ key }}";
+        var hive = "{{ hive.slug }}";
+        var channel_name="{{ channel }}";
+        var event_name="{{ event }}";
+        var chat="{{ chat_field }}";
+        var new_chat="{{ new_chat }}";
+        var csrftoken = Cookies.get('csrftoken');
+
+        // Connecting to pusher
+        var pusher = new Pusher(key, {  authEndpoint: '/test-ui/chat_auth/',
+                                        auth: {
+                                            headers: {'X-CSRFToken': csrftoken}
+                                        }
+                                    });
+
+        //channel_name = channel_name.replace("ñ", "__nh__");
+        var channel = pusher.subscribe("presence-".concat(channel_name));
+
+        // Listening to the channel
+        channel.bind(event_name, function(data) {
+
+            if(data.username!=user) write(data.public_name, data.message, data.timestamp, data.timestamp_server);
+        });
+
+        // AJAX method to write chat answers on screen
+        function write(name_user, text, timestamp, timestamp_server) {
+            chat = $('#chat_field').html();
+            num_rep ++;
+            if (num_rep > 15) {
+                $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
+                $('#time').text("Last message on " + timestamp + " &nbsp;&mbsp;&nbsp;&nbsp;&nbsp; Received on server on " + timestamp_server);
+                num_rep = 0;
+            } else {
+                $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
+                $('#time').text("Last message: " + timestamp + "   Received on server on " + timestamp_server);
+            }
+        }
+
+        // AJAX method to reload chat answers on screen
+        function reload(messages) {
+            var message = messages[0];
+            var showname = "";
+            if(message.username==user) showname="you";
+            else showname=message.public_name;
+            $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
+            for(i = 1; i < messages.length; i++){
+                message = messages[i]
+                if(message.username==user) shownname="you";
+                else showname=message.public_name;
+                $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp + '<br/>' + $('#chat_field').html());
+            }
+            $('#older').html(message.id)
+        }
+
+        $(document).ready(function() {
+
+                $.ajax({
+                    type: "GET",
+                    url: "/test-ui/messages/" + channel_name + "/last-15",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        messages = JSON.parse(newData)
+                        reload(messages)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+
+            // Buttons behaviour
+
+            // Button send behaviour when clicked
+            $('#btn_send').on('click', function()
+            {
+                var text_sent = $("#msg_text").val();
+                $("#msg_text").val("");
+                var d = new Date();
+                var timestamp = d.toTimeString();
+                var timestamp_server = null;
+                $.ajax({
+                    type: "POST",
+                    url: "/test-ui/hive_chat/" + hive + '/' + channel_name + "/",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat, socket_id:pusher.connection.socket_id},
+                    success: function(newData){
+                        if(newData=="Server Ok") {
+                            $("#status").html(newData);
+                        } else {
+                            alert(newData);
+                            location.href="/test-ui/";
+                        }
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+               // write(user, text_sent, timestamp, timestamp_server);
+                return false;
+            });
+
+            // Button load behaviour when clicked
+            $('#btn_load').on('click', function()
+            {
+                older = $('#older').html();
+                $.ajax({
+                    type: "GET",
+                    url: "/test-ui/messages/" + channel_name + "/" + older + "-15",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        messages = JSON.parse(newData)
+                        reload(messages)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+
+            // Button recent behaviour when clicked
+            $('#btn_recent').on('click', function()
+            {
+                $.ajax({
+                    type: "GET",
+                    url: "/test-ui/messages/" + channel_name + "/last-15",
+                    headers: {"X-CSRFToken":csrftoken},
+                    data: "",
+                    success: function(newData){
+                        messages = JSON.parse(newData)
+                        reload(messages)
+                    },
+                    failure: function(errMsg) {
+                        alert(errMsg);
+                    }
+                });
+                return false;
+            });
+        });
+
+    </script>
+
+{% endblock %}

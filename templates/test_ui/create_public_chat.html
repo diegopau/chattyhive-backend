@@ -1,0 +1,19 @@
+{% extends "base_test_ui.html" %}
+{% block title %}Create public chat{% endblock %}
+
+{% block more_scripts %}
+{% endblock %}
+
+{% block public_name %}{{ profile.public_name }}{%  endblock %}
+
+{% block content %}
+    <a href="/test-ui/home/">Home</a>
+    <br>
+    <form action="/test-ui/create_public_chat/{{ hive.slug }}/" method="post">{% csrf_token %}
+            {{ form.as_p }}
+        <input type="submit" value="Create" />
+    </form>
+{% endblock %}
+
+{% block body_extra_scripts %}
+{% endblock %}
