@@ -11,11 +11,15 @@ __author__ = 'diego'
 from .common_settings import *
 
 
-
 # DEBUG
 # ------------------------------------------------------------------------------
 DEBUG = env.bool('DJANGO_DEBUG', default=False)
 
+
+# SECRET CONFIGURATION
+# ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 
 # EMAIL SETTINGS

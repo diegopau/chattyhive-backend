@@ -1036,12 +1036,11 @@ class ChChat(models.Model):
         except ChChatSubscription.DoesNotExist:
             raise UnauthorizedException("User isn't part of this chat")
 
-    def new_message(self, profile, content_type, content, client_timestamp):
+    def new_message(self, profile, content_type, content):
         self.check_permissions(profile)
         self.count += 1
         message = ChMessage(profile=profile, chat=self)
         message.datetime = timezone.now()
-        message.client_timestamp = client_timestamp
         message.content_type = content_type
         message.content = content
         message.save()
