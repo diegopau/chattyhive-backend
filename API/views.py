@@ -438,7 +438,7 @@ def request_upload(request, format=None):
 
         s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
 
-        # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists!
+        # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
         temp_bucket = s3_connection.get_bucket('temp-eu.chattyhive.com', validate=False)
         s3_object = Key(temp_bucket)  # With this object with can create either folders or files
 
