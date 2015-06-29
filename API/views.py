@@ -1189,6 +1189,9 @@ class ChMessageList(APIView):
                 s3_object_to_remove.key = folder_to_remove
                 s3_object_to_remove.delete()
 
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder)
+
                 # We need to modify the message content with the new URL
                 msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
                               '/' + 'file' + '/' + file_name_and_extension
