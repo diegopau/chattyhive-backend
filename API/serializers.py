@@ -15,7 +15,7 @@ from chattyhive_project.settings import common_settings
 class URLParamsError(Exception):
     def __init__(self, message, errors):
 
-        # Call the base class constructor with the parameters it needs
+        # Call the base class constructor with the parameters it needs.
         super(ValidationError, self).__init__(message)
 
         # Now for your custom code...
