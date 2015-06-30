@@ -128,31 +128,35 @@ CACHES = {
              "SOCKET_TIMEOUT": 5,  # in seconds
          }
     },
-    "requests": {  # This will be used as cache for incoming requests, it has a short time out (in seconds)
-         "BACKEND": "django_redis.cache.RedisCache",
-         "LOCATION": env("REDIS_URL_2", default="redis://127.0.0.1:6379/2"),
-         "TIMEOUT": 300,
-         "OPTIONS": {
-             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-             "MAX_ENTRIES": 2000,
-             "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
-             "SOCKET_TIMEOUT": 5,  # in seconds
-             # In some situations, when Redis is only used for cache, you do not want exceptions when Redis is down.
-             # This is default behavior in the memcached backend and it can be emulated in django-redis setting
-             # IGNORE_EXCEPTIONS
-             "IGNORE_EXCEPTIONS": True,
-         }
-    },
-    "sessions": {
-         "BACKEND": "django_redis.cache.RedisCache",
-         "LOCATION": env("REDIS_URL_3", default="redis://127.0.0.1:6379/3"),
-         "TIMEOUT": None,
-         "OPTIONS": {
-             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-             "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
-             "SOCKET_TIMEOUT": 5,  # in seconds
-         }
-    }
+
+    # BECAUSE FREE REDIS HEROKU LAYER NOW ONLY ALLOWS YOU 1 DATABASE THIS IS COMMENTED OUT FOR NOW, IT WILL BE
+    # TEMPORALLY ALL HANDLE BY JUST ONE REDIS DATABASE, BUT THE IDEAL SETUP IS TO USE THREE
+    # THIS IS STILL THE IDEAL SETUP
+    # "requests": {  # This will be used as cache for incoming requests, it has a short time out (in seconds)
+    #      "BACKEND": "django_redis.cache.RedisCache",
+    #      "LOCATION": env("REDIS_URL_2", default="redis://127.0.0.1:6379/2"),
+    #      "TIMEOUT": 300,
+    #      "OPTIONS": {
+    #          "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #          "MAX_ENTRIES": 2000,
+    #          "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
+    #          "SOCKET_TIMEOUT": 5,  # in seconds
+    #          # In some situations, when Redis is only used for cache, you do not want exceptions when Redis is down.
+    #          # This is default behavior in the memcached backend and it can be emulated in django-redis setting
+    #          # IGNORE_EXCEPTIONS
+    #          "IGNORE_EXCEPTIONS": True,
+    #      }
+    # },
+    # "sessions": {
+    #      "BACKEND": "django_redis.cache.RedisCache",
+    #      "LOCATION": env("REDIS_URL_3", default="redis://127.0.0.1:6379/3"),
+    #      "TIMEOUT": None,
+    #      "OPTIONS": {
+    #          "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #          "SOCKET_CONNECT_TIMEOUT": 5,  # in seconds
+    #          "SOCKET_TIMEOUT": 5,  # in seconds
+    #      }
+    # }
 
 }
 
@@ -359,7 +363,7 @@ SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_COOKIE_AGE = 1209600
 SESSION_SAVE_EVERY_REQUEST = True
 
-SESSION_CACHE_ALIAS = "sessions"
+# SESSION_CACHE_ALIAS = "sessions"
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 
