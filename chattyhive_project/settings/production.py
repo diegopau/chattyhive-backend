@@ -13,6 +13,7 @@ from .common_settings import *
 
 # DEBUG
 # ------------------------------------------------------------------------------
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = env.bool('DJANGO_DEBUG', default=False)
 
 

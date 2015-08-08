@@ -81,7 +81,7 @@ urlpatterns = patterns('',
     # ###                    Silk profiling app                    ###
     # ### ======================================================== ###
 
-    url(r'^silk/', include('silk.urls', namespace='silk')),
+    #    url(r'^silk/', include('silk.urls', namespace='silk')),
 
     #
     # ### ======================================================== ###
