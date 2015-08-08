@@ -594,7 +594,7 @@ class ChUserList(APIView):
         """prueba
         """
         users = ChUser.objects.all()
-        serializer = serializers.ChUserSerializer(users, many=True)
+        serializer = serializers.ChUserLevel2Serializer(users, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):

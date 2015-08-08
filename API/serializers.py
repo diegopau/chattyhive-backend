@@ -341,9 +341,11 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('tag', )
 
 
-#Serializers define the API representation.
-class ChUserLevel1Serializer(serializers.ModelSerializer):
+class ChUserLevel2Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET user list,
+       Used by the following serializers: --
 
+    """
     related_devices = serializers.SlugRelatedField(slug_field='dev_id', many=True, read_only=True)
 
     class Meta:
@@ -539,6 +541,23 @@ class ChMessageSerializer(serializers.ModelSerializer):
 # ============================================================ #
 #                       Users & Profiles                       #
 # ============================================================ #
+
+# ????? NECESITO UN CHUSERSERIALIZER O UN CHPROFILESERIALIZER MAS BIEN???????????
+class ChUserSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: Register user,
+       Used by the following serializers: --
+
+    """
+
+    profile = ChProfileLevelXSerializer(many=False, read_only=False)
+
+
+    class Meta:
+        model = ChUser
+        fields = ('id', 'profile')
+
+
+
 
 class ChProfileSerializer(serializers.ModelSerializer):
     """Used by the following API methods: GET user profile,
