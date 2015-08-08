@@ -41,7 +41,7 @@ INSTALLED_APPS += (
     # Uncomment the next line to enable the django_extensions package -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
     # 'django_extensions',
     # Uncomment the next line to enable silk (performance monitoring, profiling)
-    #  -- NOTE: COULD MAKE THE RESPONSE TIMES LOT HIGHER
+    #  -- NOTE: COULD MAKE THE RESPONSE TIMES A LOT HIGHER
     # 'silk',
 )
 

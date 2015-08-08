@@ -6,3 +6,4 @@ venv
 local_private_values_never_upload.sh
 heroku_private_values_never_upload.txt
 dump.rdb
+*.dump

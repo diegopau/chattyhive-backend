@@ -342,10 +342,13 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 #Serializers define the API representation.
-class ChUserSerializer(serializers.ModelSerializer):
+class ChUserLevel1Serializer(serializers.ModelSerializer):
+
+    related_devices = serializers.SlugRelatedField(slug_field='dev_id', many=True, read_only=True)
+
     class Meta:
         model = ChUser
-        fields = ('date_joined', 'email', 'is_active', 'is_authenticated', 'is_staff', 'objects', 'related_device',
+        fields = ('date_joined', 'email', 'is_active', 'is_authenticated', 'is_staff', 'objects', 'related_devices',
                   'username')
 
 
@@ -627,3 +630,5 @@ class ChProfileSerializer(serializers.ModelSerializer):
                   'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
                   'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex',
                   'private_show_age', 'private_show_location', 'created', 'last_activity')
+
+
