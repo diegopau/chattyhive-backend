@@ -787,7 +787,7 @@ class ChUserList(APIView):
             # profile.city = City.serializer.validated_data['city']
             # profile.region = serializer.validated_data['region']
             # profile.country = serializer.validated_data['country']
-            # profile._languages = serializer.validated_data['_languages']
+            # profile._languages = serializer.validated_data['languages']
             # profile.picture = serializer.validated_data['picture']
             # profile.avatar = serializer.validated_data['avatar']
 

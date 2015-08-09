@@ -585,7 +585,7 @@ class ChProfileLevel2Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChProfile
-        fields = ('first_name', 'last_name', 'picture', 'birth_date', '_languages', 'public_name', 'sex', 'city',
+        fields = ('first_name', 'last_name', 'picture', 'birth_date', 'languages', 'public_name', 'sex', 'city',
                   'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
                   'public_show_location')
 
