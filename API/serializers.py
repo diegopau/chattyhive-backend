@@ -542,21 +542,52 @@ class ChMessageSerializer(serializers.ModelSerializer):
 #                       Users & Profiles                       #
 # ============================================================ #
 
-# ????? NECESITO UN CHUSERSERIALIZER O UN CHPROFILESERIALIZER MAS BIEN???????????
-class ChUserSerializer(serializers.ModelSerializer):
+
+class ChProfileLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: Register user,
-       Used by the following serializers: --
+       Used by the following serializers: ChUserSerializer,
 
     """
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2'.lower())
+    region = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    city = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
-    profile = ChProfileLevelXSerializer(many=False, read_only=False)
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
 
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
+
+        # Instantiate the superclass normally
+        super(ChProfileLevel2Serializer, self).__init__(*args, **kwargs)
+
+        if fields_to_remove is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields_to_remove:
+                self.fields.pop(field_name)
+
+    def validate(self, data):
+
+        if 'picture' in data:
+            # The validation for the picture and avatar should go here.. but of now it was easier to have it inside
+            # the view
+            pass
+
+        if 'avatar' in data:
+            if not data['avatar']:
+                raise ValidationError("An avatar URL must be always present", code="400")
+
+        if 'public_name' in data:
+            # We check that this username does not already exist
+            pass
+
+        return data
 
     class Meta:
-        model = ChUser
-        fields = ('id', 'profile')
-
-
+        model = ChProfile
+        fields = ('first_name', 'last_name', 'picture', 'birth_date', '_languages', 'public_name', 'sex', 'city',
+                  'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
+                  'public_show_location')
 
 
 class ChProfileSerializer(serializers.ModelSerializer):
@@ -649,5 +680,4 @@ class ChProfileSerializer(serializers.ModelSerializer):
                   'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
                   'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex',
                   'private_show_age', 'private_show_location', 'created', 'last_activity')
-
 

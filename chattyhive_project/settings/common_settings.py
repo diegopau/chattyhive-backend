@@ -124,7 +124,7 @@ CACHES = {
 
     # BECAUSE FREE REDIS HEROKU LAYER NOW ONLY ALLOWS YOU 1 DATABASE THIS IS COMMENTED OUT FOR NOW, IT WILL BE
     # TEMPORALLY ALL HANDLE BY JUST ONE REDIS DATABASE, BUT THE IDEAL SETUP IS TO USE THREE
-    # THIS IS STILL THE IDEAL SETUP
+    # THIS IS STILL THE IDEAL SETUP (REDIS CLOUD IS THE CHEAPEST OPTION RIGHT NOW TO ALLOW 3 DAA
     # "requests": {  # This will be used as cache for incoming requests, it has a short time out (in seconds)
     #      "BACKEND": "django_redis.cache.RedisCache",
     #      "LOCATION": env("REDIS_URL_2", default="redis://127.0.0.1:6379/2"),

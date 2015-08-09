@@ -5,9 +5,10 @@ __author__ = 'diego'
 import django
 import json
 from django.contrib.auth import authenticate
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
+from django.core.validators import validate_email
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
-    ChMessage, Device, ChCategory
+    ChMessage, Device, ChCategory, City, Region, Country
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
@@ -37,6 +38,11 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError, NotAuthenticated
+
+
+# ============================================================ #
+#                       Support methods                        #
+# ============================================================ #
 
 
 # ============================================================ #
@@ -597,12 +603,261 @@ class ChUserList(APIView):
         serializer = serializers.ChUserLevel2Serializer(users, many=True)
         return Response(serializer.data)
 
+    @transaction.atomic
     def post(self, request, format=None):
         """post prueba
         """
-        serializer = serializers.ChUserSerializer(data=request.data)
+
+        if 'password' in request.data:
+            if len(request.data['password']) < 8:
+                return Response({'error_message': 'Password is too short'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # We check if email is valid and if there is not already a registered user with this email
+        if 'email' in request.data:
+            try:
+                validate_email( request.data['email'] )
+                ChUser.objects.get(email=request.data['email'])
+            except ValidationError:
+                return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
+            except ChUser.DoesNotExist:
+                    pass
+            else:
+                return Response({'error_message': 'There is already a registered user for this email address'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Some fields are not mandatory so they might not be inside the request data
+        fields_to_remove = []
+        if 'city' not in request.data:
+            fields_to_remove.append('city')
+        if 'region' not in request.data:
+            fields_to_remove.append('region')
+        if 'picture' not in request.data:
+            fields_to_remove.append('picture')
+
+        serializer = serializers.ChProfileLevel2Serializer(data=request.data, fields_to_remove=fields_to_remove)
+
         if serializer.is_valid():
-            serializer.save()
+
+            # PROFILE PICTURE PROCESSING
+            # If the an URL is present for the profile picture then we have to check if we have a correlation between
+            # this user, the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
+            # folder the client was allowed to upload for this user.
+            # TODO: this should be moved to a separated method
+
+            if 'picture' in serializer.validated_data:
+                pictureURL = serializer.validated_data['picture']
+                if ('http://' in pictureURL) or ('https://' in pictureURL):
+                    if 'amazonaws.com' in pictureURL:
+                        s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                        '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                        if s3_URL_prefix in pictureURL:
+                            folder_plus_file_URL = pictureURL[len(s3_URL_prefix):len(pictureURL)]
+                            self.check_file_extension(folder_plus_file_URL)
+                            if folder_plus_file_URL.count('/') == 1:
+                                temp_folder_picture = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                                if cache.get('s3_temp_dir:' + temp_folder_picture) == serializer.validated_data['public_name']:
+                                    file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')]
+                                    file_name_and_extension_picture = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                                    file_extension_picture = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                                    folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension_picture))]
+                                    # We check now if all files exist in S3
+                                    s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                    # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                    temp_bucket_picture = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                    s3_object_key = Key(temp_bucket_picture)
+                                    s3_object_key.key = folder_URL + 'file' + file_extension_picture
+                                    k1 = s3_object_key.exists()
+                                    s3_object_key.key = folder_URL + 'xlarge' + file_extension_picture
+                                    k2 = s3_object_key.exists()
+                                    s3_object_key.key = folder_URL + 'medium' + file_extension_picture
+                                    k3 = s3_object_key.exists()
+                                    s3_object_key.key = folder_URL + 'small' + file_extension_picture
+                                    k4 = s3_object_key.exists()
+
+                                    if not (k1 and k2 and k3 and k4):
+                                        return Response({'error_message': 'Files not uploaded correctly'},
+                                                        status=status.HTTP_403_FORBIDDEN)
+
+                                    # We check everything is correct, but we won't actually move the file from the
+                                    # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                    # So we move the file at the end of the method
+
+                                else:
+                                    return Response({'error_message': 'Upload not allowed'},
+                                                    status=status.HTTP_403_FORBIDDEN)
+                            else:
+                                return Response({'error_message': 'Bad S3 temp folder URL'},
+                                                status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            return Response({'error_message': 'We only accept images hosted in ' +
+                                                              common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'Content type is image but no URL is present'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                cache.get('')  # TODO: que pinta esto aquí??
+
+
+            # AVATAR PROCESSING
+            # If the an URL is present for the avatar then we have to check if we have a correlation between
+            # this user, the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
+            # folder the client was allowed to upload for this user.
+            # TODO: this should be moved to a separated method
+            avatarURL = serializer.validated_data['avatar']
+            if ('http://' in avatarURL) or ('https://' in pictureURL):
+                if 'amazonaws.com' in avatarURL:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in avatarURL:
+                        folder_plus_file_URL = avatarURL[len(s3_URL_prefix):len(avatarURL)]
+                        self.check_file_extension(folder_plus_file_URL)
+                        if folder_plus_file_URL.count('/') == 1:
+                            temp_folder_avatar = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_avatar) == profile.public_name:
+                                file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')]
+                                file_name_and_extension_avatar = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                                file_extension_avatar = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                                folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension_avatar))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket_avatar = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket_avatar)
+                                s3_object_key.key = folder_URL + 'file' + file_extension_avatar
+                                k5 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'xlarge' + file_extension_avatar
+                                k6 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'medium' + file_extension_avatar
+                                k7 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'small' + file_extension_avatar
+                                k8 = s3_object_key.exists()
+
+                                if not (k5 and k6 and k7 and k8):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_403_FORBIDDEN)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept images hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            cache.get('')  # TODO: que pinta esto aquí??
+
+
+            # We create the User object and the Profile object
+
+            # Creating the new user
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
+            # For the UserManager is the value of the username is not relevant, we pass the email instead
+            username = email
+            manager = ChUserManager()
+            user = manager.create_user(username, email, password)
+
+            # Creating the profile
+            # TODO: esto en teoria ya salva el perfil con todos sus campos.. COMPROBAR
+            profile = serializer.save()
+
+            profile.user = user
+
+            # Inserting info to the profile (not needed if serializer.save() works well...)
+            # profile.first_name = serializer.validated_data['first_name']
+            # profile.last_name = serializer.validated_data['last_name']
+            # profile.birth_date = serializer.validated_data['birth_date']
+            # profile.public_name = serializer.validated_data['public_name']
+            # profile.sex = serializer.validated_data['sex']
+            # profile.private_show_age = serializer.validated_data['private_show_age']
+            # profile.public_show_age = serializer.validated_data['public_show_age']
+            # profile.public_show_sex = serializer.validated_data['public_show_sex']
+            # profile.public_show_location = serializer.validated_data['public_show_location']
+            # profile.city = City.serializer.validated_data['city']
+            # profile.region = serializer.validated_data['region']
+            # profile.country = serializer.validated_data['country']
+            # profile._languages = serializer.validated_data['_languages']
+            # profile.picture = serializer.validated_data['picture']
+            # profile.avatar = serializer.validated_data['avatar']
+
+
+            profile.save()
+
+            # PICTURES PROCESSING
+            if 'picture' in serializer.validated_data:
+                destination_bucket = common_settings.S3_PRIVATE_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket_picture)
+
+                # We need to move 3 images
+                # 1 file size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'file' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'file' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'xlarge' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'xlarge' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'medium' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 4 small size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'small' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # We also delete the folder
+                folder_to_remove = temp_folder_picture
+                s3_object_to_remove = Key(temp_bucket_picture)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder_picture)
+
+                # We need to modify the profile with the new picture address
+                 = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
+                              '/' + 'file' + '/' + file_name_and_extension
+
+
+
+
+                profile.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1032,7 +1287,7 @@ class ChMessageList(APIView):
                 else:
                     return Response({'error_message': 'Content type is image but no URL is present'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                cache.get('')
+                cache.get('')  # TODO: que pinta esto aquí??
             elif not content_type == 'text':
                 # TODO: This is a temporal check because for now we only allow text or images
                 return Response({'error_message': 'Wrong content_type'}, status=status.HTTP_400_BAD_REQUEST)
