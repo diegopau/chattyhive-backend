@@ -561,7 +561,7 @@ class ChProfileLevel2Serializer(serializers.ModelSerializer):
         # Instantiate the superclass normally
         super(ChProfileLevel2Serializer, self).__init__(*args, **kwargs)
 
-        if fields_to_remove is not None:
+        if fields_to_remove:
             # Drop fields that are specified in the `fields` argument.
             for field_name in fields_to_remove:
                 self.fields.pop(field_name)

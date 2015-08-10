@@ -14,6 +14,7 @@ import environ
 
 ROOT_DIR = environ.Path(__file__) - 3  # (/a/b/myfile.py - 3 = /)
 env = environ.Env()
+environ.Env.read_env()  # Reads values from .env file when in local machine
 
 
 

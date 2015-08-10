@@ -596,6 +596,22 @@ class ChUserList(APIView):
     (user registration)
     """
 
+    def check_file_extension(self, folder_plus_file_URL):
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('_file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def get(self, request, format=None):
         """prueba
         """
@@ -631,21 +647,18 @@ class ChUserList(APIView):
 
         # Some fields are not mandatory so they might not be inside the request data
         fields_to_remove = []
-        if 'city' not in request.data:
+        if 'city' not in request.data['profile']:
             fields_to_remove.append('city')
-        if 'region' not in request.data:
+        if 'region' not in request.data['profile']:
             fields_to_remove.append('region')
-        if 'picture' not in request.data:
+        if 'picture' not in request.data['profile']:
             fields_to_remove.append('picture')
 
-        serializer = serializers.ChProfileLevel2Serializer(data=request.data, fields_to_remove=fields_to_remove)
+        serializer = serializers.ChProfileLevel2Serializer(data=request.data['profile'], fields_to_remove=fields_to_remove)
 
         if serializer.is_valid():
 
             # PROFILE PICTURE PROCESSING
-            # If the an URL is present for the profile picture then we have to check if we have a correlation between
-            # this user, the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
-            # folder the client was allowed to upload for this user.
             # TODO: this should be moved to a separated method
 
             if 'picture' in serializer.validated_data:

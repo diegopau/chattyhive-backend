@@ -7,9 +7,6 @@ __author__ = 'diego'
 
 from .common_settings import *
 
-
-
-
 # DEBUG
 # ------------------------------------------------------------------------------
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
