@@ -676,11 +676,11 @@ class ChHive(models.Model):
         """
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False, profile__country=profile.country).exclude(profile=profile)
-        users_list_near = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+        users_list_near = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False).exclude(profile__country=profile.country).exclude(profile=profile)
-        users_list_far = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+        users_list_far = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
