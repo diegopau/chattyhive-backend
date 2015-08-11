@@ -633,7 +633,7 @@ class ChUserList(APIView):
         # We check if email is valid and if there is not already a registered user with this email
         if 'email' in request.data:
             try:
-                validate_email( request.data['email'] )
+                validate_email(request.data['email'])
                 ChUser.objects.get(email=request.data['email'])
             except ValidationError:
                 return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
@@ -720,7 +720,7 @@ class ChUserList(APIView):
             # folder the client was allowed to upload for this user.
             # TODO: this should be moved to a separated method
             avatarURL = serializer.validated_data['avatar']
-            if ('http://' in avatarURL) or ('https://' in pictureURL):
+            if ('http://' in avatarURL) or ('https://' in avatarURL):
                 if 'amazonaws.com' in avatarURL:
                     s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
                                     '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
@@ -774,18 +774,28 @@ class ChUserList(APIView):
             # We create the User object and the Profile object
 
             # Creating the new user
-            email = serializer.validated_data['email']
-            password = serializer.validated_data['password']
+            email = request.data['email']
+            password = request.data['password']
             # For the UserManager is the value of the username is not relevant, we pass the email instead
             username = email
             manager = ChUserManager()
             user = manager.create_user(username, email, password)
 
             # Creating the profile
+            serializer.validated_data['user'] = user
+            color = ''
+            for ii in range(3):
+                while True:
+                    rgb = uuid4().hex[:2]
+                    if 'EE' > rgb > '20':
+                        break
+                color = color + rgb
+            serializer.validated_data['personal_color'] = '#' + color
+            serializer.validated_data['private_status'] = 'I\'m new in chattyhive!'
+            serializer.validated_data['public_status'] = 'I\'m new in chattyhive!'
+
             # TODO: esto en teoria ya salva el perfil con todos sus campos.. COMPROBAR
             profile = serializer.save()
-
-            profile.user = user
 
             # Inserting info to the profile (not needed if serializer.save() works well...)
             # profile.first_name = serializer.validated_data['first_name']
@@ -803,7 +813,6 @@ class ChUserList(APIView):
             # profile._languages = serializer.validated_data['languages']
             # profile.picture = serializer.validated_data['picture']
             # profile.avatar = serializer.validated_data['avatar']
-
 
             profile.save()
 
@@ -847,7 +856,7 @@ class ChUserList(APIView):
                 s3_object_to_move.delete()
 
                 # We also delete the folder
-                folder_to_remove = temp_folder_picture
+                folder_to_remove = temp_folder_picture + '/'
                 s3_object_to_remove = Key(temp_bucket_picture)
                 s3_object_to_remove.key = folder_to_remove
                 s3_object_to_remove.delete()
@@ -860,7 +869,7 @@ class ChUserList(APIView):
             # AVATAR PROCESSING
             destination_bucket = common_settings.S3_PUBLIC_BUCKET
             dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
-            s3_object_to_move = Key(temp_bucket_picture)
+            s3_object_to_move = Key(temp_bucket_avatar)
 
             # We need to move 3 images
             # 1 file size
@@ -896,7 +905,7 @@ class ChUserList(APIView):
             s3_object_to_move.delete()
 
             # We also delete the folder
-            folder_to_remove = temp_folder_avatar
+            folder_to_remove = temp_folder_avatar + '/'
             s3_object_to_remove = Key(temp_bucket_avatar)
             s3_object_to_remove.key = folder_to_remove
             s3_object_to_remove.delete()
@@ -905,7 +914,6 @@ class ChUserList(APIView):
             profile.avatar = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
                               '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
                               + '/' + 'images' + '/' + 'file' + file_extension_avatar
-
 
             profile.save()
 
@@ -1700,63 +1708,3 @@ def register(request):
     else:
         status = "INVALID_METHOD"
         return HttpResponse(json.dumps({'status': status}))
-
-
-def join(request):
-    if request.method == 'POST':
-        # Getting params from POST
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        hive_name = data['hive']
-        username = data['user']
-
-        # Processing params to get info in server
-        user = ChUser.objects.get(username=username)
-        profile = ChProfile.objects.get(user=user)
-        hive_joining = ChHive.objects.get(name=hive_name)
-
-        # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
-        try:
-            subscriptions = ChChatSubscription.objects.filter(profile=profile)
-            hives = []
-            for subscription in subscriptions:
-                # Excluding duplicated hives
-                hive_appeared = False
-                for hive in hives:
-                    if subscription.hive == hive:
-                        hive_appeared = True
-                if not hive_appeared:
-                    # Adding the hive to the hives array (only hives subscribed)
-                    hives.append(subscription.hive.toJSON())
-        except ChChatSubscription.DoesNotExist:
-            return HttpResponse("Subscription not found")
-
-        # Checking if the user is already subscribed to this hive
-        hive_appeared = False
-        for hive_aux in hives:
-            if hive_aux == hive_joining:
-                hive_appeared = True
-
-        # Joining to this hive
-        if not hive_appeared:
-
-            # Getting public chat of hive
-            chat2 = ChChat.objects.get(hive=hive_joining)
-
-            # Creating subscription
-            subscription = ChChatSubscription()
-            subscription.hive = hive_joining
-            subscription.profile = profile
-            subscription.chat = chat2
-            subscription.save()
-
-            status = 'SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
-
-        else:
-            status = 'ALREADY_SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
-        # raise Http404

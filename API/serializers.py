@@ -548,10 +548,15 @@ class ChProfileLevel2Serializer(serializers.ModelSerializer):
        Used by the following serializers: ChUserSerializer,
 
     """
-    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
-    country = serializers.SlugRelatedField(read_only=True, slug_field='code2'.lower())
-    region = serializers.SlugRelatedField(read_only=True, slug_field='name')
-    city = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False,
+                                             queryset=LanguageModel.objects.all(), slug_field='language')
+    country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(), slug_field='code2')
+
+    # IMPORTANT: It should be possible to do some optimization here: because i get all region objects as queryset
+    # it will load every region when it should be possible to restrict the queryset to only Regions of the specified
+    # country... the same (even more relevant) for cities.
+    region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
+    city = serializers.SlugRelatedField(read_only=False, queryset=City.objects.all(), slug_field='name')
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
