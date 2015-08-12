@@ -603,12 +603,12 @@ class ChProfileSerializer(serializers.ModelSerializer):
 
     user = ChUserLevel0Serializer(many=False, read_only=True)
     languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
-    country = serializers.SlugRelatedField(read_only=True, slug_field='code2'.lower())
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
     region = serializers.SlugRelatedField(read_only=True, slug_field='name')
     city = serializers.SlugRelatedField(read_only=True, slug_field='name')
     coordinates = serializers.CharField(source='get_coordinates', read_only=True)
 
-    hives = ChHiveLevel1Serializer(many=True, read_only=True)
+    hive_subscriptions = ChHiveSubscriptionListLevel3Serializer(many=True, read_only=True)
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
@@ -645,15 +645,15 @@ class ChProfileSerializer(serializers.ModelSerializer):
             basic_fields = {'user', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
                             'first_name', 'last_name', 'picture', 'private_status'}
             info_fields = {'birth_date', 'sex',
-                           'languages', 'country', 'region', 'city', 'location', 'public_show_age', 'public_show_sex'
+                           'languages', 'country', 'region', 'city', 'coordinates', 'public_show_age', 'public_show_sex'
                            'public_show_location', 'private_show_age', 'private_show_location'}
-            hives_fields = {'hives'}
+            hives_fields = {'hive_subscriptions'}
 
         elif profile_type == 'public':
 
             basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
-            info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'location'}
-            hives_fields = {'hives'}
+            info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'coordinates'}
+            hives_fields = {'hive_subscriptions'}
 
         elif profile_type == 'private':
 
@@ -681,8 +681,8 @@ class ChProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChProfile
-        fields = ('user',  'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
+        fields = ('user', 'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
                   'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
-                  'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex',
-                  'private_show_age', 'private_show_location', 'created', 'last_activity')
+                  'city', 'hive_subscriptions', 'public_show_age', 'public_show_location', 'public_show_sex',
+                  'private_show_age', 'private_show_location', 'created', 'last_activity', 'coordinates')
 

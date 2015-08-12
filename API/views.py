@@ -1087,7 +1087,7 @@ class ChProfileChatList(APIView):
 
 
 class ChProfileDetail(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetProfile)
 
     def get_object(self, public_name):
         try:
@@ -1130,6 +1130,16 @@ class ChProfileDetail(APIView):
 
         other_profile = self.get_object(public_name)
         user_profile = request.user.profile
+
+        if profile_type == "private":
+            try:
+                # If the user is requesting his/her own profile we go on
+                self.check_object_permissions(self.request, other_profile)
+            except PermissionDenied:
+                # TODO: If the request is for the private profile of other user we have to check if the users are friends
+                pass
+            except NotAuthenticated:
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
         profile_package = request.GET.get('package', '')
 
