@@ -19,9 +19,14 @@ urlpatterns = patterns('',
     # ver: https://docs.google.com/document/d/1WH7zUVjVpw4GChMHHBJKN_w6ORyyWgvyn8kXd1pHBNc/edit#bookmark=kix.ktwhvvh1izbl
     #url(r'^users/(?P<username>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15})/$',
 
+    url(r'^users/email/$', views.EmailCheckSetAndGet.as_view(), name="email_check"),
+
+    url(r'^users/email/(?P<public_name>[0-9a-zA-Z_]+)/$', views.EmailCheckAndGet.as_view(), name="get_email"),
+
     #    views.ChUserDetail.as_view(), name="user_detail"),
 
     url(r'^users/(?P<username>[\w-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),
+
 
     # TODO: Regex for public_names should be improved (also validation) not allowing to start with a number or '_'
 

@@ -6,4 +6,6 @@ urlpatterns = patterns('',
 
     url(r'^$', views.project_summary, name='welcome_dev'),
 
+    url(r'^methods/$', views.api_methods, name='api_methods'),
+
 )

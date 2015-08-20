@@ -5,7 +5,8 @@ __author__ = 'diego'
 import django
 import json
 from django.contrib.auth import authenticate
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
+from django.core import exceptions as Excep; Excep.ObjectDoesNotExist, Excep.MultipleObjectsReturned,\
+                                             Excep.ValidationError
 from django.core.validators import validate_email
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
     ChMessage, Device, ChCategory, City, Region, Country
@@ -588,6 +589,80 @@ class ChHiveList(APIView):
 #                     Users & Profiles                         #
 # ============================================================ #
 
+class EmailCheckSetAndGet(APIView):
+
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetEmail)
+
+    def get_object(self, public_name):
+        try:
+            return ChUser.objects.get(profile__public_name=public_name)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name='', format=None):
+
+        user = self.get_object(public_name)
+
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, user.profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        data_dict = {'email': user.email}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+
+        if 'email' in request.data:
+            try:
+                validate_email(request.data['email'])
+                ChUser.objects.get(email=request.data['email'])
+            except Excep.ValidationError:
+                return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
+            except ChUser.DoesNotExist:
+                    pass
+            else:
+                return Response({'error_message': 'There is already a registered user for this email address'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
+
+    def put(self, request, format=None):
+
+        user = request.user
+
+        if 'new_email' in request.data:
+            try:
+                validate_email(request.data['new_email'])
+                ChUser.objects.get(email=request.data['new_email'])
+            except Excep.ValidationError:
+                return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
+            except ChUser.DoesNotExist:
+                    if 'password' in request.data:
+                        authenticated_user = authenticate(username=user.username, password=request.data['password'])
+                        if authenticated_user is not None and user == authenticated_user:
+                            # TODO: shouldn't the add_email get a user instead of a profile??
+                            new_email = EmailAddress.objects.add_email(user=user.profile, email=request.data['new_email'])
+                            new_email.set_as_primary()
+                            new_email.save()  # TODO: this save might not be necessary
+                            user.email = request.data['new_email']
+                            user.save()
+                        else:
+                            # the authentication system was unable to verify the username and password
+                            return Response(status=status.HTTP_401_UNAUTHORIZED)
+                    else:
+                        return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'There is already a registered user for this email address'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ChUserList(APIView):
     """Lists all users or creates new user
@@ -635,7 +710,7 @@ class ChUserList(APIView):
             try:
                 validate_email(request.data['email'])
                 ChUser.objects.get(email=request.data['email'])
-            except ValidationError:
+            except Excep.ValidationError:
                 return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
             except ChUser.DoesNotExist:
                     pass
@@ -797,24 +872,10 @@ class ChUserList(APIView):
             # TODO: esto en teoria ya salva el perfil con todos sus campos.. COMPROBAR
             profile = serializer.save()
 
-            # Inserting info to the profile (not needed if serializer.save() works well...)
-            # profile.first_name = serializer.validated_data['first_name']
-            # profile.last_name = serializer.validated_data['last_name']
-            # profile.birth_date = serializer.validated_data['birth_date']
-            # profile.public_name = serializer.validated_data['public_name']
-            # profile.sex = serializer.validated_data['sex']
-            # profile.private_show_age = serializer.validated_data['private_show_age']
-            # profile.public_show_age = serializer.validated_data['public_show_age']
-            # profile.public_show_sex = serializer.validated_data['public_show_sex']
-            # profile.public_show_location = serializer.validated_data['public_show_location']
-            # profile.city = City.serializer.validated_data['city']
-            # profile.region = serializer.validated_data['region']
-            # profile.country = serializer.validated_data['country']
-            # profile._languages = serializer.validated_data['languages']
-            # profile.picture = serializer.validated_data['picture']
-            # profile.avatar = serializer.validated_data['avatar']
-
             profile.save()
+
+            #Creating the Email object which will handle email confimation:
+            EmailAddress.objects.add_email(user=user.profile, email=email)
 
             # PROFILE PICTURE PROCESSING
             if 'picture' in serializer.validated_data:
@@ -1603,39 +1664,3 @@ class OpenPrivateChat(APIView):
                 data_dict['new_chat'] = True
             # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
             return Response(data_dict, status=status.HTTP_200_OK)
-
-
-# ============================================================ #
-#                            OLD                               #
-# ============================================================ #
-
-def email_check(request):
-    """
-    :param request:
-    :return: JSON with status
-    """
-
-    if request.method == 'POST':
-
-        # Getting email from POST param
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        email = data['email']
-
-        username = email
-        # print(email + '_ANDROID')  # PRINT
-
-        # Checking already existing user
-        try:
-            if ChUser.objects.get(username=username) is not None:
-                status = "USER_ALREADY_EXISTS"
-            else:
-                status = "NONE"
-        except ObjectDoesNotExist:
-            status = "OK"
-
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
-
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")

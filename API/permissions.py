@@ -60,3 +60,10 @@ class CanGetHiveUsers(BasePermission):
             return False
         else:
             return True
+
+
+class CanGetEmail(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        print("object permission is returning: ", obj.user == request.user)
+        return obj.user == request.user
