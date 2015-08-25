@@ -1381,17 +1381,18 @@ class ChMessageList(APIView):
                                     file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')-len('_file')]
                                     file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
                                     file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                                    folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension))]
                                     location_without_ending = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_extension)+len('_file'))]
                                     # We check now if all files exist in S3
                                     s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
                                     # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
                                     temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
                                     s3_object_key = Key(temp_bucket)
-                                    s3_object_key.key = location_without_ending + '_file' + file_extension
+                                    s3_object_key.key = folder_URL + 'file' + file_extension
                                     k1 = s3_object_key.exists()
-                                    s3_object_key.key = location_without_ending + '_xlarge' + file_extension
+                                    s3_object_key.key = folder_URL + 'xlarge' + file_extension
                                     k2 = s3_object_key.exists()
-                                    s3_object_key.key = location_without_ending + '_medium' + file_extension
+                                    s3_object_key.key = folder_URL + 'medium' + file_extension
                                     k3 = s3_object_key.exists()
 
                                     if not (k1 and k2 and k3):
@@ -1536,7 +1537,7 @@ class ChMessageList(APIView):
                 chat_subscription_profile.save()
 
             if content_type == 'image':
-                # We move the file from temp bucket to destination bucket
+                # We move the files from temp bucket to destination bucket
                 if chat.type == 'public':
                     destination_bucket = common_settings.S3_PUBLIC_BUCKET
                 else:
@@ -1544,12 +1545,17 @@ class ChMessageList(APIView):
                 dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
                 s3_object_to_move = Key(temp_bucket)
 
+                # We are taking the last 6 digits of the chat count for this message, if there are no 6 digits we
+                # fill the string with zeros on the left up to the 6 digits
+                file_name_unique_id = str(chat.count + 1)
+                new_file_name = 'IMG_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id
+
                 # We need to move 3 images
                 # 1 file size
                 s3_object_to_move.key = folder_plus_file_URL
                 destination_object_key = Key(dest_bucket)
                 destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'file' + '/' + file_name_and_extension
+                                             + 'images' + '/' + 'file' + '/' + new_file_name + file_extension
                 dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
                 s3_object_to_move.delete()
 
@@ -1557,7 +1563,7 @@ class ChMessageList(APIView):
                 s3_object_to_move.key = temp_folder + '/' + file_name + '_xlarge' + file_extension
                 destination_object_key = Key(dest_bucket)
                 destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'xlarge' + '/' + file_name + '_xlarge' + file_extension
+                                             + 'images' + '/' + 'xlarge' + '/' + new_file_name + file_extension
                 dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
                 s3_object_to_move.delete()
 
@@ -1565,7 +1571,7 @@ class ChMessageList(APIView):
                 s3_object_to_move.key = temp_folder + '/' + file_name + '_medium' + file_extension
                 destination_object_key = Key(dest_bucket)
                 destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'medium' + '/' + file_name + '_medium' + file_extension
+                                             + 'images' + '/' + 'medium' + '/' + new_file_name + file_extension
                 dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
                 s3_object_to_move.delete()
 
@@ -1580,7 +1586,7 @@ class ChMessageList(APIView):
 
                 # We need to modify the message content with the new URL
                 msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
-                              '/' + 'file' + '/' + file_name_and_extension
+                              '/' + 'file' + '/' + new_file_name + file_extension
 
             message = chat.new_message(profile=profile,
                                        content_type='text',
