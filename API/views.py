@@ -1545,10 +1545,9 @@ class ChMessageList(APIView):
                 dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
                 s3_object_to_move = Key(temp_bucket)
 
-                # We are taking the last 6 digits of the chat count for this message, if there are no 6 digits we
-                # fill the string with zeros on the left up to the 6 digits
+                # We are taking the last 6 digits of the chat count for this message
                 file_name_unique_id = str(chat.count + 1)
-                new_file_name = 'IMG_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id
+                new_file_name = 'IMG_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
 
                 # We need to move 3 images
                 # 1 file size
