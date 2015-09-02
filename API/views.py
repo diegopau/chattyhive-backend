@@ -679,10 +679,10 @@ class ChUserList(APIView):
                     return
                 else:
                     return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'error_message': 'Wrong filename'},
                             status=status.HTTP_400_BAD_REQUEST)
