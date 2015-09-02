@@ -435,6 +435,23 @@ ALLOWED_IMAGE_EXTENSIONS = (
     'gif',
 )
 
+ALLOWED_VIDEO_EXTENSIONS = (
+    'avi',
+    'mp4',
+)
+
+ALLOWED_AUDIO_EXTENSIONS = (
+    'mp3',
+    'flac',
+)
+
+ALLOWED_ANIMATION_EXTENSIONS = (
+    'gif',
+)
+
+
+
+
 # GCM
 # ----------------------------------------------------------------
 GCM_SENDER_ID = env('GCM_SENDER_ID')

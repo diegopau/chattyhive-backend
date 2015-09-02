@@ -1314,21 +1314,24 @@ class ChMessageList(APIView):
         except ChChat.DoesNotExist:
             raise Http404
 
-    def check_file_extension(self, folder_plus_file_URL):
-        if folder_plus_file_URL.count('.') == 1:
-            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
-            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
-                if folder_plus_file_URL.count('_file') == 1:
-                    return
+    def check_file_extension(self, folder_plus_file_URL, content_type):
+
+        if content_type == 'image':
+            if folder_plus_file_URL.count('.') == 1:
+                extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                    if folder_plus_file_URL.count('file') == 1:
+                        return
+                    else:
+                        return Response({'error_message': 'Wrong filename'},
+                                status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_400_BAD_REQUEST)
+        return
 
     def get(self, request, chat_id, format=None):
         chat = self.get_chat(chat_id)
@@ -1376,7 +1379,7 @@ class ChMessageList(APIView):
                                         '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
                         if s3_URL_prefix in msg_content:
                             folder_plus_file_URL = msg_content[len(s3_URL_prefix):len(msg_content)]
-                            self.check_file_extension(folder_plus_file_URL)
+                            self.check_file_extension(folder_plus_file_URL, content_type)
                             if folder_plus_file_URL.count('/') == 1:
                                 temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
                                 if cache.get('s3_temp_dir:' + temp_folder) == profile.public_name:
@@ -1417,8 +1420,8 @@ class ChMessageList(APIView):
                                     return Response({'error_message': 'Upload not allowed'},
                                                     status=status.HTTP_403_FORBIDDEN)
                             else:
-                               return Response({'error_message': 'Bad S3 temp folder URL'},
-                                               status=status.HTTP_400_BAD_REQUEST)
+                                return Response({'error_message': 'Bad S3 temp folder URL'},
+                                                status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response({'error_message': 'We only accept content hosted in ' +
                                                               common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
@@ -1428,14 +1431,14 @@ class ChMessageList(APIView):
                                         status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'error_message': 'Content type is image but no URL is present'},
-                                        status=status.HTTP_400_BAD_REQUEST)
+                                    status=status.HTTP_400_BAD_REQUEST)
                 # cache.get('')  # TODO: que pinta esto aquí??
 
             elif content_type == 'text':
                 pass
             else:
-               return Response({'error_message': 'Wrong content_type'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error_message': 'Wrong content_type'},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             # Initialization of the message to be sent
             message_data = {'profile': profile}
@@ -1549,7 +1552,8 @@ class ChMessageList(APIView):
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription_profile.save()
 
-            if content_type == 'image':
+            if content_type == 'image' or content_type == 'video' or content_type == 'audio' or\
+                            content_type == 'animation' or content_type == 'file':
                 # We move the files from temp bucket to destination bucket
                 if chat.type == 'public':
                     destination_bucket = common_settings.S3_PUBLIC_BUCKET
@@ -1558,47 +1562,74 @@ class ChMessageList(APIView):
                 dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
                 s3_object_to_move = Key(temp_bucket)
 
-                # We are taking the last 6 digits of the chat count for this message
-                file_name_unique_id = str(chat.count + 1)
-                new_file_name = 'IMG_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+                if content_type == 'image':
 
-                # We need to move 3 images
-                # 1 file size
-                s3_object_to_move.key = folder_plus_file_URL
-                destination_object_key = Key(dest_bucket)
-                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'file' + '/' + new_file_name + file_extension
-                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-                s3_object_to_move.delete()
+                    # We are taking the last 6 digits of the chat count for this message
+                    file_name_unique_id = str(chat.count + 1)
+                    new_file_name = 'IMG_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
 
-                # 2 xlarge size
-                s3_object_to_move.key = temp_folder + '/' + 'xlarge' + file_extension
-                destination_object_key = Key(dest_bucket)
-                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'xlarge' + '/' + new_file_name + file_extension
-                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-                s3_object_to_move.delete()
+                    # We need to move 3 images
+                    # 1 file size
+                    s3_object_to_move.key = folder_plus_file_URL
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + 'images' + '/' + 'file' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
-                # 3 medium size
-                s3_object_to_move.key = temp_folder + '/' + 'medium' + file_extension
-                destination_object_key = Key(dest_bucket)
-                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'medium' + '/' + new_file_name + file_extension
-                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-                s3_object_to_move.delete()
+                    # 2 xlarge size
+                    s3_object_to_move.key = temp_folder + '/' + 'xlarge' + file_extension
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + 'images' + '/' + 'xlarge' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
-                # We also delete the folder
-                folder_to_remove = folder_plus_file_URL[0:folder_plus_file_URL.find('/') + 1]
-                s3_object_to_remove = Key(temp_bucket)
-                s3_object_to_remove.key = folder_to_remove
-                s3_object_to_remove.delete()
+                    # 3 medium size
+                    s3_object_to_move.key = temp_folder + '/' + 'medium' + file_extension
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + 'images' + '/' + 'medium' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
-                # And we delete the entry from the cache
-                cache.delete('s3_temp_dir:' + temp_folder)
+                    # We also delete the folder
+                    folder_to_remove = folder_plus_file_URL[0:folder_plus_file_URL.find('/') + 1]
+                    s3_object_to_remove = Key(temp_bucket)
+                    s3_object_to_remove.key = folder_to_remove
+                    s3_object_to_remove.delete()
 
-                # We need to modify the message content with the new URL
-                msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
-                              '/' + 'file' + '/' + new_file_name + file_extension
+                    # And we delete the entry from the cache
+                    cache.delete('s3_temp_dir:' + temp_folder)
+
+                    # We need to modify the message content with the new URL
+                    msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
+                                  '/' + 'file' + '/' + new_file_name + file_extension
+
+                else:
+
+                    # We are taking the last 6 digits of the chat count for this message
+                    file_name_unique_id = str(chat.count + 1)
+
+                    if content_type == 'video':
+                        new_file_name = 'VID_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    if content_type == 'audio':
+                        new_file_name = 'AUD_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    if content_type == 'animation':
+                        new_file_name = 'ANI_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    if content_type == 'file':
+                        new_file_name = 'FILE_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    # We need to move the file to the destination bucket
+                    s3_object_to_move.key = folder_plus_file_URL
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + content_type + 's' + '/' + 'file' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
             message = chat.new_message(profile=profile,
                                        content_type=content_type,
