@@ -1367,7 +1367,9 @@ class ChMessageList(APIView):
             # the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
             # folder the client was allowed to upload for this user.
             # TODO: this should be moved to a separated method
-            if content_type == 'image':
+
+            if content_type == 'image' or content_type == 'video' or content_type == 'audio' or\
+                            content_type == 'animation' or content_type == 'file':
                 if ('http://' in msg_content) or ('https://' in msg_content):
                     if 'amazonaws.com' in msg_content:
                         s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
@@ -1378,31 +1380,39 @@ class ChMessageList(APIView):
                             if folder_plus_file_URL.count('/') == 1:
                                 temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
                                 if cache.get('s3_temp_dir:' + temp_folder) == profile.public_name:
-                                    file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')-len('_file')]
                                     file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
                                     file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
                                     folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension))]
-                                    location_without_ending = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_extension)+len('_file'))]
                                     # We check now if all files exist in S3
                                     s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
                                     # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
                                     temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
                                     s3_object_key = Key(temp_bucket)
-                                    s3_object_key.key = folder_URL + 'file' + file_extension
-                                    k1 = s3_object_key.exists()
-                                    s3_object_key.key = folder_URL + 'xlarge' + file_extension
-                                    k2 = s3_object_key.exists()
-                                    s3_object_key.key = folder_URL + 'medium' + file_extension
-                                    k3 = s3_object_key.exists()
 
-                                    if not (k1 and k2 and k3):
-                                        return Response({'error_message': 'Files not uploaded correctly'},
-                                                        status=status.HTTP_403_FORBIDDEN)
+                                    if content_type == 'image':
 
-                                    # We check everything is correct, but we won't actually move the file from the
-                                    # temp bucket to the final bucket in Amazon S3 without doing additional checks
-                                    # So we move the file at the end of the method
+                                        s3_object_key.key = folder_URL + 'file' + file_extension
+                                        k1 = s3_object_key.exists()
+                                        s3_object_key.key = folder_URL + 'xlarge' + file_extension
+                                        k2 = s3_object_key.exists()
+                                        s3_object_key.key = folder_URL + 'medium' + file_extension
+                                        k3 = s3_object_key.exists()
 
+                                        if not (k1 and k2 and k3):
+                                            return Response({'error_message': 'Files not uploaded correctly'},
+                                                            status=status.HTTP_403_FORBIDDEN)
+
+                                        # We check everything is correct, but we won't actually move the file from the
+                                        # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                        # So we move the file at the end of the method
+
+                                    else:  # for any other content-type
+                                        s3_object_key.key = folder_URL + 'file' + file_extension
+                                        k1 = s3_object_key.exists()
+
+                                        if not k1:
+                                            return Response({'error_message': 'Files not uploaded correctly'},
+                                                            status=status.HTTP_403_FORBIDDEN)
                                 else:
                                     return Response({'error_message': 'Upload not allowed'},
                                                     status=status.HTTP_403_FORBIDDEN)
@@ -1410,19 +1420,22 @@ class ChMessageList(APIView):
                                return Response({'error_message': 'Bad S3 temp folder URL'},
                                                status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            return Response({'error_message': 'We only accept images hosted in ' +
+                            return Response({'error_message': 'We only accept content hosted in ' +
                                                               common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
                                             status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                        return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
                                         status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'error_message': 'Content type is image but no URL is present'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                # cache.get('')  # TODO: que pinta esto aquí??
+
+            elif content_type == 'text':
+                pass
+            else:
+               return Response({'error_message': 'Wrong content_type'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                cache.get('')  # TODO: que pinta esto aquí??
-            elif content_type == 'video':
-                # TODO: This is a temporal check because for now we only allow text or images
-                return Response({'error_message': 'Wrong content_type'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Initialization of the message to be sent
             message_data = {'profile': profile}
@@ -1475,7 +1488,7 @@ class ChMessageList(APIView):
             else:  # new_chat == False
                 try:
                     with transaction.atomic():
-                        # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
+                        # TODO: Additional checks here if chat is between friends (has the user been blocked by the target user?)
                         chat = ChChat.objects.get(chat_id=chat_id)
                         if chat.slug.find('+') != -1:  # This is a chat between friends
                             pass  # TODO
@@ -1559,7 +1572,7 @@ class ChMessageList(APIView):
                 s3_object_to_move.delete()
 
                 # 2 xlarge size
-                s3_object_to_move.key = temp_folder + '/' + file_name + '_xlarge' + file_extension
+                s3_object_to_move.key = temp_folder + '/' + 'xlarge' + file_extension
                 destination_object_key = Key(dest_bucket)
                 destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
                                              + 'images' + '/' + 'xlarge' + '/' + new_file_name + file_extension
@@ -1567,7 +1580,7 @@ class ChMessageList(APIView):
                 s3_object_to_move.delete()
 
                 # 3 medium size
-                s3_object_to_move.key = temp_folder + '/' + file_name + '_medium' + file_extension
+                s3_object_to_move.key = temp_folder + '/' + 'medium' + file_extension
                 destination_object_key = Key(dest_bucket)
                 destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
                                              + 'images' + '/' + 'medium' + '/' + new_file_name + file_extension
@@ -1588,7 +1601,7 @@ class ChMessageList(APIView):
                               '/' + 'file' + '/' + new_file_name + file_extension
 
             message = chat.new_message(profile=profile,
-                                       content_type='text',
+                                       content_type=content_type,
                                        content=msg_content,)
 
             chat.save()
