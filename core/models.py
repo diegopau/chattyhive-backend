@@ -1214,7 +1214,10 @@ class ChMessage(models.Model):
         ('animation', 'Animation'),
         ('url', 'URL'),
         ('file', 'File'),
-        ('invitation', 'Invitation')
+        ('location', 'Location'),
+        ('invitation', 'Invitation'),
+        ('phone-contact', 'Phone Contact'),
+        ('chatty-contact', 'Chattyhive Contact')
     )
 
     _id = models.AutoField(primary_key=True)

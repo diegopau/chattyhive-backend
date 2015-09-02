@@ -1420,7 +1420,7 @@ class ChMessageList(APIView):
                     return Response({'error_message': 'Content type is image but no URL is present'},
                                     status=status.HTTP_400_BAD_REQUEST)
                 cache.get('')  # TODO: que pinta esto aquí??
-            elif not content_type == 'text':
+            elif content_type == 'video':
                 # TODO: This is a temporal check because for now we only allow text or images
                 return Response({'error_message': 'Wrong content_type'}, status=status.HTTP_400_BAD_REQUEST)
 
