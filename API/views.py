@@ -4,6 +4,7 @@ __author__ = 'diego'
 
 import django
 import json
+import re
 from django.contrib.auth import authenticate
 from django.core import exceptions as Excep; Excep.ObjectDoesNotExist, Excep.MultipleObjectsReturned,\
                                              Excep.ValidationError
@@ -591,7 +592,7 @@ class ChHiveList(APIView):
 
 class EmailCheckSetAndGet(APIView):
 
-    permission_classes = (permissions.IsAuthenticated, permissions.CanGetEmail)
+    permission_classes = (permissions.IsAuthenticatedForPutOrGet, permissions.CanGetEmail)
 
     def get_object(self, public_name):
         try:
@@ -602,9 +603,10 @@ class EmailCheckSetAndGet(APIView):
     def get(self, request, public_name='', format=None):
 
         user = self.get_object(public_name)
+        self.check_permissions(self.request)
 
         try:
-            # If the user is requesting his/her own subscriptions we go on
+            # If the user is requesting his/her own email
             self.check_object_permissions(self.request, user.profile)
         except PermissionDenied:
             return Response(status=status.HTTP_403_FORBIDDEN)
@@ -635,6 +637,7 @@ class EmailCheckSetAndGet(APIView):
     def put(self, request, format=None):
 
         user = request.user
+        self.check_permissions(self.request)
 
         if 'new_email' in request.data:
             try:
@@ -662,6 +665,55 @@ class EmailCheckSetAndGet(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UsernameCheckAndGet(APIView):
+
+    permission_classes = (permissions.IsAuthenticatedForPutOrGet, permissions.CanGetUsername)
+
+    def get_object(self, email):
+        try:
+            return ChUser.objects.get(email=email)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def validate_public_name(self, public_name):
+
+        if re.match(r'^[0-9a-zA-Z_]{1,20}$', public_name):
+            return
+        else:
+            return Response({'error_message': 'Malformed public_name'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, email='', format=None):
+
+        user = self.get_object(email)
+        self.check_permissions(self.request)
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, user.profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        data_dict = {'public_name': user.profile.public_name}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+
+        if 'public_name' in request.data:
+            try:
+                self.validate_public_name(request.data['public_name'])
+                ChUser.objects.get(profile__public_name=request.data['public_name'])
+            except ChUser.DoesNotExist:
+                    pass
+            else:
+                return Response({'error_message': 'There is already a registered user for with this public name'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Public_name is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
 
 
 class ChUserList(APIView):

@@ -23,6 +23,10 @@ urlpatterns = patterns('',
 
     url(r'^users/email/(?P<public_name>[0-9a-zA-Z_]+)/$', views.EmailCheckAndGet.as_view(), name="get_email"),
 
+    url(r'^users/publicname/$', views.UsernameCheckAndGet.as_view(), name="username_check"),
+
+    url(r'^users/publicname/(?P<email>[^@]+@[^@]+\.[^@]+)/$', views.EmailCheckAndGet.as_view(), name="get_username"),
+
     #    views.ChUserDetail.as_view(), name="user_detail"),
 
     url(r'^users/(?P<username>[\w-]+)/$', views.ChUserDetail.as_view(), name="user_detail"),

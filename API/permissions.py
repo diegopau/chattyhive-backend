@@ -67,3 +67,18 @@ class CanGetEmail(BasePermission):
     def has_object_permission(self, request, view, obj):
         print("object permission is returning: ", obj.user == request.user)
         return obj.user == request.user
+
+
+class CanGetUsername(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        print("object permission is returning: ", obj.user == request.user)
+        return obj.user == request.user
+
+
+class IsAuthenticatedForPutOrGet(BasePermission):
+
+    def has_permission(self, request, view):
+        if request.method == 'POST' or request.user and request.user.is_authenticated():
+            return True
+        return False
