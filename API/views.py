@@ -684,7 +684,14 @@ class UsernameCheckAndGet(APIView):
         else:
             return Response({'error_message': 'Malformed public_name'}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request, email='', format=None):
+    def get(self, request, format=None):
+
+        email = request.GET.get('email', '')
+        try:
+            validate_email(email)
+        except Excep.ValidationError:
+            return Response({'error_message': 'Email is not present or not well-formed'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         user = self.get_object(email)
         self.check_permissions(self.request)
