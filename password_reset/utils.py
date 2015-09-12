@@ -6,5 +6,4 @@ except ImportError:
 
 
 def get_username(user):
-    username_field = getattr(user, 'USERNAME_FIELD', 'username')
-    return getattr(user, username_field)
+    return user.profile.public_name

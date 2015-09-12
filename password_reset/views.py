@@ -53,7 +53,7 @@ class Recover(SaltMixin, generic.FormView):
     template_name = 'password_reset/recovery_form.html'
     email_template_name = 'password_reset/recovery_email.txt'
     email_subject_template_name = 'password_reset/recovery_email_subject.txt'
-    search_fields = ['username', 'email']
+    search_fields = ['email']
 
     def get_success_url(self):
         return reverse('password_reset_sent', args=[self.mail_signature])
