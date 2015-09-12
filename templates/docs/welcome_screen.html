@@ -6,6 +6,12 @@
 
 {% block content %}
 
+    <h1>Welcome to chattyhive!</h1>
+    <br />
+    <br />
+    <br />
+
+    <h4>API access for developers</h4>
     <form action="/" method="post">{% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Submit" />

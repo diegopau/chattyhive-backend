@@ -17,21 +17,20 @@ from docs.forms import LoginForm
 @csrf_exempt
 def welcome_screen(request):
     if request.method == 'GET':
-        return render(request, 'docs/welcome_screen.html')
+        form = LoginForm()
+        return render(request, 'docs/welcome_screen.html', {
+            'form': form
+        })
+
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
             try:
                 login_string = form.cleaned_data['login']
                 password = form.cleaned_data['password']
-                if '@' in login_string:
-                    user = ChUser.objects.get(email=login_string)
-                    user = authenticate(username=user.username, password=password)
-                else:
-                    profile = ChProfile.objects.select_related().get(public_name=login_string)
-                    # TODO: no tengo muy claro que este profile.username (se está accediendo a un campo del ChUser a
-                    # través del ChProfile) esté funcionando. Ver bien lo de select_related()...
-                    user = authenticate(username=profile.username, password=password)
+
+                user = ChUser.objects.get(username=login_string)
+                user = authenticate(username=login_string, password=password)
 
                 if not user.is_staff:
                     return HttpResponse("Sorry, only authorized developers can access to the API section")
@@ -40,7 +39,7 @@ def welcome_screen(request):
                     # With login we persist the authentication, so the client won't have to reathenticate with each
                     # request.
                     login(request, user)
-                    return HttpResponseRedirect("/docs/project_summary")
+                    return HttpResponseRedirect("/api/summary/")
                 else:
                     return HttpResponse("Sorry, your account is not enabled")
             except ChUser.DoesNotExist or ChProfile.DoesNotExist:

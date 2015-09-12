@@ -6,8 +6,9 @@ urlpatterns = patterns('',
 
     url(r'^$', views.welcome_screen, name='welcome_screen'),
 
-    url(r'^summary/$', views.project_summary, name='summary'),
+    url(r'^api/summary/$', views.project_summary, name='summary'),
 
-    url(r'^methods/$', views.api_methods, name='api_methods'),
+    url(r'^api/methods/$', views.api_methods, name='api_methods'),
 
+    url(r'^api/logout/$', 'login.views.logout_view', name='logout'),
 )

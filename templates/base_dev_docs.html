@@ -14,6 +14,8 @@
     <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
 
     <link href="{{ STATIC_URL }}css/dev_docs.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
+
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -40,7 +42,8 @@
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="http://join.chattyhive.com/">Launch page</a></li>
                 <li><a href="http://blog.chattyhive.com/">Blog</a></li>
-                <li><a href="/summary/">API</a></li>
+                <li><a href="/api/summary/">API</a></li>
+                <li><button type="button" class="btn btn-default navbar-btn" id="btn_logout">Logout</button></li>
             </ul>
         </div>
     </div>
@@ -51,8 +54,8 @@
     <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
             <ul class="nav nav-sidebar">
-                <li><a href="/summary/">Project summary</a></li>
-                <li><a href="/methods/">API</a></li>
+                <li><a href="/api/summary/">Project summary</a></li>
+                <li><a href="/api/methods/">API</a></li>
             </ul>
             <ul class="nav nav-sidebar">
                 <li><a href="/test-ui/">Test interface</a></li>
@@ -67,11 +70,38 @@
     </div>
 </div>
 
+
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
 <script src="{{ STATIC_URL }}js/jquery.min.js"></script>
 <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+<script src="{{ STATIC_URL }}js/js.cookie.js"></script>
+
+<script type="text/javascript">
+    // Buttons behaviour
+    $(document).ready(function () {
+        // Button logout behaviour when clicked
+        $('#btn_logout').on('click', function () {
+            var csrftoken = Cookies.get('csrftoken');
+            $.ajax({
+                type: "POST",
+                url: "/api/logout/",
+                headers: {"X-CSRFToken": csrftoken},
+                data: "",
+                success: function (newData) {
+                    alert(newData);
+                    //$.removeCookie(); TODO toggle to remove browser cookies
+                    location.href = "/";
+                },
+                failure: function (errMsg) {
+                    alert(errMsg);
+                }
+            });
+            return false;
+        });
+    });
+</script>
 
 <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 <script src="{{ STATIC_URL }}js/ie10-viewport-bug-workaround.js"></script>
