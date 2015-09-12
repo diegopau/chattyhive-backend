@@ -1,8 +1,9 @@
-__author__ = 'lorenzo'
-
 from django import forms
 from core.models import ChProfile
 from datetimewidget.widgets import DateWidget
+
+__author__ = 'lorenzo'
+
 
 class LoginForm(forms.Form):
     login = forms.CharField(max_length=40)

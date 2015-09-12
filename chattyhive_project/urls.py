@@ -56,6 +56,13 @@ urlpatterns = patterns('',
     url(r'^', include('core.urls')),
 
 
+    ################################
+    #       password reset URLs    #
+    ################################
+
+    url(r'^', include('password_reset.urls')),
+
+
     #############################
     #  email confirmation URLs  #
     #############################

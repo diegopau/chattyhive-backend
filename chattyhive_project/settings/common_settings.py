@@ -77,6 +77,7 @@ LOCAL_APPS = (
     'login',
     'email_confirmation',
     'test_ui',
+    'password_reset',
 )
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

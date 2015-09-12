@@ -13,7 +13,7 @@
 
     <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
 
-    <link href="{{ STATIC_URL }}css/dev_docs.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -45,27 +45,6 @@
         </div>
     </div>
 </nav>
-
-
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar">
-            <ul class="nav nav-sidebar">
-                <li><a href="/summary/">Project summary</a></li>
-                <li><a href="/methods/">API</a></li>
-            </ul>
-            <ul class="nav nav-sidebar">
-                <li><a href="/test-ui/">Test interface</a></li>
-                <li><a href="/admin/">Admin</a></li>
-            </ul>
-        </div>
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            {% block content %}
-
-            {% endblock %}
-        </div>
-    </div>
-</div>
 
 <!-- Bootstrap core JavaScript
 ================================================== -->
