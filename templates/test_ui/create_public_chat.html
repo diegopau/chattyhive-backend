@@ -7,8 +7,9 @@
 {% block public_name %}{{ profile.public_name }}{%  endblock %}
 
 {% block content %}
-    <a href="/test-ui/home/">Home</a>
-    <br>
+
+    <h1> New public chat </h1>
+
     <form action="/test-ui/create_public_chat/{{ hive.slug }}/" method="post">{% csrf_token %}
             {{ form.as_p }}
         <input type="submit" value="Create" />

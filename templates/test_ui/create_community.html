@@ -8,9 +8,8 @@
 
 {% block content %}
 
-    <a href="/test-ui/home/">Home</a>
-    <br>
-    NEW COMMUNITY
+    <h1> New community </h1>
+    <a href="/test-ui/create_hive/">Create a standard hive instead</a>
     <form action="/test-ui/create_community/" method="post">{% csrf_token %}
             {{ formHive.as_p }}
             {{ formTags.as_p }}

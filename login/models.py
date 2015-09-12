@@ -18,7 +18,7 @@ class RegistrationFormOne(forms.ModelForm):
     class Meta:
         model = ChProfile
         widgets = {
-            # This has been added for django-date-picker. Uses localization and bootstrap 3
+            # This has been added for django-date-widget. Uses localization and bootstrap 3
             'birth_date': DateWidget(attrs={'id': "id_birth_date"}, usel10n=True, bootstrap_version=3)
         }
         fields = ('first_name', 'last_name', 'birth_date', 'sex', '_languages',

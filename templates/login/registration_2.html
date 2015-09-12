@@ -1,12 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title></title>
-</head>
-<body>
-<form action="/test-ui/create_user/register2/" method="post">{% csrf_token %}
+{% extends "base_login.html" %}
+
+{% block title %}chattyhive Alpha Web{% endblock %}
+
+{% block more_scripts %}{% endblock %}
+
+{% block content %}
+    <h1>Sign Up - Step 2</h1>
+    <form action="/test-ui/create_user/register2/" method="post">{% csrf_token %}
         {{ form.as_p }}
     <input type="submit" value="Submit" />
 </form>
-</body>
-</html>
+{% endblock %}

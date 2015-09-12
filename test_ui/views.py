@@ -546,7 +546,8 @@ def explore(request):
             hives = None
 
         return render(request, "{app_name}/explore.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
-            'hives': hives
+            'hives': hives,
+            'profile': request.user.profile
         })
 
 

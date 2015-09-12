@@ -1,3 +1,31 @@
+html {
+    height: 100%;
+}
+
+body {
+    font-size: 16px;
+    height: 100%;
+    padding-top: 50px;
+    background-color: transparent;
+    background-image: url('../images/Gridiron.svg');
+    background-size: auto;
+    background-attachment: scroll;
+    font-family: Helvetica,Arial,sans-serif;
+}
+
+#main_section {
+    height: 100%;
+    background-color: transparent;
+    background-image: -webkit-linear-gradient(rgba(255, 235, 189, 0.70), rgba(255, 244, 217, 0.81) 14%, rgba(255, 248, 231, 0.89) 28%, rgba(255, 252, 244, 0.95) 49%, white);
+    background-image: -o-linear-gradient(rgba(255, 235, 189, 0.70), rgba(255, 244, 217, 0.81) 14%, rgba(255, 248, 231, 0.89) 28%, rgba(255, 252, 244, 0.95) 49%, white);
+    background-image: linear-gradient(rgba(255, 235, 189, 0.70), rgba(255, 244, 217, 0.81) 14%, rgba(255, 248, 231, 0.89) 28%, rgba(255, 252, 244, 0.95) 49%, white);
+}
+
+.input-group {
+    width: 350px;
+}
+
+
 .logo{
     max-width: 160px;
     max-height: 38px;

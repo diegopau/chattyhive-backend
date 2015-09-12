@@ -8,8 +8,8 @@
 
 {% block content %}
 
-    <a href="/test-ui/home/">Home</a><br />
-    <br />
+    <h1>{{ hive.name }}</h1>
+
     {% if subscribed %}
         <div>:{{ hive.name }} -- <a href="/test-ui/leave/{{ hive.slug }}">leave</a></div>
     {% else %}
