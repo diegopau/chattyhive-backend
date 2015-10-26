@@ -1162,7 +1162,6 @@ class ChChatSubscription(models.Model):
 
 class ChFriendsGroupChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='friends_group_chat_extra_info')
-    hive = models.ForeignKey(ChHive, related_name="friends_group_chats", null=True, blank=True)
 
 
 class ChHivematesGroupChat(models.Model):
