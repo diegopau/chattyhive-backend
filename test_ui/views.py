@@ -406,7 +406,6 @@ def get_messages(request, chat_name, init, interval):
                 messages_row.append({"username": message.profile.username,
                                      "public_name": message.profile.public_name,
                                      "message": message.content,
-                                     "client_timestamp": message.client_timestamp,
                                      "server_time": message.created.astimezone(),
                                      "id": message.id
                                      })
