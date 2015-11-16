@@ -68,13 +68,21 @@
         function reload(messages) {
             var message = messages[0];
             var showname = "";
-            if(message.public_name==user_public_name) showname="You";
-            else showname=message.public_name;
+            if(message.public_name==user_public_name) {
+                showname = "You";
+            }
+            else {
+                showname = message.public_name;
+            }
             $('#chat_field').html(showname + " said: " + message.content + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time);
             for(i = 1; i < messages.length; i++){
                 message = messages[i]
-                if(message.public_name==user_public_name) shownname="You";
-                else showname=message.public_name;
+                if(message.public_name==user_public_name) {
+                    showname = "You";
+                }
+                else {
+                    showname=message.public_name;
+                }
                 $('#chat_field').html(showname + " said: " + message.content + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time + '<br/>' + $('#chat_field').html());
             }
             $('#older').html(message.id)
@@ -126,7 +134,7 @@
                 return false;
             });
 
-            // Button load behaviour when clicked
+            // Button load previous messages behaviour when clicked
             $('#btn_load').on('click', function()
             {
                 older = $('#older').html();
@@ -146,7 +154,7 @@
                 return false;
             });
 
-            // Button recent behaviour when clicked
+            // Button load last messages behaviour when clicked
             $('#btn_recent').on('click', function()
             {
                 $.ajax({
