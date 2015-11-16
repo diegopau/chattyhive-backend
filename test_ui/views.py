@@ -431,8 +431,7 @@ def get_messages(request, chat_name, init, interval):
                 raise Http404
             messages_row = []
             for message in messages:
-                messages_row.append({"username": message.profile.username,
-                                     "public_name": message.profile.public_name,
+                messages_row.append({"public_name": message.profile.public_name,
                                      "content": message.content,
                                      "server_time": message.created.astimezone(),
                                      "id": message.id
