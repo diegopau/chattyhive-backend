@@ -381,7 +381,7 @@ def chat(request, hive_slug, chat_id):
 
         form = MsgForm()
         return render(request, "{app_name}/chat.html".format(app_name=common_settings.TEST_UI_APP_NAME), {
-            'user': user.profile.public_name,
+            'user_public_name': user.profile.public_name,
             'hive': hive,
             'app_key': app_key,
             'key': key,
@@ -433,7 +433,7 @@ def get_messages(request, chat_name, init, interval):
             for message in messages:
                 messages_row.append({"username": message.profile.username,
                                      "public_name": message.profile.public_name,
-                                     "message": message.content,
+                                     "content": message.content,
                                      "server_time": message.created.astimezone(),
                                      "id": message.id
                                      })
