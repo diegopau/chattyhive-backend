@@ -47,7 +47,7 @@
 
         // Listening to the channel
         channel.bind(event_name, function(data) {
-            if(data.username!=user_public_name) write(data.public_name, data.message, data.timestamp, data.timestamp_server);
+            if(data.username!=user_public_name) write(data.public_name, data.message, data.server_time);
         });
 
         // AJAX method to write chat answers on screen
@@ -70,12 +70,12 @@
             var showname = "";
             if(message.username==user_public_name) showname="You";
             else showname=message.public_name;
-            $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time);
+            $('#chat_field').html(showname + " said: " + message.content + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time);
             for(i = 1; i < messages.length; i++){
                 message = messages[i]
                 if(message.username==user_public_name) shownname="You";
                 else showname=message.public_name;
-                $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time + '<br/>' + $('#chat_field').html());
+                $('#chat_field').html(showname + " said: " + message.content + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time + '<br/>' + $('#chat_field').html());
             }
             $('#older').html(message.id)
         }
@@ -109,7 +109,7 @@
                     type: "POST",
                     url: "/test-ui/chat/" + hive + '/' + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {message:text_sent, new_chat:new_chat, socket_id:pusher.connection.socket_id},
+                    data: {content:text_sent, new_chat:new_chat, socket_id:pusher.connection.socket_id},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);

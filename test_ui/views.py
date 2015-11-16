@@ -327,7 +327,7 @@ def chat(request, hive_slug, chat_id):
             chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
             chat_subscription_profile.save()
 
-        msg = request.POST.get("message")
+        msg = request.POST.get("content")
         message = chat.new_message(profile=profile,
                                    content_type='text',
                                    content=msg,)
