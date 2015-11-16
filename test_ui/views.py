@@ -224,49 +224,76 @@ def hive_chat(request, hive_slug, chat_id):
                 response = HttpResponse("Bad request")
                 response.status_code = 400
                 return response
+            else:
+                if chat_slug.find('+') != -1:  # This is a chat between friends
+                    pass  # TODO
+                elif chat_slug.find('--') != -1:  # This is a chat between hivemates inside a hive
+                    # We get a chat_id
+                    slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
+                    chat_id = chat_slug[0:chat_slug.find('-')]
+                    hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+                    other_profile_public_name = \
+                        slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
 
-            # We get a chat_id
-            slug_ends_with = chat_slug[chat_slug.find('-'):len(chat_slug)]
-            chat_id = chat_slug[0:chat_slug.find('-')]
-            hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
-            other_profile_public_name = \
-                slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                    hive = ChHive.objects.get(slug=hive_slug)
+                    # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                    try:
+                        with transaction.atomic():
+                            hive_subscription = ChHiveSubscription.objects.select_related().get(
+                                hive=hive, profile=profile, subscription_state='active')
+                    except ChHiveSubscription.DoesNotExist:
+                        response = HttpResponse("Forbidden")
+                        response.status_code = 403
+                        return response
 
-            hive = ChHive.objects.get(slug=hive_slug)
-            # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
-            try:
-                hive_subscription = ChHiveSubscription.objects.select_related().get(
-                        hive=hive, profile=profile, subscription_state='active')
-            except ChHiveSubscription.DoesNotExist:
-                response = HttpResponse("Forbidden")
-                response.status_code = 403
-                return response
-
-            # We search for any other ChChat object with the same ending. Just in case the other profile was also
-            # starting a new chat (he/she would have a different temporal chat_id assigned).
-            try:
-                chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
-            except ChChat.DoesNotExist:
-                chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
-                chat.save()
+                    # We search for any other ChChat object with the same ending. Just in case the other profile was also
+                    # starting a new chat (he/she would have a different temporal chat_id assigned).
+                    try:
+                        with transaction.atomic():
+                            chat = ChChat.objects.get(hive=hive, slug__endswith=slug_ends_with)
+                    except ChChat.DoesNotExist:
+                        chat = ChChat(chat_id=chat_id, slug=chat_slug, type='mate_private', hive=hive)
+                        chat.save()
+                else:  # This could be a public chat
+                    response = HttpResponse("Wrong slug, or public chat and new=True incompatible")
+                    response.status_code = 400
+                    return response
         else:  # new_chat == False
             try:
                 chat = ChChat.objects.get(chat_id=chat_id)
-                slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
-                hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
-                other_profile_public_name = \
-                    slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                if chat.slug.find('+') != -1:  # This is a chat between friends
+                    pass  # TODO
+                elif chat.slug.find('--') != -1:  # This is a chat between hivemates inside a hive
+                    slug_ends_with = chat.slug[chat.slug.find('-'):len(chat.slug)]
+                    hive_slug = slug_ends_with[1:slug_ends_with.find('--')]
+                    other_profile_public_name = \
+                        slug_ends_with.replace(hive_slug, '').replace(profile.public_name, '').replace('-', '')
+                    hive = ChHive.objects.get(slug=hive_slug)
+                    # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
+                    try:
+                        with transaction.atomic():
+                            hive_subscription = \
+                                ChHiveSubscription.objects.select_related().get(hive=hive,
+                                                                                profile=profile,
+                                                                                subscription_state='active')
 
-                hive = ChHive.objects.get(slug=hive_slug)
-                # We now check if the user is authorized to enter this chat (he must be subscribed to the hive)
-                try:
-                    with transaction.atomic():
-                        hive_subscription = ChHiveSubscription.objects.select_related().get(hive=hive, profile=profile,
-                                                                                            subscription_state='active')
-                except ChHiveSubscription.DoesNotExist:
-                    response = HttpResponse("Forbidden")
-                    response.status_code = 403
-                    return response
+                    except ChHiveSubscription.DoesNotExist:
+                        response = HttpResponse("Forbidden")
+                        response.status_code = 403
+                        return response
+
+                else:  # This is a public chat
+                    hive = chat.hive
+                    try:
+                        with transaction.atomic():
+                            hive_subscription = \
+                                ChHiveSubscription.objects.select_related().get(hive=hive,
+                                                                                profile=profile,
+                                                                                subscription_state='active')
+                    except ChHiveSubscription.DoesNotExist:
+                        response = HttpResponse("Forbidden")
+                        response.status_code = 403
+                        return response
 
             except ChChat.DoesNotExist:
                 response = HttpResponse("Unauthorized")
@@ -276,7 +303,7 @@ def hive_chat(request, hive_slug, chat_id):
         # If the chat exist, then we have to send the message to the existing chat
         if chat.type == 'public':
             pass
-        else:
+        else:  # This is only needed if chat is private
             other_profile = ChProfile.objects.get(public_name=other_profile_public_name)
             message_data['other_profile'] = other_profile
             if chat.deleted:
@@ -291,10 +318,11 @@ def hive_chat(request, hive_slug, chat_id):
                 chat_subscription_other_profile = ChChatSubscription(chat=chat, profile=other_profile)
                 chat_subscription_other_profile.save()
         try:
-            chat_subscription_profile = ChChatSubscription.objects.get(chat=chat, profile=profile)
-            if chat_subscription_profile.subscription_state == 'deleted':
-                chat_subscription_profile.subscription_state = 'active'
-                chat_subscription_profile.save()
+            with transaction.atomic():
+                chat_subscription_profile = ChChatSubscription.objects.get(chat=chat, profile=profile)
+                if chat_subscription_profile.subscription_state == 'deleted':
+                    chat_subscription_profile.subscription_state = 'active'
+                    chat_subscription_profile.save()
         except ChChatSubscription.DoesNotExist:
             chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
             chat_subscription_profile.save()
