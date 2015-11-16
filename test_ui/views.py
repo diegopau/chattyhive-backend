@@ -181,16 +181,16 @@ def open_private_chat(request, target_public_name):
                 # If the chat doesn't exist we give a provisional chat_id and redirect:
                 chat_id = ChChat.get_chat_id()
                 chat_id += slug_ends_with
-                return HttpResponseRedirect("/{base_url}/hive_chat/".format(base_url=common_settings.TEST_UI_BASE_URL)
+                return HttpResponseRedirect("/{base_url}/chat/".format(base_url=common_settings.TEST_UI_BASE_URL)
                                             + hive.slug + "/" + chat_id + "?new_chat=True")
 
             # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
-            return HttpResponseRedirect("/{base_url}/hive_chat/".format(
+            return HttpResponseRedirect("/{base_url}/chat/".format(
                 base_url=common_settings.TEST_UI_BASE_URL) + hive.slug + "/" + chat.chat_id + "?new_chat=False")
 
 
 @login_required
-def hive_chat(request, hive_slug, chat_id):
+def chat(request, hive_slug, chat_id):
     """
     :param request:
     :param chat_id: id of the chat

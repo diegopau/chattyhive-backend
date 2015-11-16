@@ -36,7 +36,7 @@ urlpatterns = patterns('',
         views.get_hive_users, name='get_hive_users'),
 
     # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars
-    url(r'^hive_chat/(?P<hive_slug>.+)/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-.+--[\w]+-[\w]+)?)/', views.hive_chat,
+    url(r'^chat/(?P<hive_slug>.+)/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-.+--[\w]+-[\w]+)?)/', views.chat,
         name='chat'),
     # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars
     url(r'^messages/(?P<chat_name>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-.+--[\w]+-[\w]+)?)/(?P<init>[0-9last]+)-(?P<interval>[0-9]+)/',
