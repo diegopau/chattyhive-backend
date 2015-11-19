@@ -66,6 +66,7 @@ def start_session(request, format=None):
 
 
 class UserLogin(APIView):
+#TODO: Login does not require csrftoken right now, why?
 
     def get_or_register_device(self, dev_id, dev_type, dev_os, dev_code, new_device, reg_id, user):
 
@@ -336,9 +337,7 @@ class UserLogin(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-
-# TODO: This permission should be set, but is giving problems
-# @permission_classes(permissions.IsAuthenticated,)
+@permission_classes((permissions.IsAuthenticated,))
 def user_logout(request):
     logout(request)
     return Response(status=status.HTTP_200_OK)
@@ -389,8 +388,7 @@ class CheckAsynchronousServices(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-# TODO: This permission should be set, but is giving problems (TRY AGAIN TO UNCOMMENT IT! I HAVE MADE SOME CHANGES)
-# @permission_classes((permissions.IsAuthenticated,))
+@permission_classes((permissions.IsAuthenticated,))
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
