@@ -438,7 +438,7 @@ def asynchronous_authentication(request):
 @parser_classes((JSONParser,))
 @permission_classes((permissions.IsAuthenticated,))
 def request_upload(request, format=None):
-    """Returns a temporal url for the client where it can upload a file
+    """Returns a temporary url for the client where it can upload a file
     """
     if request.method == 'GET':
 
@@ -466,122 +466,6 @@ def request_upload(request, format=None):
 
         return Response({"url": url}, status=status.HTTP_200_OK)
 
-
-# ============================================================ #
-#                          Explore                             #
-# ============================================================ #
-
-class ChHiveList(APIView):
-    """Lists hives in Explora or creates new hive
-
-    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
-    (user registration)
-    """
-
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get(self, request, list_order='', category_slug='', category_code='', format=None):
-        """prueba
-        """
-        location = {}
-
-        # Info retrieval
-        profile = request.user.profile
-
-        tags = request.query_params.getlist('tags')
-
-        include_subscribed_string = request.query_params.get('include_subscribed', 'False')
-        include_subscribed = False
-
-        if include_subscribed_string == 'True':
-            include_subscribed = True
-
-        search_string =request.query_params.get('search_string', '')
-
-        coordinates = request.query_params.get('coordinates', '')
-        if coordinates != '':
-            location['coordinates'] = coordinates
-
-        else:  # If we get coordinates we discard anything else
-            country = request.query_params.get('country', '')
-            if country != '':
-                location['country'] = country
-
-            region = request.query_params.get('region', '')
-            if region != '':
-                location['region'] = region
-
-            city = request.query_params.get('city', '')
-            if city != '':
-                location['city'] = region
-
-            # We check if the params are coherent
-            if 'city' in location:
-                if 'region' not in location:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
-            if 'region' in location:
-                if 'country' not in location:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        if list_order and (category_code or category_slug):  # Can not be both present at the same time!
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        elif list_order or (category_code or category_slug):
-            if search_string:
-                return Response({'error_message': 'if search_string is present no other params should be'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            if category_code or category_slug:
-                if category_code:
-                    try:
-                        category_id = ChCategory.objects.get(code=category_code)
-                    except ChCategory.DoesNotExist:
-                        return Response({'error_message': 'Category not found by this code'},
-                                        status=status.HTTP_404_NOT_FOUND)
-                elif category_slug:
-                    try:
-                        category_id = ChCategory.objects.get(slug=category_slug)
-                    except ChCategory.DoesNotExist:
-                        return Response({'error_message': 'Category not found by this slug'},
-                                        status=status.HTTP_404_NOT_FOUND)
-                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location,
-                                                     tags=tags, include_subscribed=include_subscribed)
-            elif list_order:
-                if list_order == 'recommended':
-                    hives = ChHive.get_hives_by_priority(profile=profile, tags=tags,
-                                                         include_subscribed=include_subscribed)
-                elif list_order == 'near':
-                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location,
-                                                                      tags=tags, include_subscribed=include_subscribed)
-                elif list_order == 'recent':
-                    hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
-                elif list_order == 'communities':
-                    hives = ChHive.get_communities(profile=profile, location=location,
-                                                   tags=tags, include_subscribed=include_subscribed)
-                elif list_order == 'top':
-                    hives = ChHive.get_hives_by_subscriptions_number(profile=profile,
-                                                                     tags=tags, include_subscribed=include_subscribed)
-                else:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        else:  # no parameters, we just give back all hives or perform the search if search_string present
-            if search_string:
-                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string,
-                                                    include_subscribed=include_subscribed)
-            else:
-                hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
-
-        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, format=None):
-        """post prueba
-        """
-        serializer = serializers.ChHiveSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================ #
@@ -626,7 +510,7 @@ class EmailCheckSetAndGet(APIView):
                     pass
             else:
                 return Response({'error_message': 'There is already a registered user for this email address'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_409_CONFLICT)
         else:
             return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1279,6 +1163,120 @@ class ChProfileDetail(APIView):
 # ============================================================ #
 #                       Hives & Chats                          #
 # ============================================================ #
+
+
+class ChHiveList(APIView): # AKA Explore
+    """Lists hives in Explora or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, list_order='', category_slug='', category_code='', format=None):
+        """prueba
+        """
+        location = {}
+
+        # Info retrieval
+        profile = request.user.profile
+
+        tags = request.query_params.getlist('tags')
+
+        include_subscribed_string = request.query_params.get('include_subscribed', 'False')
+        include_subscribed = False
+
+        if include_subscribed_string == 'True':
+            include_subscribed = True
+
+        search_string =request.query_params.get('search_string', '')
+
+        coordinates = request.query_params.get('coordinates', '')
+        if coordinates != '':
+            location['coordinates'] = coordinates
+
+        else:  # If we get coordinates we discard anything else
+            country = request.query_params.get('country', '')
+            if country != '':
+                location['country'] = country
+
+            region = request.query_params.get('region', '')
+            if region != '':
+                location['region'] = region
+
+            city = request.query_params.get('city', '')
+            if city != '':
+                location['city'] = region
+
+            # We check if the params are coherent
+            if 'city' in location:
+                if 'region' not in location:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+            if 'region' in location:
+                if 'country' not in location:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if list_order and (category_code or category_slug):  # Can not be both present at the same time!
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        elif list_order or (category_code or category_slug):
+            if search_string:
+                return Response({'error_message': 'if search_string is present no other params should be'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if category_code or category_slug:
+                if category_code:
+                    try:
+                        category_id = ChCategory.objects.get(code=category_code)
+                    except ChCategory.DoesNotExist:
+                        return Response({'error_message': 'Category not found by this code'},
+                                        status=status.HTTP_404_NOT_FOUND)
+                elif category_slug:
+                    try:
+                        category_id = ChCategory.objects.get(slug=category_slug)
+                    except ChCategory.DoesNotExist:
+                        return Response({'error_message': 'Category not found by this slug'},
+                                        status=status.HTTP_404_NOT_FOUND)
+                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location,
+                                                     tags=tags, include_subscribed=include_subscribed)
+            elif list_order:
+                if list_order == 'recommended':
+                    hives = ChHive.get_hives_by_priority(profile=profile, tags=tags,
+                                                         include_subscribed=include_subscribed)
+                elif list_order == 'near':
+                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location,
+                                                                      tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'recent':
+                    hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'communities':
+                    hives = ChHive.get_communities(profile=profile, location=location,
+                                                   tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'top':
+                    hives = ChHive.get_hives_by_subscriptions_number(profile=profile,
+                                                                     tags=tags, include_subscribed=include_subscribed)
+                else:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        else:  # no parameters, we just give back all hives or perform the search if search_string present
+            if search_string:
+                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string,
+                                                    include_subscribed=include_subscribed)
+            else:
+                hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
+
+        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+        serializer = serializers.ChHiveSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ChChatDetail(APIView):
     """API method: GET chat info
