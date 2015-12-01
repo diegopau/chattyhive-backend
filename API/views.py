@@ -478,7 +478,10 @@ class EmailCheckSetAndGet(APIView):
 
     def get_object(self, public_name):
         try:
-            return ChUser.objects.get(profile__public_name=public_name)
+            if len(public_name) == 32:  # This actually is a username instead of a public_name
+                return ChUser.objects.get(username=public_name)
+            else:
+                return ChUser.objects.get(profile__public_name=public_name)
         except ChUser.DoesNotExist:
             raise Http404
 
