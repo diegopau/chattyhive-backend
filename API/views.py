@@ -547,7 +547,7 @@ class EmailCheckSetAndGet(APIView):
                     return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'error_message': 'There is already a registered user for this email address'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_409_CONFLICT)
         else:
             return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
 
