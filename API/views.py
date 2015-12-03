@@ -485,7 +485,7 @@ class EmailCheckSetAndGet(APIView):
         except ChUser.DoesNotExist:
             raise Http404
 
-    def get(self, request, public_name='', format=None):
+    def get(self, request, public_name='', format=None):  # API method: email get
 
         user = self.get_object(public_name)
         self.check_permissions(self.request)
@@ -501,7 +501,7 @@ class EmailCheckSetAndGet(APIView):
         data_dict = {'email': user.email}
         return Response(data=data_dict, status=status.HTTP_200_OK)
 
-    def post(self, request, format=None):
+    def post(self, request, format=None):  # API method: Email check
 
         if 'email' in request.data:
             try:
@@ -519,7 +519,7 @@ class EmailCheckSetAndGet(APIView):
 
         return Response(status=status.HTTP_200_OK)
 
-    def put(self, request, format=None):
+    def put(self, request, format=None):  # API method: Email change
 
         user = request.user
         self.check_permissions(self.request)
@@ -531,20 +531,20 @@ class EmailCheckSetAndGet(APIView):
             except Excep.ValidationError:
                 return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
             except ChUser.DoesNotExist:
-                    if 'password' in request.data:
-                        authenticated_user = authenticate(username=user.username, password=request.data['password'])
-                        if authenticated_user is not None and user == authenticated_user:
-                            # TODO: shouldn't the add_email get a user instead of a profile??
-                            new_email = EmailAddress.objects.add_email(user=user.profile, email=request.data['new_email'])
-                            new_email.set_as_primary()
-                            new_email.save()  # TODO: this save might not be necessary
-                            user.email = request.data['new_email']
-                            user.save()
-                        else:
-                            # the authentication system was unable to verify the username and password
-                            return Response(status=status.HTTP_401_UNAUTHORIZED)
+                if 'password' in request.data:
+                    authenticated_user = authenticate(username=user.username, password=request.data['password'])
+                    if authenticated_user is not None and user == authenticated_user:
+                        # TODO: shouldn't the add_email get a user instead of a profile??
+                        new_email = EmailAddress.objects.add_email(user=user.profile, email=request.data['new_email'])
+                        new_email.set_as_primary()
+                        new_email.save()  # TODO: this save might not be necessary
+                        user.email = request.data['new_email']
+                        user.save()
                     else:
-                        return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
+                        # the authentication system was unable to verify the username and password
+                        return Response(status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'error_message': 'There is already a registered user for this email address'},
                                 status=status.HTTP_400_BAD_REQUEST)
