@@ -540,6 +540,8 @@ class EmailCheckSetAndGet(APIView):
                         new_email.save()  # TODO: this save might not be necessary
                         user.email = request.data['new_email']
                         user.save()
+                        return Response(status=status.HTTP_200_OK)
+
                     else:
                         # the authentication system was unable to verify the username and password
                         return Response(status=status.HTTP_401_UNAUTHORIZED)
