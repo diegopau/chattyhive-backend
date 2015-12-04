@@ -538,8 +538,14 @@ class EmailCheckSetAndGet(APIView):
                         new_email = EmailAddress.objects.add_email(user=user.profile, email=request.data['new_email'])
                         new_email.set_as_primary()
                         new_email.save()  # TODO: this save might not be necessary
+
+                        email_address_to_delete = EmailAddress.objects.get(email=user.email)
+
                         user.email = request.data['new_email']
                         user.save()
+
+                        email_address_to_delete.delete()
+
                         return Response(status=status.HTTP_200_OK)
 
                     else:

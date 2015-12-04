@@ -24,6 +24,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default='CHANGEME!!!')
 
 # EMAIL SETTINGS
 # ------------------------------------------------------------------------------
+ROOT_SITE_ADDRESS = '127.0.0.1:8000'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 1025
 EMAIL_BACKEND = env('DJANGO_EMAIL_BACKEND',
