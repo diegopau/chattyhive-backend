@@ -586,7 +586,11 @@ class PublicNameCheckAndGet(APIView):
             return Response({'error_message': 'Email is not present or not well-formed'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        user = self.get_object(email)
+        try:
+            user = self.get_object(email)
+        except ChUser.DoesNotExist:
+            pass
+
         self.check_permissions(self.request)
         try:
             # If the user is requesting his/her own subscriptions we go on
