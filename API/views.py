@@ -560,7 +560,7 @@ class EmailCheckSetAndGet(APIView):
             return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UsernameCheckAndGet(APIView):
+class PublicNameCheckAndGet(APIView):
 
     permission_classes = (permissions.IsAuthenticatedForPutOrGet, permissions.CanGetUsername)
 
