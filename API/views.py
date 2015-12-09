@@ -589,7 +589,7 @@ class PublicNameCheckAndGet(APIView):
         try:
             user = self.get_object(email)
         except ChUser.DoesNotExist:
-            pass
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         self.check_permissions(self.request)
         try:
