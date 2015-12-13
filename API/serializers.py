@@ -545,7 +545,6 @@ class ChMessageSerializer(serializers.ModelSerializer):
 
 class ChProfileLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: Register user,
-       Used by the following serializers: ChUserSerializer,
 
     """
     languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False,

@@ -704,12 +704,12 @@ class ChUserList(APIView):
                             if folder_plus_file_URL.count('/') == 1:
                                 temp_folder_picture = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
 
-                                # Temp folder has been named by the client, and the name of it must be the csrf token for the client
-                                if temp_folder_picture == django.middleware.csrf.get_token(request):
-                                    pass
-                                else:
-                                    return Response({'error_message': 'Bad S3 temp folder name'},
-                                                    status=status.HTTP_400_BAD_REQUEST)
+                                #Temp folder has been named by the client, and the name of it must be the csrf token for the client
+                                #if temp_folder_picture == django.middleware.csrf.get_token(request):
+                                #    pass
+                                #else:
+                                #    return Response({'error_message': 'Bad S3 temp folder name'},
+                                #                    status=status.HTTP_400_BAD_REQUEST)
 
                                 file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')]
                                 file_name_and_extension_picture = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
