@@ -970,7 +970,7 @@ def password_change(request):
         else:
             Response(error="The old password does not match the password for this user", status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
 
 
 class ChUserDetail(APIView):
