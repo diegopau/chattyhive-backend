@@ -967,6 +967,7 @@ def password_change(request):
             new_hashed_password = hashers.make_password(new_password)
             if not hashers.is_password_usable(new_hashed_password):
                 Response(error="this new proposed password is not a valid password", status=status.HTTP_400_BAD_REQUEST)
+            request.user.password = new_hashed_password
         else:
             Response(error="The old password does not match the password for this user", status=status.HTTP_400_BAD_REQUEST)
 
