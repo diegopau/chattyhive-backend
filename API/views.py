@@ -19,7 +19,7 @@ from email_confirmation.models import EmailAddress, EmailConfirmation
 from API import serializers
 from API import permissions
 import datetime
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, hashers
 from chattyhive_project.settings import common_settings
 from django.db import IntegrityError, transaction
 from core.models import UnauthorizedException
@@ -945,6 +945,32 @@ class ChUserList(APIView):
             return Response(status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['PUT'])
+@parser_classes((JSONParser,))
+@permission_classes((permissions.IsAuthenticated,))
+def password_change(request):
+    if request.method == 'PUT':
+
+        if 'old_password' not in request.data:
+            Response(error="old password is missing in the request", status=status.HTTP_400_BAD_REQUEST)
+
+        if 'new_password' not in request.data:
+            Response(error="new password is missing in the request", status=status.HTTP_400_BAD_REQUEST)
+
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+
+        if hashers.check_password(old_password, request.user.password):
+            new_hashed_password = hashers.make_password(new_password)
+            if not hashers.is_password_usable(new_hashed_password):
+                Response(error="this new proposed password is not a valid password", status=status.HTTP_400_BAD_REQUEST)
+        else:
+            Response(error="The old password does not match the password for this user", status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(status=status.HTTP_200_OK)
 
 
 class ChUserDetail(APIView):

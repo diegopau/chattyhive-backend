@@ -23,6 +23,8 @@ urlpatterns = patterns('',
 
     url(r'^users/email/(?P<public_name>[0-9a-zA-Z_]+)/$', views.EmailCheckSetAndGet.as_view(), name="get_email"),
 
+    url(r'^users/password/$', views.password_change, name="password_change"),
+
     url(r'^users/public_name/$', views.PublicNameCheckAndGet.as_view(), name="username_check_get"),
 
     #    views.ChUserDetail.as_view(), name="user_detail"),
@@ -68,14 +70,15 @@ urlpatterns = patterns('',
 
     url(r'^files/url/$', views.request_upload, name="request_upload"),
 
+
     # Countries, regions and cities
-    url(r'locations/countries/$', views.get_countries, name="get_countries"),
+    url(r'^locations/countries/$', views.get_countries, name="get_countries"),
 
     # TODO: this regex is trying to match exactly 2 characters and does not work, if I use ^[A-Z]{2}$ then Django does not read the whole URL, stops in the $
-    url(r'locations/(?P<country_code>[A-Z]{2})/regions/', views.get_regions, name="get_regions"),
+    url(r'^locations/(?P<country_code>[A-Z]{2})/regions/$', views.get_regions, name="get_regions"),
 
     # TODO: maybe we should create an elaborate regex for region name?
-    url(r'locations/(?P<country_code>[A-Z]{2})/(?P<region_name>.+)/cities/', views.get_cities, name="get_cities")
+    url(r'^locations/(?P<country_code>[A-Z]{2})/(?P<region_name>.+)/cities/$', views.get_cities, name="get_cities")
 )
 
 # Esto lo que hace es permitir que por ejemplo se haga /users/.json para que en un navegador te lo muestre en json en vez de html.
