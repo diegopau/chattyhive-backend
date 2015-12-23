@@ -66,7 +66,16 @@ urlpatterns = patterns('',
     url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/messages/$',
         views.ChMessageList.as_view(), name="chat_messages"),
 
-    url(r'^files/url/$', views.request_upload, name="request_upload")
+    url(r'^files/url/$', views.request_upload, name="request_upload"),
+
+    # Countries, regions and cities
+    url(r'locations/countries/$', views.get_countries, name="get_countries"),
+
+    # TODO: this regex is trying to match exactly 2 characters and does not work, if I use ^[A-Z]{2}$ then Django does not read the whole URL, stops in the $
+    url(r'locations/(?P<country_code>[A-Z]{2})/regions/', views.get_regions, name="get_regions"),
+
+    # TODO: maybe we should create an elaborate regex for region name?
+    url(r'locations/(?P<country_code>[A-Z]{2})/(?P<region_name>.+)/cities/', views.get_cities, name="get_cities")
 )
 
 # Esto lo que hace es permitir que por ejemplo se haga /users/.json para que en un navegador te lo muestre en json en vez de html.

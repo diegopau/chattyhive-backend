@@ -1791,3 +1791,47 @@ class OpenPrivateChat(APIView):
                 data_dict['new_chat'] = True
             # If the chat exists (and even if it is marked as deleted) we give the chat_id and redirect:
             return Response(data_dict, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def get_countries(request, format=None):
+    """Returns a list of country codes
+    """
+    if request.method == 'GET':
+        country_codes = []
+        for country in Country.objects.all():
+            country_codes.append(country.code2)
+
+        return Response(data=country_codes, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def get_regions(request, country_code, format=None):
+    """Returns a list of country codes
+    """
+    if request.method == 'GET':
+        country = Country.objects.get(code2=country_code)
+        region_names = []
+
+        for region in Region.objects.filter(country=country):
+            region_names.append(region.name)
+
+        return Response(data=region_names, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def get_cities(request, country_code, region_name, format=None):
+    """Returns a list of country codes
+    """
+    if request.method == 'GET':
+        country = Country.objects.get(code2=country_code)
+        region = Region.objects.get(country=country, name=region_name)
+        city_names = []
+
+        for city in City.objects.filter(country=country, region=region):
+            city_names.append(city.name)
+
+        return Response(data=city_names, status=status.HTTP_200_OK)
