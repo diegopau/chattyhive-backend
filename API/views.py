@@ -953,6 +953,7 @@ class ChUserList(APIView):
 @permission_classes((permissions.IsAuthenticated,))
 def password_change(request):
     if request.method == 'PUT':
+        user = request.user
 
         if 'old_password' not in request.data:
             Response({"error_message": "old password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -967,7 +968,8 @@ def password_change(request):
             new_hashed_password = hashers.make_password(new_password)
             if not hashers.is_password_usable(new_hashed_password):
                 Response({"error_message": "this new proposed password is not a valid password"}, status=status.HTTP_400_BAD_REQUEST)
-            request.user.password = new_hashed_password
+            user.password = new_hashed_password
+            user.save()
         else:
             Response({"error_message": "The old password does not match the password for this user"}, status=status.HTTP_400_BAD_REQUEST)
 
