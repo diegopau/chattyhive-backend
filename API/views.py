@@ -956,10 +956,10 @@ def password_change(request):
         user = request.user
 
         if 'old_password' not in request.data:
-            Response({"error_message": "old password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_message": "old password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
 
         if 'new_password' not in request.data:
-            Response({"error_message": "new password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_message": "new password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
 
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
@@ -967,11 +967,11 @@ def password_change(request):
         if hashers.check_password(old_password, user.password):
             new_hashed_password = hashers.make_password(new_password)
             if not hashers.is_password_usable(new_hashed_password):
-                Response({"error_message": "this new proposed password is not a valid password"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error_message": "this new proposed password is not a valid password"}, status=status.HTTP_400_BAD_REQUEST)
             user.password = new_hashed_password
             user.save()
         else:
-            Response({"error_message": "The old password does not match the password for this user"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error_message": "The old password does not match the password for this user"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(status=status.HTTP_200_OK)
 
