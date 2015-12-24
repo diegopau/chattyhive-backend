@@ -979,7 +979,7 @@ def password_change(request):
 class ChUserDetail(APIView):
     """Show user detail, updates user detail or deletes specific user
 
-    User detail is just avaliable from the browsable API, the endpoint is only exposed for a PUT with a new user
+    User detail is just available from the browsable API
     (user registration)
     """
 
@@ -993,12 +993,12 @@ class ChUserDetail(APIView):
 
     def get(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = serializers.ChUserSerializer(user)
+        serializer = serializers.ChUserLevel2Serializer(user)
         return Response(serializer.data)
 
     def put(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = serializers.ChUserSerializer(user, data=request.data)
+        serializer = serializers.ChUserLevel2Serializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1006,7 +1006,7 @@ class ChUserDetail(APIView):
 
     def delete(self, request, username, format=None):
         user = self.get_object(username)
-        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es l
+        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es
         # lo indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
         # Falta confirmar esto bien
         user.delete_account()
