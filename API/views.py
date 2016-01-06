@@ -1149,6 +1149,23 @@ class ChProfileDetail(APIView):
         except ChProfile.DoesNotExist:
             raise Http404
 
+    def check_file_extension(self, folder_plus_file_URL):
+
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def remove_restricted_fields(self, user_profile, other_profile, serializer_data, profile_type):
 
         if profile_type == 'logged_profile':
@@ -1203,6 +1220,8 @@ class ChProfileDetail(APIView):
 
         return Response(allowed_data)
 
+
+    # TODO: change method to PATCH
     def put(self, request, public_name, format=None):
 
         profile_to_update = self.get_object(public_name)
@@ -1221,6 +1240,61 @@ class ChProfileDetail(APIView):
             'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
             'personal_color', 'public_show_location', 'private_show_location', 'private_status', 'public_status')
 
+
+        if 'avatar' in request.data:
+            avatar = request.data['avatar']
+            if ('http://' in avatar) or ('https://' in avatar):
+                if 'amazonaws.com' in avatar:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in avatar:
+                        folder_plus_file_URL = avatar[len(s3_URL_prefix):len(avatar)]
+                        self.check_file_extension(folder_plus_file_URL)
+                        if folder_plus_file_URL.count('/') == 1:
+                            temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder) == user_profile.public_name:
+                                file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                                file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                                folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket)
+
+                                s3_object_key.key = folder_URL + 'file' + file_extension
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'xlarge' + file_extension
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'medium' + file_extension
+                                k3 = s3_object_key.exists()
+
+                                if not (k1 and k2 and k3):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_403_FORBIDDEN)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept content hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, fields_to_include=fields_to_include)
 
         return Response(serializer.data)
@@ -1230,8 +1304,7 @@ class ChProfileDetail(APIView):
 #                       Hives & Chats                          #
 # ============================================================ #
 
-
-class ChHiveList(APIView): # AKA Explore
+class ChHiveList(APIView):  # AKA Explore
     """Lists hives in Explora or creates new hive
 
     User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
