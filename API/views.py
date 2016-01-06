@@ -731,7 +731,7 @@ class ChUserList(APIView):
 
                                 if not (k1 and k2 and k3 and k4):
                                     return Response({'error_message': 'Files not uploaded correctly'},
-                                                    status=status.HTTP_403_FORBIDDEN)
+                                                    status=status.HTTP_400_BAD_REQUEST)
 
                                 # We check everything is correct, but we won't actually move the file from the
                                 # temp bucket to the final bucket in Amazon S3 without doing additional checks
@@ -788,7 +788,7 @@ class ChUserList(APIView):
 
                             if not (k5 and k6 and k7 and k8):
                                 return Response({'error_message': 'Files not uploaded correctly'},
-                                                status=status.HTTP_403_FORBIDDEN)
+                                                status=status.HTTP_400_BAD_REQUEST)
 
                             # We check everything is correct, but we won't actually move the file from the
                             # temp bucket to the final bucket in Amazon S3 without doing additional checks
@@ -1234,7 +1234,7 @@ class ChProfileDetail(APIView):
             return Response({'error_message': 'You can not update other profile than yours'},
                             status=status.HTTP_403_FORBIDDEN)
         except NotAuthenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         fields_to_include = ('first_name', 'last_name', 'picture', 'languages', 'city',
             'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
@@ -1248,30 +1248,86 @@ class ChProfileDetail(APIView):
                     s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
                                     '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
                     if s3_URL_prefix in avatar:
-                        folder_plus_file_URL = avatar[len(s3_URL_prefix):len(avatar)]
-                        self.check_file_extension(folder_plus_file_URL)
-                        if folder_plus_file_URL.count('/') == 1:
-                            temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
-                            if cache.get('s3_temp_dir:' + temp_folder) == user_profile.public_name:
-                                file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
-                                file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
-                                folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension))]
+                        folder_plus_file_URL_avatar = avatar[len(s3_URL_prefix):len(avatar)]
+                        self.check_file_extension(folder_plus_file_URL_avatar)
+                        if folder_plus_file_URL_avatar.count('/') == 1:
+                            temp_folder_avatar = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_avatar) == user_profile.public_name:
+                                file_name_and_extension_picture = folder_plus_file_URL_avatar[folder_plus_file_URL_avatar.find('/') + 1:len(folder_plus_file_URL_avatar)]
+                                file_extension_avatar = folder_plus_file_URL_avatar[folder_plus_file_URL_avatar.find('.'): len(folder_plus_file_URL_avatar)]
+                                folder_URL_avatar = folder_plus_file_URL_avatar[0:len(folder_plus_file_URL_avatar)-(len(file_name_and_extension_picture))]
                                 # We check now if all files exist in S3
                                 s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
                                 # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
                                 temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
                                 s3_object_key = Key(temp_bucket)
 
-                                s3_object_key.key = folder_URL + 'file' + file_extension
+                                s3_object_key.key = folder_URL_avatar + 'file' + file_extension_avatar
                                 k1 = s3_object_key.exists()
-                                s3_object_key.key = folder_URL + 'xlarge' + file_extension
+                                s3_object_key.key = folder_URL_avatar + 'xlarge' + file_extension_avatar
                                 k2 = s3_object_key.exists()
-                                s3_object_key.key = folder_URL + 'medium' + file_extension
+                                s3_object_key.key = folder_URL_avatar + 'medium' + file_extension_avatar
+                                k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_avatar + 'small' + file_extension_avatar
+                                k4 = s3_object_key.exists()
+
+                                if not (k1 and k2 and k3 and k4):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_400_BAD_REQUEST)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept content hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        if 'picture' in request.data:
+            picture = request.data['picture']
+            if ('http://' in picture) or ('https://' in picture):
+                if 'amazonaws.com' in picture:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in picture:
+                        folder_plus_file_URL_picture = picture[len(s3_URL_prefix):len(picture)]
+                        self.check_file_extension(folder_plus_file_URL_picture)
+                        if folder_plus_file_URL_picture.count('/') == 1:
+                            temp_folder_picture = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_picture) == user_profile.public_name:
+                                file_name_and_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('/') + 1:len(folder_plus_file_URL_picture)]
+                                file_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('.'): len(folder_plus_file_URL_picture)]
+                                folder_URL_picture = folder_plus_file_URL_picture[0:len(folder_plus_file_URL_picture)-(len(file_name_and_extension_picture))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket)
+
+                                s3_object_key.key = folder_URL_picture + 'file' + file_extension_picture
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'xlarge' + file_extension_picture
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'medium' + file_extension_picture
                                 k3 = s3_object_key.exists()
 
                                 if not (k1 and k2 and k3):
                                     return Response({'error_message': 'Files not uploaded correctly'},
-                                                    status=status.HTTP_403_FORBIDDEN)
+                                                    status=status.HTTP_400_BAD_REQUEST)
 
                                 # We check everything is correct, but we won't actually move the file from the
                                 # temp bucket to the final bucket in Amazon S3 without doing additional checks
@@ -1296,6 +1352,104 @@ class ChProfileDetail(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, fields_to_include=fields_to_include)
+
+        # We now move the images in case there was a change for avatar or profile picture
+
+        if 'avatar' in request.data:
+            # We need to move 4 images for the avatar
+            destination_bucket = common_settings.S3_PUBLIC_BUCKET
+            dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+            s3_object_to_move = Key(temp_bucket)
+
+            # 1 file size
+            s3_object_to_move.key = folder_plus_file_URL_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'file' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 2 xlarge size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'xlarge' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'xlarge' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 3 medium size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'medium' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'medium' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 4 small size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'small' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'small' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+
+            # We also delete the folder
+            folder_to_remove = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/') + 1]
+            s3_object_to_remove = Key(temp_bucket)
+            s3_object_to_remove.key = folder_to_remove
+            s3_object_to_remove.delete()
+
+            # And we delete the entry from the cache
+            cache.delete('s3_temp_dir:' + temp_folder_avatar)
+
+        if 'picture' in request.data:
+            # We need to move 4 images for the profile picture
+            destination_bucket = common_settings.S3_PRIVATE_BUCKET
+            dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+            s3_object_to_move = Key(temp_bucket)
+
+            # 1 file size
+            s3_object_to_move.key = folder_plus_file_URL_picture
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'file' + file_extension_picture
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 2 xlarge size
+            s3_object_to_move.key = temp_folder_picture + '/' + 'xlarge' + file_extension_picture
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'xlarge' + file_extension_picture
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 3 medium size
+            s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'medium' + file_extension_picture
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 4 small size
+            s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                         + 'images' + '/' + 'small' + file_extension_picture
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+
+            # We also delete the folder
+            folder_to_remove = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/') + 1]
+            s3_object_to_remove = Key(temp_bucket)
+            s3_object_to_remove.key = folder_to_remove
+            s3_object_to_remove.delete()
+
+            # And we delete the entry from the cache
+            cache.delete('s3_temp_dir:' + temp_folder_picture)
 
         return Response(serializer.data)
 
@@ -1605,7 +1759,7 @@ class ChMessageList(APIView):
 
                                         if not (k1 and k2 and k3):
                                             return Response({'error_message': 'Files not uploaded correctly'},
-                                                            status=status.HTTP_403_FORBIDDEN)
+                                                            status=status.HTTP_400_BAD_REQUEST)
 
                                         # We check everything is correct, but we won't actually move the file from the
                                         # temp bucket to the final bucket in Amazon S3 without doing additional checks
