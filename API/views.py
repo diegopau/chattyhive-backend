@@ -944,7 +944,8 @@ class ChUserList(APIView):
 
             return Response(status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -1216,9 +1217,12 @@ class ChProfileDetail(APIView):
 
         serializer = serializers.ChProfileSerializer(other_profile, type=profile_type, package=profile_package)
 
-        allowed_data = self.remove_restricted_fields(user_profile, other_profile, serializer.data, profile_type)
+        if serializer.is_valid():
+            allowed_data = self.remove_restricted_fields(user_profile, other_profile, serializer.data, profile_type)
 
-        return Response(allowed_data)
+            return Response(allowed_data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
     # TODO: change method to PATCH
@@ -1353,105 +1357,110 @@ class ChProfileDetail(APIView):
 
         serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, fields_to_include=fields_to_include)
 
-        # We now move the images in case there was a change for avatar or profile picture
+        if serializer.is_valid():
 
-        if 'avatar' in request.data:
-            # We need to move 4 images for the avatar
-            destination_bucket = common_settings.S3_PUBLIC_BUCKET
-            dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
-            s3_object_to_move = Key(temp_bucket)
+            # We now move the images in case there was a change for avatar or profile picture
 
-            # 1 file size
-            s3_object_to_move.key = folder_plus_file_URL_avatar
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'file' + file_extension_avatar
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
+            if 'avatar' in request.data:
+                # We need to move 4 images for the avatar
+                destination_bucket = common_settings.S3_PUBLIC_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket)
 
-            # 2 xlarge size
-            s3_object_to_move.key = temp_folder_avatar + '/' + 'xlarge' + file_extension_avatar
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'xlarge' + file_extension_avatar
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
+                # 1 file size
+                s3_object_to_move.key = folder_plus_file_URL_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'file' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
 
-            # 3 medium size
-            s3_object_to_move.key = temp_folder_avatar + '/' + 'medium' + file_extension_avatar
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'medium' + file_extension_avatar
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder_avatar + '/' + 'xlarge' + file_extension_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'xlarge' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
 
-            # 4 small size
-            s3_object_to_move.key = temp_folder_avatar + '/' + 'small' + file_extension_avatar
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'small' + file_extension_avatar
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
+                # 3 medium size
+                s3_object_to_move.key = temp_folder_avatar + '/' + 'medium' + file_extension_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'medium' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
 
-
-            # We also delete the folder
-            folder_to_remove = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/') + 1]
-            s3_object_to_remove = Key(temp_bucket)
-            s3_object_to_remove.key = folder_to_remove
-            s3_object_to_remove.delete()
-
-            # And we delete the entry from the cache
-            cache.delete('s3_temp_dir:' + temp_folder_avatar)
-
-        if 'picture' in request.data:
-            # We need to move 4 images for the profile picture
-            destination_bucket = common_settings.S3_PRIVATE_BUCKET
-            dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
-            s3_object_to_move = Key(temp_bucket)
-
-            # 1 file size
-            s3_object_to_move.key = folder_plus_file_URL_picture
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'file' + file_extension_picture
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
-
-            # 2 xlarge size
-            s3_object_to_move.key = temp_folder_picture + '/' + 'xlarge' + file_extension_picture
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'xlarge' + file_extension_picture
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
-
-            # 3 medium size
-            s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'medium' + file_extension_picture
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
-
-            # 4 small size
-            s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
-            destination_object_key = Key(dest_bucket)
-            destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
-                                         + 'images' + '/' + 'small' + file_extension_picture
-            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-            s3_object_to_move.delete()
+                # 4 small size
+                s3_object_to_move.key = temp_folder_avatar + '/' + 'small' + file_extension_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'small' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
 
 
-            # We also delete the folder
-            folder_to_remove = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/') + 1]
-            s3_object_to_remove = Key(temp_bucket)
-            s3_object_to_remove.key = folder_to_remove
-            s3_object_to_remove.delete()
+                # We also delete the folder
+                folder_to_remove = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/') + 1]
+                s3_object_to_remove = Key(temp_bucket)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
 
-            # And we delete the entry from the cache
-            cache.delete('s3_temp_dir:' + temp_folder_picture)
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder_avatar)
 
-        return Response(status=status.HTTP_200_OK)
+            if 'picture' in request.data:
+                # We need to move 4 images for the profile picture
+                destination_bucket = common_settings.S3_PRIVATE_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket)
+
+                # 1 file size
+                s3_object_to_move.key = folder_plus_file_URL_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'file' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'xlarge' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'xlarge' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'medium' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 4 small size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'small' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+
+                # We also delete the folder
+                folder_to_remove = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/') + 1]
+                s3_object_to_remove = Key(temp_bucket)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder_picture)
+
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ============================================================ #
