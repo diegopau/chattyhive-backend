@@ -1451,7 +1451,7 @@ class ChProfileDetail(APIView):
             # And we delete the entry from the cache
             cache.delete('s3_temp_dir:' + temp_folder_picture)
 
-        return Response(serializer.data)
+        return Response(status=status.HTTP_200_OK)
 
 
 # ============================================================ #
