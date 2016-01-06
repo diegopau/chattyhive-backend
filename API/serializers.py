@@ -542,6 +542,66 @@ class ChMessageSerializer(serializers.ModelSerializer):
 #                       Users & Profiles                       #
 # ============================================================ #
 
+class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: Update user profile,
+
+    """
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False,
+                                             queryset=LanguageModel.objects.all(), slug_field='language')
+    country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(), slug_field='code2')
+
+    # IMPORTANT: It should be possible to do some optimization here: because i get all region objects as queryset
+    # it will load every region when it should be possible to restrict the queryset to only Regions of the specified
+    # country... the same (even more relevant) for cities.
+    region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
+    city = serializers.SlugRelatedField(read_only=False, queryset=City.objects.all(), slug_field='name')
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+
+        fields = kwargs.pop('fields_to_include', None)
+
+        # Instantiate the superclass normally
+        super(ChProfileLevel2PatchSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(fields)
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+    def validate(self, data):
+
+        if 'picture' in data:
+            # The validation for the picture and avatar should go here.. but of now it was easier to have it inside
+            # the view
+            pass
+
+        if 'avatar' in data:
+            if not data['avatar']:
+                raise ValidationError("An avatar URL must be always present", code="400")
+
+        if 'personal_color' in data:
+            # TODO: additional validation ??
+            pass
+
+        if 'private_status' in data:
+            if len(data['private_status']) > 140:
+                raise ValidationError("The status message can be 140 chars long maximum", code="400")
+
+        if 'public_status' in data:
+            if len(data['private_status']) > 140:
+                raise ValidationError("The status message can be 140 chars long maximum", code="400")
+
+        return data
+
+    class Meta:
+        model = ChProfile
+        fields = ('first_name', 'last_name', 'picture', 'languages', 'city',
+                  'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
+                  'personal_color', 'public_show_location', 'private_show_location', 'private_status', 'public_status')
+
 
 class ChProfileLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: Register user,

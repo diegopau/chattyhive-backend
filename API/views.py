@@ -983,7 +983,7 @@ class ChUserDetail(APIView):
     (user registration)
     """
 
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, permissions.IsAuthenticatedOrReadOnly)
 
     def get_object(self, username):
         try:
@@ -1141,7 +1141,7 @@ class ChProfileChatList(APIView):
 
 
 class ChProfileDetail(APIView):
-    permission_classes = (permissions.IsAuthenticated, permissions.CanGetProfile)
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetProfile, permissions.CanUpdateProfile)
 
     def get_object(self, public_name):
         try:
@@ -1202,6 +1202,28 @@ class ChProfileDetail(APIView):
         allowed_data = self.remove_restricted_fields(user_profile, other_profile, serializer.data, profile_type)
 
         return Response(allowed_data)
+
+    def put(self, request, public_name, format=None):
+
+        profile_to_update = self.get_object(public_name)
+        user_profile = request.user.profile
+
+        try:
+            # If the user is requesting his/her own profile we go on
+            self.check_object_permissions(self.request, profile_to_update)
+        except PermissionDenied:
+            return Response({'error_message': 'You can not update other profile than yours'},
+                            status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        fields_to_include = ('first_name', 'last_name', 'picture', 'languages', 'city',
+            'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
+            'personal_color', 'public_show_location', 'private_show_location', 'private_status', 'public_status')
+
+        serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, fields_to_include=fields_to_include)
+
+        return Response(serializer.data)
 
 
 # ============================================================ #

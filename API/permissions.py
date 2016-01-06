@@ -51,6 +51,13 @@ class CanGetProfile(BasePermission):
         return obj.user == request.user
 
 
+class CanUpdateProfile(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        print("object permission is returning: ", obj.user == request.user)
+        return obj.user == request.user
+
+
 class CanGetHiveUsers(BasePermission):
 
     def has_object_permission(self, request, view, obj):
