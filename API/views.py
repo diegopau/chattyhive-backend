@@ -1237,10 +1237,7 @@ class ChProfileDetail(APIView):
         except NotAuthenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        fields_to_include = ('first_name', 'last_name', 'picture', 'languages', 'city',
-            'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
-            'personal_color', 'public_show_location', 'private_show_location', 'private_status', 'public_status')
-
+        fields_to_include = list(request.data.keys())
 
         if 'avatar' in request.data:
             avatar = request.data['avatar']
