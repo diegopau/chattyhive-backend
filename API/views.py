@@ -1222,8 +1222,7 @@ class ChProfileDetail(APIView):
         return Response(allowed_data)
 
 
-    # TODO: change method to PATCH
-    def put(self, request, public_name, format=None):
+    def patch(self, request, public_name, format=None):
 
         profile_to_update = self.get_object(public_name)
         user_profile = request.user.profile
@@ -1322,8 +1321,10 @@ class ChProfileDetail(APIView):
                                 k2 = s3_object_key.exists()
                                 s3_object_key.key = folder_URL_picture + 'medium' + file_extension_picture
                                 k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'small' + file_extension_picture
+                                k4 = s3_object_key.exists()
 
-                                if not (k1 and k2 and k3):
+                                if not (k1 and k2 and k3 and k4):
                                     return Response({'error_message': 'Files not uploaded correctly'},
                                                     status=status.HTTP_400_BAD_REQUEST)
 
@@ -1349,7 +1350,7 @@ class ChProfileDetail(APIView):
                 return Response({'error_message': 'Content type is image but no URL is present'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = serializers.ChProfileLevel2PatchSerializer(data=request.data, fields_to_include=fields_to_include)
+        serializer = serializers.ChProfileLevel2PatchSerializer(data=request.data, fields_to_include=fields_to_include, partial=True,)
 
         if serializer.is_valid():
 
@@ -1452,7 +1453,7 @@ class ChProfileDetail(APIView):
                 cache.delete('s3_temp_dir:' + temp_folder_picture)
 
                 # We finally update the profile with the data from the serializer
-                user_profile = serializer.update()
+                user_profile = serializer.partial_update()
                 user_profile.save()
 
             return Response(status=status.HTTP_200_OK)
