@@ -47,8 +47,7 @@ urlpatterns = patterns('',
         views.ChProfileDetail.as_view(), name="profile_detail"),
 
      # This is for patch user profile method
-    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/$',
-        views.ChProfileDetail.as_view(), name="profile_detail"),
+    url(r'^profiles/(?P<public_name>[0-9a-zA-Z_]+)/$', views.ChProfileDetail.as_view(), name="profile_detail"),
 
     # TODO: This regex must be improved once the hive_slug has a defined set of allowed chars
     url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/$',
