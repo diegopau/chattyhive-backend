@@ -1452,9 +1452,9 @@ class ChProfileDetail(APIView):
                 # And we delete the entry from the cache
                 cache.delete('s3_temp_dir:' + temp_folder_picture)
 
-                # We finally update the profile with the data from the serializer
-                user_profile = serializer.partial_update()
-                user_profile.save()
+            # We finally update the profile with the data from the serializer
+            user_profile = serializer.partial_update()
+            user_profile.save()
 
             return Response(status=status.HTTP_200_OK)
 
