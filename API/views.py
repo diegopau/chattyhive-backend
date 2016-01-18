@@ -189,7 +189,7 @@ class UserLogin(APIView):
                                     # it wasn't so
                                     data_dict['email_verification'] = 'expired'
                                     EmailAddress.objects.check_confirmation(email_address)
-                                    return Response(data_dict, status=status.HTTP_401_UNAUTHORIZED)
+                                    return Response(data_dict, status=status.HTTP_403_FORBIDDEN)
                                 else:
                                     # FIRST EXPIRATION DATE IS DUE and it has been already checked and warned, but the
                                     # extra warning time has not expired,
@@ -328,7 +328,7 @@ class UserLogin(APIView):
                         return Response(data_dict, status=status.HTTP_200_OK)
                 else:
                     print("The password is valid, but the account has been disabled!")
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+                    return Response(status=status.HTTP_403_FORBIDDEN)
             else:
                 # the authentication system was unable to verify the username and password
                 print("The username and password were incorrect.")
@@ -350,7 +350,7 @@ class CheckAsynchronousServices(APIView):
         try:
             device = Device.objects.get(dev_id=dev_id, active=True)
             if not device.user == user:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         except Device.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
