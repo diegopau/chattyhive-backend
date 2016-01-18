@@ -591,7 +591,7 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
                 raise ValidationError("The status message can be 140 chars long maximum", code="400")
 
         if 'public_status' in data:
-            if len(data['private_status']) > 140:
+            if len(data['public_status']) > 140:
                 raise ValidationError("The status message can be 140 chars long maximum", code="400")
 
         return data
