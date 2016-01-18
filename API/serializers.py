@@ -596,6 +596,8 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
 
         return data
 
+    def update(self, instance, validated_data):
+
     class Meta:
         model = ChProfile
         fields = ('first_name', 'last_name', 'picture', 'languages', 'city',
