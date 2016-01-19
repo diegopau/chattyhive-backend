@@ -1406,7 +1406,7 @@ class ChProfileDetail(APIView):
 
                 # We need to modify the profile with the new picture address
                 avatar_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
-                              '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
+                              '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile_to_update.public_name\
                               + '/' + 'images' + '/' + 'file' + file_extension_avatar
 
             if 'picture' in request.data:
@@ -1459,7 +1459,7 @@ class ChProfileDetail(APIView):
 
                 # We need to modify the profile with the new picture address
                 picture_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
-                                  '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
+                                  '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile_to_update.public_name\
                                   + '/' + 'images' + '/' + 'file' + file_extension_picture
 
             # We finally update the profile with the data from the serializer
