@@ -1404,6 +1404,11 @@ class ChProfileDetail(APIView):
                 # And we delete the entry from the cache
                 cache.delete('s3_temp_dir:' + temp_folder_avatar)
 
+                # We need to modify the profile with the new picture address
+                avatar_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                              '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
+                              + '/' + 'images' + '/' + 'file' + file_extension_avatar
+
             if 'picture' in request.data:
                 # We need to move 4 images for the profile picture
                 destination_bucket = common_settings.S3_PRIVATE_BUCKET
@@ -1452,8 +1457,17 @@ class ChProfileDetail(APIView):
                 # And we delete the entry from the cache
                 cache.delete('s3_temp_dir:' + temp_folder_picture)
 
+                # We need to modify the profile with the new picture address
+                picture_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                                  '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
+                                  + '/' + 'images' + '/' + 'file' + file_extension_picture
+
             # We finally update the profile with the data from the serializer
             profile_to_update = serializer.save()
+            if 'picture' in request.data:
+                profile_to_update.picture = picture_destination_URL
+            if 'avatar' in request.data:
+                profile_to_update.avatar = avatar_destination_URL
             profile_to_update.save()
 
             return Response(status=status.HTTP_200_OK)

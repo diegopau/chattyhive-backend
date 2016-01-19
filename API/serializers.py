@@ -559,7 +559,7 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
     def validate(self, data):
 
         if 'picture' in data:
-            # The validation for the picture and avatar should go here.. but of now it was easier to have it inside
+            # The validation for the picture and avatar should go here.. but for now it was easier to have it inside
             # the view
             pass
 
