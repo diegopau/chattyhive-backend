@@ -550,7 +550,7 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
                                              queryset=LanguageModel.objects.all(), slug_field='language')
     country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(), slug_field='code2')
 
-    # IMPORTANT: It should be possible to do some optimization here: because i get all region objects as queryset
+    # TODO: IMPORTANT: It should be possible to do some optimization here: because I get all region objects as queryset
     # it will load every region when it should be possible to restrict the queryset to only Regions of the specified
     # country... the same (even more relevant) for cities.
     region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
@@ -597,12 +597,48 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
         return data
 
     def update(self, instance, validated_data):
+        if 'first_name' in validated_data:
+            instance.first_name = validated_data.get('first_name', instance.first_name)
+        if 'last_name' in validated_data:
+            instance.last_name = validated_data.get('last_name', instance.last_name)
+        if 'picture' in validated_data:
+            instance.picture = validated_data.get('picture', instance.picture)
+        if 'avatar' in validated_data:
+            instance.avatar = validated_data.get('avatar', instance.avatar)
+        # if 'languages' in validated_data:
+        #     instance.first_name = validated_data.get('email', instance.first_name)
+        # if 'city' in validated_data:
+        #     instance.first_name = validated_data.get('email', instance.first_name)
+        # if 'region' in validated_data:
+        #     instance.first_name = validated_data.get('email', instance.first_name)
+        # if 'country' in validated_data:
+        #     instance.first_name = validated_data.get('email', instance.first_name)
+        if 'birth_date' in validated_data:
+            instance.birth_date = validated_data.get('birth_date', instance.birth_date)
+        if 'private_show_age' in validated_data:
+            instance.private_show_age = validated_data.get('private_show_age', instance.private_show_age)
+        if 'public_show_age' in validated_data:
+            instance.public_show_age = validated_data.get('public_show_age', instance.public_show_age)
+        if 'public_show_sex' in validated_data:
+            instance.public_show_sex = validated_data.get('public_show_sex', instance.public_show_sex)
+        if 'public_show_location' in validated_data:
+            instance.public_show_location = validated_data.get('public_show_location', instance.public_show_location)
+        if 'private_show_location' in validated_data:
+            instance.private_show_location = validated_data.get('private_show_location', instance.private_show_location)
+        if 'personal_color' in validated_data:
+            instance.first_name = validated_data.get('personal_color', instance.personal_color)
+        if 'private_status' in validated_data:
+            instance.first_name = validated_data.get('private_status', instance.private_status)
+        if 'public_status' in validated_data:
+            instance.first_name = validated_data.get('public_status', instance.public_status)
+        instance.save()
+        return instance
 
     class Meta:
         model = ChProfile
-        fields = ('first_name', 'last_name', 'picture', 'languages', 'city',
-                  'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
-                  'personal_color', 'public_show_location', 'private_show_location', 'private_status', 'public_status')
+        fields = ('first_name', 'last_name', 'picture', 'avatar', 'languages', 'city', 'region', 'country',
+                  'birth_date', 'private_show_age', 'public_show_age', 'public_show_sex', 'public_show_location',
+                  'private_show_location', 'personal_color', 'private_status', 'public_status')
 
 
 class ChProfileLevel2Serializer(serializers.ModelSerializer):
@@ -613,7 +649,7 @@ class ChProfileLevel2Serializer(serializers.ModelSerializer):
                                              queryset=LanguageModel.objects.all(), slug_field='language')
     country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(), slug_field='code2')
 
-    # IMPORTANT: It should be possible to do some optimization here: because i get all region objects as queryset
+    # TODO: IMPORTANT: It should be possible to do some optimization here: because i get all region objects as queryset
     # it will load every region when it should be possible to restrict the queryset to only Regions of the specified
     # country... the same (even more relevant) for cities.
     region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
