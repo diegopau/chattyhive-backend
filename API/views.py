@@ -1350,7 +1350,7 @@ class ChProfileDetail(APIView):
                 return Response({'error_message': 'Content type is image but no URL is present'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, data=request.data, partial=True, fields_to_include=fields_to_include)
+        serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, data=request.data, partial=True)
 
         if serializer.is_valid():
 
@@ -1453,8 +1453,8 @@ class ChProfileDetail(APIView):
                 cache.delete('s3_temp_dir:' + temp_folder_picture)
 
             # We finally update the profile with the data from the serializer
-            user_profile = serializer.save()
-            user_profile.save()
+            profile_to_update = serializer.save()
+            profile_to_update.save()
 
             return Response(status=status.HTTP_200_OK)
 

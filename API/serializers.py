@@ -556,21 +556,6 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
     region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
     city = serializers.SlugRelatedField(read_only=False, queryset=City.objects.all(), slug_field='name')
 
-    def __init__(self, *args, **kwargs):
-        # Don't pass the 'fields' arg up to the superclass
-
-        fields = kwargs.pop('fields_to_include', None)
-
-        # Instantiate the superclass normally
-        super(ChProfileLevel2PatchSerializer, self).__init__(*args, **kwargs)
-
-        if fields is not None:
-            # Drop any fields that are not specified in the `fields` argument.
-            allowed = set(fields)
-            existing = set(self.fields.keys())
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
-
     def validate(self, data):
 
         if 'picture' in data:
@@ -594,45 +579,28 @@ class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
             if len(data['public_status']) > 140:
                 raise ValidationError("The status message can be 140 chars long maximum", code="400")
 
-        return data
+        if 'country' in data:
+            if 'region' in data:
+                if 'city' not in data:
+                    data['city'] = None
+            else:
+                if 'city' in data:
+                    raise ValidationError("If there is a city there must be a region defined too", code="400")
+                else:
+                    data['region'] = None
+                    data['city'] = None
 
-    def update(self, instance, validated_data):
-        if 'first_name' in validated_data:
-            instance.first_name = validated_data.get('first_name', instance.first_name)
-        if 'last_name' in validated_data:
-            instance.last_name = validated_data.get('last_name', instance.last_name)
-        if 'picture' in validated_data:
-            instance.picture = validated_data.get('picture', instance.picture)
-        if 'avatar' in validated_data:
-            instance.avatar = validated_data.get('avatar', instance.avatar)
-        # if 'languages' in validated_data:
-        #     instance.first_name = validated_data.get('email', instance.first_name)
-        # if 'city' in validated_data:
-        #     instance.first_name = validated_data.get('email', instance.first_name)
-        # if 'region' in validated_data:
-        #     instance.first_name = validated_data.get('email', instance.first_name)
-        # if 'country' in validated_data:
-        #     instance.first_name = validated_data.get('email', instance.first_name)
-        if 'birth_date' in validated_data:
-            instance.birth_date = validated_data.get('birth_date', instance.birth_date)
-        if 'private_show_age' in validated_data:
-            instance.private_show_age = validated_data.get('private_show_age', instance.private_show_age)
-        if 'public_show_age' in validated_data:
-            instance.public_show_age = validated_data.get('public_show_age', instance.public_show_age)
-        if 'public_show_sex' in validated_data:
-            instance.public_show_sex = validated_data.get('public_show_sex', instance.public_show_sex)
-        if 'public_show_location' in validated_data:
-            instance.public_show_location = validated_data.get('public_show_location', instance.public_show_location)
-        if 'private_show_location' in validated_data:
-            instance.private_show_location = validated_data.get('private_show_location', instance.private_show_location)
-        if 'personal_color' in validated_data:
-            instance.first_name = validated_data.get('personal_color', instance.personal_color)
-        if 'private_status' in validated_data:
-            instance.first_name = validated_data.get('private_status', instance.private_status)
-        if 'public_status' in validated_data:
-            instance.first_name = validated_data.get('public_status', instance.public_status)
-        instance.save()
-        return instance
+        if 'region' in data:
+            if 'country' not in data:
+                raise ValidationError("If there is a region there must be a country defined too", code="400")
+
+        if 'city' in data:
+            if ('country' in data) and ('region' in data):
+                pass
+            else:
+                raise ValidationError("If there is a city there must be a country and region defined too", code="400")
+
+        return data
 
     class Meta:
         model = ChProfile
