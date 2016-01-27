@@ -710,7 +710,7 @@ class ChProfileSerializer(serializers.ModelSerializer):
             basic_fields = {'user', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
                             'first_name', 'last_name', 'picture', 'private_status'}
             info_fields = {'birth_date', 'sex',
-                           'languages', 'country', 'region', 'city', 'coordinates', 'public_show_age', 'public_show_sex'
+                           'languages', 'country', 'region', 'city', 'coordinates', 'public_show_age', 'public_show_sex',
                            'public_show_location', 'private_show_age', 'private_show_location'}
             hives_fields = {'hive_subscriptions'}
 
