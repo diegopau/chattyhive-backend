@@ -366,12 +366,13 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'chat_id', 'created')
 
 
-class ChMessageLevel1Serializer(serializers.ModelSerializer):
+class ChMessageSerializer(serializers.ModelSerializer):
     profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
+    id = serializers.IntegerField(source='_count', read_only=True)
 
     class Meta:
         model = ChMessage
-        fields = ('content_type', 'received', 'content', 'profile')
+        fields = ('id', 'received', 'content', 'content_type', 'created', 'profile')
 
 
 # ============================================================ #
@@ -382,7 +383,7 @@ class ChChatLevel2Serializer(serializers.ModelSerializer):
        Used by the following serializers: ChPublicChatLevel3Serializer, ChCommunityPublicChatLevel3Serializer
 
     """
-    last_message = ChMessageLevel1Serializer(many=False, read_only=True)
+    last_message = ChMessageSerializer(many=False, read_only=True)
 
     class Meta:
         model = ChChat
@@ -463,7 +464,7 @@ class ChChatListLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat list,
 
     """
-    last_message = ChMessageLevel1Serializer(many=False, read_only=True)
+    last_message = ChMessageSerializer(many=False, read_only=True)
 
     class Meta:
         model = ChChat
@@ -527,15 +528,6 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChChat
         fields = ('chat_id', 'community', 'count', 'created', 'type')
-
-
-class ChMessageSerializer(serializers.ModelSerializer):
-    profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
-    id = serializers.IntegerField(source='_count', read_only=True)
-
-    class Meta:
-        model = ChMessage
-        fields = ('id', 'received', 'content', 'content_type', 'created', 'profile')
 
 
 # ============================================================ #
