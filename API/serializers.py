@@ -442,7 +442,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChHive
-        fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'type', 'category', 'languages',
+        fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'picture', 'type', 'category', 'languages',
                   'creator', 'tags', 'subscribed_users_count', 'public_chat', 'community_public_chats',)
 
 
@@ -515,9 +515,41 @@ class ChHiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'languages', 'category', 'creation_date', 'creator', 'description',
-                  'priority', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
+                  'priority', 'picture', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
                   'community_public_chats', 'community')
 
+class ChHiveCreationSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive info,
+
+    """
+    category = serializers.SlugRelatedField(read_only=False, slug_field='code')
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False, slug_field='language')
+
+    # If in the POST we only need to establish the relationship with User model (not update the model itself) we
+    # set read_only to True
+    creator = serializers.SlugRelatedField(read_only=False, slug_field='public_name')
+    tags = serializers.SlugRelatedField(many=True, read_only=False, slug_field='tag')
+
+    subscribed_users_count = serializers.IntegerField(source='get_subscribed_users_count', read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
+
+        # Instantiate the superclass normally
+        super(ChHiveSerializer, self).__init__(*args, **kwargs)
+
+        if fields_to_remove is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields_to_remove:
+                self.fields.pop(field_name)
+
+    class Meta:
+        model = ChHive
+        fields = ('name', 'languages', 'category', 'creation_date', 'creator', 'description',
+                  'priority', 'picture', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
+                  'community_public_chats', 'community')
 
 class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,

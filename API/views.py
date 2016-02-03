@@ -1586,7 +1586,10 @@ class ChHiveList(APIView):  # AKA Explore
     def post(self, request, format=None):
         """post prueba
         """
-        serializer = serializers.ChHiveSerializer(data=request.data)
+
+
+
+        serializer = serializers.ChHiveCreationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -568,6 +568,7 @@ class ChHive(models.Model):
     picture = models.URLField(null=True, blank=True)
     priority = models.IntegerField(default=50, validators=[RegexValidator(r'^(?:100|[1-9]?[0-9])$',
                                                                           'Only integers between 0 - 100 allowed')])
+    visibility_country = models.ForeignKey(Country, null=True, blank=True)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
     deleted = models.BooleanField(default=False)
 
