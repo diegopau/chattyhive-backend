@@ -693,7 +693,7 @@ class ChHive(models.Model):
         if not tags:
             return hives
         else:
-            hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags)
+            hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags).distinct()
             return hives_by_tags
 
     @classmethod
