@@ -977,170 +977,6 @@ def password_change(request):
         return Response(status=status.HTTP_200_OK)
 
 
-class ChUserDetail(APIView):
-    """Show user detail, updates user detail or deletes specific user
-
-    User detail is just available from the browsable API
-    (user registration)
-    """
-
-    permission_classes = (permissions.IsAuthenticated, permissions.IsAuthenticatedOrReadOnly)
-
-    def get_object(self, username):
-        try:
-            return ChUser.objects.get(username=username)
-        except ChUser.DoesNotExist:
-            raise Http404
-
-    def get(self, request, username, format=None):
-        user = self.get_object(username)
-        serializer = serializers.ChUserLevel2Serializer(user)
-        return Response(serializer.data)
-
-    def put(self, request, username, format=None):
-        user = self.get_object(username)
-        serializer = serializers.ChUserLevel2Serializer(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, username, format=None):
-        user = self.get_object(username)
-        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es
-        # lo indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
-        # Falta confirmar esto bien
-        user.delete_account()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ChProfileHiveList(APIView):
-    """API method: Hive list
-
-    """
-    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
-
-    def get_object(self, public_name):
-        try:
-            return ChProfile.objects.select_related().get(public_name=public_name)
-        except ChProfile.DoesNotExist:
-            raise Http404
-
-    def get(self, request, public_name, format=None):
-        profile = self.get_object(public_name)
-        try:
-            # If the user is requesting his/her own subscriptions we go on
-            self.check_object_permissions(self.request, profile)
-        except PermissionDenied:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        except NotAuthenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        hive_subscriptions = profile.hive_subscriptions
-
-        serializer = serializers.ChHiveSubscriptionListLevel3Serializer(hive_subscriptions, many=True)
-        return Response(serializer.data)
-
-    def post(self, request, public_name, format=None):
-
-        profile = self.get_object(public_name)
-        try:
-            # If the user is requesting a join with his own profile then we go on
-            self.check_object_permissions(self.request, profile)
-        except PermissionDenied:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        except NotAuthenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        hive_slug = request.data.get('hive_slug', '')
-
-        if hive_slug == '':
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # We get the hive for this hive_slug
-        try:
-            hive = ChHive.objects.get(slug=hive_slug, deleted=False)
-        except ChHive.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        try:
-            hive.join(profile)
-        except IntegrityError:
-            return Response({'error_message': 'The user was already subscribed to the hive'},
-                            status=status.HTTP_409_CONFLICT)
-        except UnauthorizedException:
-            return Response({'error_message': 'The user is expelled from the hive'},
-                            status=status.HTTP_401_UNAUTHORIZED)
-
-        # Because I don't want Django Rest Framework to treat it as a serializer in this case, I cast it to a dict
-        hive_info = dict(serializers.ChHiveSerializer(hive).data)
-
-        return Response(hive_info, status=status.HTTP_200_OK)
-
-
-class ChProfileHiveDetail(APIView):
-    """API method: Hive list
-
-    """
-    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
-
-    def get_object(self, public_name):
-        try:
-            return ChProfile.objects.select_related().get(public_name=public_name)
-        except ChProfile.DoesNotExist:
-            raise Http404
-
-    def delete(self, request, public_name, hive_slug, format=None):
-
-        profile = self.get_object(public_name)
-        try:
-            # If the user is requesting a join with his own profile then we go on
-            self.check_object_permissions(self.request, profile)
-        except PermissionDenied:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        except NotAuthenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        if hive_slug == '':
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        # We get the hive for this hive_slug
-        try:
-            hive = ChHive.objects.get(slug=hive_slug, deleted=False)
-        except ChHive.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        try:
-            hive.leave(profile)
-        except IntegrityError:
-            return Response({'error_message': 'User have not joined the hive'},
-                            status=status.HTTP_409_CONFLICT)
-
-        return Response(status=status.HTTP_200_OK)
-
-
-class ChProfileChatList(APIView):
-    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
-
-    def get_object(self, public_name):
-        try:
-            return ChProfile.objects.select_related().get(public_name=public_name)
-        except ChProfile.DoesNotExist:
-            raise Http404
-
-    def get(self, request, public_name, format=None):
-        profile = self.get_object(public_name)
-        try:
-            # If the user is requesting his/her own subscriptions we go on
-            self.check_object_permissions(self.request, profile)
-        except PermissionDenied:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        except NotAuthenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        chat_subscriptions = profile.chat_subscriptions
-        serializer = serializers.ChChatSubscriptionListLevel4Serializer(chat_subscriptions, many=True)
-        return Response(serializer.data)
-
-
 class ChProfileDetail(APIView):
     permission_classes = (permissions.IsAuthenticated, permissions.CanGetProfile, permissions.CanUpdateProfile)
 
@@ -1476,12 +1312,176 @@ class ChProfileDetail(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ChUserDetail(APIView):
+    """Show user detail, updates user detail or deletes specific user
+
+    User detail is just available from the browsable API
+    (user registration)
+    """
+
+    permission_classes = (permissions.IsAuthenticated, permissions.IsAuthenticatedOrReadOnly)
+
+    def get_object(self, username):
+        try:
+            return ChUser.objects.get(username=username)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, username, format=None):
+        user = self.get_object(username)
+        serializer = serializers.ChUserLevel2Serializer(user)
+        return Response(serializer.data)
+
+    def put(self, request, username, format=None):
+        user = self.get_object(username)
+        serializer = serializers.ChUserLevel2Serializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, username, format=None):
+        user = self.get_object(username)
+        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es
+        # lo indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
+        # Falta confirmar esto bien
+        user.delete_account()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChProfileHiveList(APIView):
+    """API method: Hive list
+
+    """
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        hive_subscriptions = profile.hive_subscriptions
+
+        serializer = serializers.ChHiveSubscriptionListLevel3Serializer(hive_subscriptions, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, public_name, format=None):
+
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting a join with his own profile then we go on
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        hive_slug = request.data.get('hive_slug', '')
+
+        if hive_slug == '':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # We get the hive for this hive_slug
+        try:
+            hive = ChHive.objects.get(slug=hive_slug, deleted=False)
+        except ChHive.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            hive.join(profile)
+        except IntegrityError:
+            return Response({'error_message': 'The user was already subscribed to the hive'},
+                            status=status.HTTP_409_CONFLICT)
+        except UnauthorizedException:
+            return Response({'error_message': 'The user is expelled from the hive'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        # Because I don't want Django Rest Framework to treat it as a serializer in this case, I cast it to a dict
+        hive_info = dict(serializers.ChHiveSerializer(hive).data)
+
+        return Response(hive_info, status=status.HTTP_200_OK)
+
+
+class ChProfileChatList(APIView):
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        chat_subscriptions = profile.chat_subscriptions
+        serializer = serializers.ChChatSubscriptionListLevel4Serializer(chat_subscriptions, many=True)
+        return Response(serializer.data)
+
+
+class ChProfileHiveDetail(APIView):
+    """API method: Hive list
+
+    """
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetHiveList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def delete(self, request, public_name, hive_slug, format=None):
+
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting a join with his own profile then we go on
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if hive_slug == '':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # We get the hive for this hive_slug
+        try:
+            hive = ChHive.objects.get(slug=hive_slug, deleted=False)
+        except ChHive.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            hive.leave(profile)
+        except IntegrityError:
+            return Response({'error_message': 'User have not joined the hive'},
+                            status=status.HTTP_409_CONFLICT)
+
+        return Response(status=status.HTTP_200_OK)
+
+
 # ============================================================ #
 #                       Hives & Chats                          #
 # ============================================================ #
 
 class ChHiveList(APIView):  # AKA Explore
-    """Lists hives in Explora or creates new hive
+    """Lists hives in Explore or creates new hive
 
     User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
     (user registration)
