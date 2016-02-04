@@ -1,7 +1,4 @@
 from django.utils import timezone
-
-__author__ = 'diego'
-
 import django
 import json
 import re
@@ -10,7 +7,7 @@ from django.core import exceptions as Excep; Excep.ObjectDoesNotExist, Excep.Mul
                                              Excep.ValidationError
 from django.core.validators import validate_email
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
-    ChMessage, Device, ChCategory, City, Region, Country
+    ChMessage, Device, ChCategory, City, Region, Country, ChPublicChat, ChCommunity
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
@@ -27,6 +24,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from uuid import uuid4
 from django.core.cache import cache
+from slugify import slugify
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -41,6 +39,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError, NotAuthenticated
 
+__author__ = 'diego'
 
 # ============================================================ #
 #                       Support methods                        #
@@ -1168,7 +1167,6 @@ class ChProfileDetail(APIView):
                                 # temp bucket to the final bucket in Amazon S3 without doing additional checks
                                 # So we move the file at the end of the method
 
-
                             else:
                                 return Response({'error_message': 'Upload not allowed'},
                                                 status=status.HTTP_403_FORBIDDEN)
@@ -1230,7 +1228,6 @@ class ChProfileDetail(APIView):
                 dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
                 s3_object_to_move.delete()
 
-
                 # We also delete the folder
                 folder_to_remove = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/') + 1]
                 s3_object_to_remove = Key(temp_bucket)
@@ -1242,8 +1239,9 @@ class ChProfileDetail(APIView):
 
                 # We need to modify the profile with the new picture address
                 avatar_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
-                              '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile_to_update.public_name\
-                              + '/' + 'images' + '/' + 'file' + file_extension_avatar
+                                         '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + \
+                                         profile_to_update.public_name + '/' + 'images' + '/' + 'file' + \
+                                         file_extension_avatar
 
             if 'picture' in request.data:
                 # We need to move 4 images for the profile picture
@@ -1589,54 +1587,175 @@ class ChHiveList(APIView):  # AKA Explore
 
         user = request.user
         profile = ChProfile.objects.get(user=user)
+        fields_to_remove = []
 
-        serializer = serializers.ChHiveCreationSerializer(data=request.data)
+        if 'visibility_country' not in request.data:
+            fields_to_remove.append('visibility_country')
 
+        if 'picture' in request.data:
+            picture = request.data['picture']
+            if ('http://' in picture) or ('https://' in picture):
+                if 'amazonaws.com' in picture:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in picture:
+                        folder_plus_file_URL_picture = picture[len(s3_URL_prefix):len(picture)]
+                        self.check_file_extension(folder_plus_file_URL_picture)
+                        if folder_plus_file_URL_picture.count('/') == 1:
+                            temp_folder_picture = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_picture) == profile.public_name:
+                                file_name_and_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('/') + 1:len(folder_plus_file_URL_picture)]
+                                file_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('.'): len(folder_plus_file_URL_picture)]
+                                folder_URL_picture = folder_plus_file_URL_picture[0:len(folder_plus_file_URL_picture)-(len(file_name_and_extension_picture))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket)
 
+                                s3_object_key.key = folder_URL_picture + 'file' + file_extension_picture
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'large' + file_extension_picture
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'medium' + file_extension_picture
+                                k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'small' + file_extension_picture
+                                k4 = s3_object_key.exists()
 
+                                if not (k1 and k2 and k3 and k4):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_400_BAD_REQUEST)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept content hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            fields_to_remove.append('picture')
+
+        serializer = serializers.ChHiveCreationSerializer(data=request.data, fields_to_remove=fields_to_remove)
 
         if serializer.is_valid():
             with transaction.atomic():
 
-
-                if 'password' in request.data:
-                    if request.data['type']
-
-                hive_name = formHive.cleaned_data['name']
-                hive = formHive.save(commit=False)
+                hive = serializer.save()
                 hive.creator = profile
-                hive.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False, max_length=250)
+                hive.slug = slugify(serializer.validated_data['name'], translate=None, to_lower=True, separator='-',
+                                    capitalize=False, max_length=250)
                 try:
                     with transaction.atomic():
                         ChHive.objects.get(slug=hive.slug)
-                        return HttpResponse("The hive slug already exists")
+                        return Response({'error_message': 'There is already a Hive with this or very similar name'},
+                                        status=status.HTTP_409_CONFLICT)
                 except ChHive.DoesNotExist:
                     # hive.slug = replace_unicode(hive_name)
                     hive.save()
 
-                # Adding tags
-                tagsText = formTags.cleaned_data['tags']
-                tagsList = re.split(r'[, ]+', tagsText)
-                hive.set_tags(tagsList)
-                hive.save()
+                if 'tags' in request.data:
+                    # Adding tags
+                    tagsText = request.data['tags']
+                    tagsList = re.split(r'[, ]+', tagsText)
+                    hive.set_tags(tagsList)
+                    hive.save()
 
                 # Adding languages
-                hive.languages = formHive.cleaned_data['_languages']
-                hive.save()
+                # hive.languages = formHive.cleaned_data['_languages']
+                # hive.save()
 
-                # Creating public chat of hive, step 1: ChChat object
-                chat = ChChat()
-                chat.hive = hive
-                chat.type = 'public'
-                chat.chat_id = ChChat.get_chat_id()
-                chat.slug = chat.chat_id + '-' + hive.slug
-                chat.save()
+                if serializer.validated_data['type'] == 'Hive':
+                    # Creating public chat of hive, step 1: ChChat object
+                    chat = ChChat()
+                    chat.hive = hive
+                    chat.type = 'public'
+                    chat.chat_id = ChChat.get_chat_id()
+                    chat.slug = chat.chat_id + '-' + hive.slug
+                    chat.save()
 
-                # Creating public chat of hive, step 2: ChPublicChat object
-                public_chat = ChPublicChat(chat=chat, hive=hive)
-                public_chat.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False,
-                                           max_length=250)
-                public_chat.save()
+                    # Creating public chat of hive, step 2: ChPublicChat object
+                    public_chat = ChPublicChat(chat=chat, hive=hive)
+                    public_chat.slug = slugify(serializer.validated_data['name'], translate=None, to_lower=True,
+                                               separator='-', capitalize=False, max_length=250)
+                    public_chat.save()
+
+                elif serializer.validated_data['type'] == 'Community':
+                    # Creating community from hive
+                    community = ChCommunity(hive=hive, owner=profile)
+                    community.save()
+
+                    # Creating public chat of hive
+                    community.new_public_chat(name=hive.name, public_chat_slug_ending=hive.slug, description=hive.description)
+
+                if 'picture' in request.data:
+
+                    # We need to move 4 images for the profile picture
+                    destination_bucket = common_settings.S3_PUBLIC_BUCKET
+                    dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                    s3_object_to_move = Key(temp_bucket)
+
+                    # 1 file size
+                    s3_object_to_move.key = folder_plus_file_URL_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'file' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # 2 xlarge size
+                    s3_object_to_move.key = temp_folder_picture + '/' + 'large' + file_extension_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'large' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # 3 medium size
+                    s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'medium' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # 4 small size
+                    s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'small' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # We also delete the folder
+                    folder_to_remove = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/') + 1]
+                    s3_object_to_remove = Key(temp_bucket)
+                    s3_object_to_remove.key = folder_to_remove
+                    s3_object_to_remove.delete()
+
+                    # And we delete the entry from the cache
+                    cache.delete('s3_temp_dir:' + temp_folder_picture)
+
+                    # We need to modify the profile with the new picture address
+                    picture_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                                      '.amazonaws.com/' + destination_bucket + '/' + 'hives' + '/' + hive.slug \
+                                      + '/' + 'images' + '/' + 'file' + file_extension_picture
+
+                    hive.picture = picture_destination_URL
+                    hive.save()
 
                 # Creating subscription
                 hive_subscription = ChHiveSubscription(hive=hive, profile=profile)

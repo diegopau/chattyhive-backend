@@ -523,13 +523,13 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
 
     """
     category = serializers.SlugRelatedField(read_only=False, slug_field='code')
-    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False, slug_field='language')
+    languages = serializers.SlugRelatedField(source='_languages', many=True, queryset=LanguageModel.objects.all(),
+                                             read_only=False, slug_field='language')
+    visibility_country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(),
+                                                      slug_field='code2')
 
     # If in the POST we only need to establish the relationship with User model (not update the model itself) we
     # set read_only to True
-    creator = serializers.SlugRelatedField(read_only=False, slug_field='public_name')
-
-    subscribed_users_count = serializers.IntegerField(source='get_subscribed_users_count', read_only=True)
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
@@ -547,13 +547,13 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
     def validate(self, data):
         TYPES = ('Hive', 'Community')
         if data['type'] not in TYPES:
-             raise ValidationError("The field types does not have a valid value", code="400")
+            raise ValidationError("The field types does not have a valid value", code="400")
 
         return data
 
     class Meta:
         model = ChHive
-        fields = ('name', 'languages', 'category', 'creation_date', 'creator', 'description',
+        fields = ('name', 'languages', 'category', 'description', 'visibility_country',
                   'priority', 'picture', 'type')
 
 class ChChatLevel3Serializer(serializers.ModelSerializer):
