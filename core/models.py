@@ -942,6 +942,7 @@ class ChCommunity(models.Model):
     admins = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='administrates')
     # todo: administrative info?
     deleted = models.BooleanField(_('The owner has deleted it'), default=False)
+    approved = models.BooleanField(_('Is the community approved by the chattyhive team?'), default=False)
 
     def delete_community(self):
         # TODO: Here we have to still decide what to do with the private chats the users have inside this community

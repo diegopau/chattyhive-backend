@@ -528,7 +528,6 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
     # If in the POST we only need to establish the relationship with User model (not update the model itself) we
     # set read_only to True
     creator = serializers.SlugRelatedField(read_only=False, slug_field='public_name')
-    tags = serializers.SlugRelatedField(many=True, read_only=False, slug_field='tag')
 
     subscribed_users_count = serializers.IntegerField(source='get_subscribed_users_count', read_only=True)
 
@@ -545,11 +544,17 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
             for field_name in fields_to_remove:
                 self.fields.pop(field_name)
 
+    def validate(self, data):
+        TYPES = ('Hive', 'Community')
+        if data['type'] not in TYPES:
+             raise ValidationError("The field types does not have a valid value", code="400")
+
+        return data
+
     class Meta:
         model = ChHive
         fields = ('name', 'languages', 'category', 'creation_date', 'creator', 'description',
-                  'priority', 'picture', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
-                  'community_public_chats', 'community')
+                  'priority', 'picture', 'type')
 
 class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,

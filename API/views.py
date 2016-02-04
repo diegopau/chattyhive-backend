@@ -1587,13 +1587,64 @@ class ChHiveList(APIView):  # AKA Explore
         """post prueba
         """
 
-
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
 
         serializer = serializers.ChHiveCreationSerializer(data=request.data)
+
+
+
+
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+
+
+                if 'password' in request.data:
+                    if request.data['type']
+
+                hive_name = formHive.cleaned_data['name']
+                hive = formHive.save(commit=False)
+                hive.creator = profile
+                hive.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False, max_length=250)
+                try:
+                    with transaction.atomic():
+                        ChHive.objects.get(slug=hive.slug)
+                        return HttpResponse("The hive slug already exists")
+                except ChHive.DoesNotExist:
+                    # hive.slug = replace_unicode(hive_name)
+                    hive.save()
+
+                # Adding tags
+                tagsText = formTags.cleaned_data['tags']
+                tagsList = re.split(r'[, ]+', tagsText)
+                hive.set_tags(tagsList)
+                hive.save()
+
+                # Adding languages
+                hive.languages = formHive.cleaned_data['_languages']
+                hive.save()
+
+                # Creating public chat of hive, step 1: ChChat object
+                chat = ChChat()
+                chat.hive = hive
+                chat.type = 'public'
+                chat.chat_id = ChChat.get_chat_id()
+                chat.slug = chat.chat_id + '-' + hive.slug
+                chat.save()
+
+                # Creating public chat of hive, step 2: ChPublicChat object
+                public_chat = ChPublicChat(chat=chat, hive=hive)
+                public_chat.slug = slugify(hive_name, translate=None, to_lower=True, separator='-', capitalize=False,
+                                           max_length=250)
+                public_chat.save()
+
+                # Creating subscription
+                hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
+                hive_subscription.save()
+
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChChatDetail(APIView):
