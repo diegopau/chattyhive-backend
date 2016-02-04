@@ -7,7 +7,7 @@ from django.core import exceptions as Excep; Excep.ObjectDoesNotExist, Excep.Mul
                                              Excep.ValidationError
 from django.core.validators import validate_email
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
-    ChMessage, Device, ChCategory, City, Region, Country, ChPublicChat, ChCommunity
+    ChMessage, Device, ChCategory, City, Region, Country, ChPublicChat, ChCommunity, GuidelinesModel
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
@@ -1487,6 +1487,23 @@ class ChHiveList(APIView):  # AKA Explore
 
     permission_classes = (permissions.IsAuthenticated,)
 
+    def check_file_extension(self, folder_plus_file_URL):
+
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def get(self, request, list_order='', category_slug='', category_code='', format=None):
         """prueba
         """
@@ -1592,6 +1609,20 @@ class ChHiveList(APIView):  # AKA Explore
         if 'visibility_country' not in request.data:
             fields_to_remove.append('visibility_country')
 
+        if 'tags' in request.data:
+            if len(request.data['tags']) > 5:
+                return Response({'error_message': 'a maximum of 5 tags are allowed'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate tags
+            tagsList = request.data['tags']
+
+            pattern = re.compile("^\w{1,32}$")
+            for tag in tagsList:
+                if not pattern.match(tag):
+                    return Response({'error_message': 'validation error with tags'},
+                                     status=status.HTTP_400_BAD_REQUEST)
+
         if 'picture' in request.data:
             picture = request.data['picture']
             if ('http://' in picture) or ('https://' in picture):
@@ -1654,10 +1685,26 @@ class ChHiveList(APIView):  # AKA Explore
         if serializer.is_valid():
             with transaction.atomic():
 
-                hive = serializer.save()
+                hive = ChHive(name=serializer.validated_data['name'],
+                              description=serializer.validated_data['description'],
+                              category=serializer.validated_data['category'],
+                              type=serializer.validated_data['type'],
+                              creation_date=timezone.now(),
+                              priority=50,
+                              rules=GuidelinesModel.objects.get(name="Base guidelines")
+                              )
+
                 hive.creator = profile
+
                 hive.slug = slugify(serializer.validated_data['name'], translate=None, to_lower=True, separator='-',
                                     capitalize=False, max_length=250)
+
+                if 'visibility_country' in request.data:
+                    hive.visibility_country = serializer.validated_data['visibility_country']
+
+                if 'picture' in request.data:
+                    hive.picture = serializer.validated_data['picture']
+
                 try:
                     with transaction.atomic():
                         ChHive.objects.get(slug=hive.slug)
@@ -1667,10 +1714,9 @@ class ChHiveList(APIView):  # AKA Explore
                     # hive.slug = replace_unicode(hive_name)
                     hive.save()
 
+                hive.languages = serializer.validated_data['_languages']
+
                 if 'tags' in request.data:
-                    # Adding tags
-                    tagsText = request.data['tags']
-                    tagsList = re.split(r'[, ]+', tagsText)
                     hive.set_tags(tagsList)
                     hive.save()
 
@@ -1696,6 +1742,7 @@ class ChHiveList(APIView):  # AKA Explore
                 elif serializer.validated_data['type'] == 'Community':
                     # Creating community from hive
                     community = ChCommunity(hive=hive, owner=profile)
+                    community.approved = True  # TODO: This is temporal solution.
                     community.save()
 
                     # Creating public chat of hive
@@ -1716,7 +1763,7 @@ class ChHiveList(APIView):  # AKA Explore
                     dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
                     s3_object_to_move.delete()
 
-                    # 2 xlarge size
+                    # 2 large size
                     s3_object_to_move.key = temp_folder_picture + '/' + 'large' + file_extension_picture
                     destination_object_key = Key(dest_bucket)
                     destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
@@ -1761,7 +1808,7 @@ class ChHiveList(APIView):  # AKA Explore
                 hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
                 hive_subscription.save()
 
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

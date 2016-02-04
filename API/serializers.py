@@ -522,7 +522,7 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
     """Used by the following API methods: GET hive info,
 
     """
-    category = serializers.SlugRelatedField(read_only=False, slug_field='code')
+    category = serializers.SlugRelatedField(read_only=False, queryset=ChCategory.objects.all(), slug_field='code')
     languages = serializers.SlugRelatedField(source='_languages', many=True, queryset=LanguageModel.objects.all(),
                                              read_only=False, slug_field='language')
     visibility_country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(),
@@ -537,7 +537,7 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
         fields_to_remove = kwargs.pop('fields_to_remove', None)
 
         # Instantiate the superclass normally
-        super(ChHiveSerializer, self).__init__(*args, **kwargs)
+        super(ChHiveCreationSerializer, self).__init__(*args, **kwargs)
 
         if fields_to_remove is not None:
             # Drop fields that are specified in the `fields` argument.
@@ -554,7 +554,7 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'languages', 'category', 'description', 'visibility_country',
-                  'priority', 'picture', 'type')
+                  'picture', 'type')
 
 class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,
