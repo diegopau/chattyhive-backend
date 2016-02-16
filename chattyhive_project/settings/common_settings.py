@@ -5,7 +5,7 @@ from urllib import parse
 from django.utils.translation import ugettext_lazy as _
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 # django-environ initial configuration
@@ -308,11 +308,16 @@ TEMPLATES = [
 # STATIC FILE CONFIGURATION
 # ------------------------------------------------------------------------------
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-root
+
+# This is where permanent static files can be stored
 STATIC_PATH = os.path.join(BASE_DIR, '../static')
 
 STATICFILES_DIRS = (
     STATIC_PATH,
 )
+
+# This is a temp folder for the collectstatic command will collect static files
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
 
 # URL prefix for static files.
 # Example: "http://example.com/static/", "http://static.example.com/"
