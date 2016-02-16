@@ -1402,7 +1402,7 @@ class ChProfileHiveList(APIView):
                             status=status.HTTP_409_CONFLICT)
         except UnauthorizedException:
             return Response({'error_message': 'The user is expelled from the hive'},
-                            status=status.HTTP_401_UNAUTHORIZED)
+                            status=status.HTTP_403_FORBIDDEN)
 
         # Because I don't want Django Rest Framework to treat it as a serializer in this case, I cast it to a dict
         hive_info = dict(serializers.ChHiveSerializer(hive).data)
