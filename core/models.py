@@ -634,15 +634,15 @@ class ChHive(models.Model):
 
         if profile.city is not None:
             users_in_same_city = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, city=profile.city).order_by('-last_activity')
+                hive_subscriptions__in=hive_subscriptions, city=profile.city).order_by('-last_activity')
 
         if profile.region is not None:
             users_in_same_region = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, region=profile.region).order_by('-last_activity')
+                hive_subscriptions__in=hive_subscriptions, region=profile.region).order_by('-last_activity')
 
         if profile.country is not None:
             users_in_same_country = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, country=profile.country).order_by('-last_activity')
+                hive_subscriptions__in=hive_subscriptions, country=profile.country).order_by('-last_activity')
         else:
             raise IntegrityError("User has no country assigned")
 
@@ -653,7 +653,7 @@ class ChHive(models.Model):
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
-        users_recently_join = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+        users_recently_join = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
             '-hive_subscription__creation_date')
 
         return users_recently_join
@@ -665,7 +665,7 @@ class ChHive(models.Model):
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
-        users_recently_online = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+        users_recently_online = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
             '-last_activity')
 
         return users_recently_online
