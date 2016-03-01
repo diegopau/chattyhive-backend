@@ -654,7 +654,7 @@ class ChHive(models.Model):
             hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
         users_recently_join = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
-            '-hive_subscription__creation_date')
+            '-hive_subscriptions__creation_date')
 
         return users_recently_join
 
