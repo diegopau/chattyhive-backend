@@ -1201,7 +1201,7 @@ class ChCommunityPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
     # slug = models.CharField(max_length=250, unique=True, default='')
-    picture = models.CharField(max_length=200)
+    picture = models.CharField(max_length=200, null=True, blank=True)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
