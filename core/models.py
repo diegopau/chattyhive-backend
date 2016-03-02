@@ -1137,12 +1137,12 @@ class ChChat(models.Model):
     def __str__(self):
         slug_ends_with = ''
         if self.type == 'mate_private':
-            slug_ends_with = ' - between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ')
+            slug_ends_with = 'between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ')
         if self.type == 'friend_private':
-            slug_ends_with = ' - between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
+            slug_ends_with = 'between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
         if self.type == 'public':
-            slug_ends_with = ''
-        return self.hive.name + '(' + self.type + ')' + slug_ends_with
+            slug_ends_with = self.hive.name
+        return self.type + ' - ' + slug_ends_with
 
 
 class ChChatSubscription(models.Model):
@@ -1212,9 +1212,10 @@ class ChCommunityPublicChat(models.Model):
         pass
 
     def save(self, *args, **kwargs):
+
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
         # IMPORTANT: if there is another ChCommunityPublicChat this is OK as long as it belongs to another community...
-        extensions = ChCommunityPublicChat.objects.filter(name=self.name).values('chat')
+        extensions = ChCommunityPublicChat.objects.filter(name=self.name).exclude(id=self.id).values('chat')  # The exclude is in case we are updating an object, not creating it.
         # ... and that is why we check here if this ChChat object belongs to the same community (hive) than the ChChat
         # we are trying to create now.
         chats = ChChat.objects.filter(id__in=extensions, hive=self.chat.hive)
