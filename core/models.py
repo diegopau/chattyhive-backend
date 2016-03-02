@@ -1205,7 +1205,7 @@ class ChCommunityPublicChat(models.Model):
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
-    rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
 
     def delete_public_chat(self):
         # TODO: delete_public_chat method.
