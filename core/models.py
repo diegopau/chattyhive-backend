@@ -948,12 +948,13 @@ class ChCommunity(models.Model):
         # to suddenly remove them just doesn't feel right!...
         pass
 
-    def new_public_chat(self, name, public_chat_slug_ending, description):
+    def new_public_chat(self, name, public_chat_slug_ending, description, rules):
         chat = ChChat(hive=self.hive, type='public')
         chat.chat_id = ChChat.get_chat_id()
         chat.slug = chat.chat_id + '-' + public_chat_slug_ending
         chat.save()
-        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
+        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive,
+                                               rules=rules)
         chat_extension.save()
         # transaction.commit()
 
@@ -1192,7 +1193,7 @@ class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
     hive = models.OneToOneField(ChHive, related_name='public_chat', null=True, blank=True)
     deleted = models.BooleanField(default=False)
-    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
+    rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
 
 
 class ChCommunityPublicChat(models.Model):
