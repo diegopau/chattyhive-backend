@@ -411,7 +411,7 @@ def asynchronous_authentication(request):
                 except ChChatSubscription.DoesNotExist:
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
             channel_data = {
-                'user_id': socket_id,
+                'user_id': profile.public_name,
                 'user_info': {
                     'public_name': profile.public_name,
                 }
@@ -1683,8 +1683,7 @@ class ChHiveList(APIView):  # AKA Explore
                               category=serializer.validated_data['category'],
                               type=serializer.validated_data['type'],
                               creation_date=timezone.now(),
-                              priority=50,
-                              rules=GuidelinesModel.objects.get(name="Base guidelines")
+                              priority=50
                               )
 
                 hive.creator = profile
@@ -1727,7 +1726,8 @@ class ChHiveList(APIView):  # AKA Explore
                     chat.save()
 
                     # Creating public chat of hive, step 2: ChPublicChat object
-                    public_chat = ChPublicChat(chat=chat, hive=hive)
+                    public_chat = ChPublicChat(chat=chat, hive=hive,
+                                               rules=GuidelinesModel.objects.get(name="Base guidelines"))
                     public_chat.slug = slugify(serializer.validated_data['name'], translate=None, to_lower=True,
                                                separator='-', capitalize=False, max_length=250)
                     public_chat.save()
@@ -1739,7 +1739,9 @@ class ChHiveList(APIView):  # AKA Explore
                     community.save()
 
                     # Creating public chat of hive
-                    community.new_public_chat(name=hive.name, public_chat_slug_ending=hive.slug, description=hive.description)
+                    community.new_public_chat(name=hive.name, public_chat_slug_ending=hive.slug,
+                                              description=hive.description,
+                                              rules=GuidelinesModel.objects.get(name="Base guidelines"))
 
                 if 'picture' in request.data:
 
@@ -1823,6 +1825,42 @@ class ChChatDetail(APIView):
         chat = self.get_object(chat_id)
 
         serializer = serializers.ChChatLevel3Serializer(chat)
+
+        return Response(serializer.data)
+
+
+class ChChatContext(APIView):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        images = request.query_params.get('images', '')
+        users = request.query_params.get('users', '')
+
+
+class ChChatUsers(APIView):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+        chat = self.get_object(chat_id)
+
+        user_data = chat.get_online_users()
+
+        serializer = serializers.ChProfileLevel0Serializer(user_data, many=True)
 
         return Response(serializer.data)
 

@@ -71,6 +71,18 @@ urlpatterns = patterns('',
     url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/messages/$',
         views.ChMessageList.as_view(), name="chat_messages"),
 
+   # url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/context/$',
+   #    views.ChChatContext.as_view(), name="chat_context"),
+
+   # url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/rules/$',
+   #   views.ChChatRules.as_view(), name="chat_rules"),
+
+   # url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/images/$',
+   #     views.ChChatImages.as_view(), name="chat_images"),
+
+    url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/users/$',
+        views.ChChatUsers.as_view(), name="chat_users"),
+
     url(r'^files/url/$', views.request_upload, name="request_upload"),
 
 

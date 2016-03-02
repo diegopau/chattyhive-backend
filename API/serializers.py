@@ -366,6 +366,12 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'chat_id', 'created')
 
 
+class ChProfileLevel0Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChProfile
+        fields = ('public_name', 'avatar')
+
+
 class ChMessageSerializer(serializers.ModelSerializer):
     profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
     id = serializers.IntegerField(source='_count', read_only=True)
@@ -565,6 +571,16 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChChat
         fields = ('chat_id', 'community', 'count', 'created', 'type')
+
+
+class ChChatContextSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET chat context, GET chat images, GET chat users, GET chat rules
+
+    """
+
+    users = ChProfileLevel0Serializer(many=True, source='get_online_users', read_only=True)
+
+
 
 
 # ============================================================ #

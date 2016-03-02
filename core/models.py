@@ -74,7 +74,7 @@ class TagModel(models.Model):
 class GuidelinesModel(models.Model):
     name = models.CharField(max_length=150, unique=True, default='')
     text = models.TextField(max_length=2000, default='')
-    editors = models.ManyToManyField('ChUser', related_name='chat_guidelines', null=True, blank=True)
+    editors = models.ManyToManyField('ChProfile', related_name='chat_guidelines', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -564,7 +564,6 @@ class ChHive(models.Model):
     creator = models.ForeignKey(ChProfile, null=True, related_name='created_hives')
     creation_date = models.DateTimeField(auto_now=False, auto_now_add=False)
     tags = models.ManyToManyField(TagModel, null=True)
-    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
     picture = models.URLField(null=True, blank=True)
     priority = models.IntegerField(default=50, validators=[RegexValidator(r'^(?:100|[1-9]?[0-9])$',
                                                                           'Only integers between 0 - 100 allowed')])
@@ -1100,6 +1099,24 @@ class ChChat(models.Model):
             pusher_channel = 'presence-' + self.chat_id
             pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']), socket_id_to_exclude)
 
+    def get_online_users(self):
+        pusher_object = Pusher(app_id=getattr(common_settings, 'PUSHER_APP_ID', None),
+                               key=getattr(common_settings, 'PUSHER_APP_KEY', None),
+                               secret=getattr(common_settings, 'PUSHER_SECRET', None),
+                               json_encoder=DjangoJSONEncoder,
+                               ssl=True)
+        users_pusher_dict = pusher_object.users_info('presence-' + self.chat_id)
+        users_public_names = users_pusher_dict["users"]
+        users = ChProfile.objects.none()
+
+        if users_public_names:
+            users_to_add = []
+            for user in users_public_names:
+                users_to_add.append(ChProfile.objects.get(public_name=user["id"]))
+            users = users_to_add
+
+        return users
+
     @staticmethod
     def confirm_messages(json_chats_array, profile):
         for chat in json.loads(json_chats_array):
@@ -1175,6 +1192,7 @@ class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
     hive = models.OneToOneField(ChHive, related_name='public_chat', null=True, blank=True)
     deleted = models.BooleanField(default=False)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
 
 
 class ChCommunityPublicChat(models.Model):

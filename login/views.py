@@ -286,7 +286,7 @@ def chat_auth(request):
                 return response
 
         channel_data = {
-            'user_id': socket_id,
+            'user_id': profile.public_name,
             'user_info': {
                 'public_name': profile.public_name,
                 'username': profile.username
