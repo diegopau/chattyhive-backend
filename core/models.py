@@ -1100,7 +1100,7 @@ class ChChat(models.Model):
             pusher_channel = 'presence-' + self.chat_id
             pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']), socket_id_to_exclude)
 
-    def get_online_users(self):
+    def get_online_users(self, limit=-1):
         pusher_object = Pusher(app_id=getattr(common_settings, 'PUSHER_APP_ID', None),
                                key=getattr(common_settings, 'PUSHER_APP_KEY', None),
                                secret=getattr(common_settings, 'PUSHER_SECRET', None),
@@ -1110,10 +1110,14 @@ class ChChat(models.Model):
         users_public_names = users_pusher_dict["users"]
         users = ChProfile.objects.none()
 
+        i = 0
         if users_public_names:
             users_to_add = []
             for user in users_public_names:
+                if i == limit:
+                    break
                 users_to_add.append(ChProfile.objects.get(public_name=user["id"]))
+                i += 1
             users = users_to_add
 
         return users

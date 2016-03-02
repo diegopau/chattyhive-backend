@@ -573,16 +573,6 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
         fields = ('chat_id', 'community', 'count', 'created', 'type')
 
 
-class ChChatContextSerializer(serializers.ModelSerializer):
-    """Used by the following API methods: GET chat context, GET chat images, GET chat users, GET chat rules
-
-    """
-
-    users = ChProfileLevel0Serializer(many=True, source='get_online_users', read_only=True)
-
-
-
-
 # ============================================================ #
 #                       Users & Profiles                       #
 # ============================================================ #

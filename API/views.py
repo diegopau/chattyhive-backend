@@ -1844,6 +1844,95 @@ class ChChatContext(APIView):
         images = request.query_params.get('images', '')
         users = request.query_params.get('users', '')
 
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        regex_int_validator = re.compile("^[1-9][0-9]*$")
+        if regex_int_validator.match(images): # images are requested
+            images_urls = []
+            images_set = ChMessage.objects.filter(chat=chat, content_type='image').order_by('id')[:int(images)]
+            if images_set.exists():
+                for image in images_set:
+                    images_urls.append(image.content)
+            response_data['images'] = images_urls
+
+        if chat.type != 'public':
+            pass
+        else:
+            if hasattr(chat, 'public_chat_extra_info'):  # Its a hive's public chat
+                if chat.public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+            else:  # Then its a community's public chat
+                if chat.community_public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.community_public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+            if regex_int_validator.match(users):  # users are requested
+                user_data = chat.get_online_users(limit=int(users))
+                serializer = serializers.ChProfileLevel0Serializer(user_data, many=True)
+                response_data['users'] = serializer.data
+
+        return Response(response_data)
+
+
+class ChChatRules(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        if chat.type != 'public':
+            return Response({'error_message': 'The target chat should be a public chat to get the rules'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            if hasattr(chat, 'public_chat_extra_info'):  # Its a hive's public chat
+                if chat.public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+            else:  # Then its a community's public chat
+                if chat.community_public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.community_public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+
+        return Response(response_data)
+
+
+class ChChatImages(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        images_urls = []
+        images_set = ChMessage.objects.filter(chat=chat, content_type='image').order_by('id')
+        if images_set.exists():
+            for image in images_set:
+                images_urls.append(image.content)
+        response_data['images'] = images_urls
+
+        return Response(response_data)
+
+
 
 class ChChatUsers(APIView):
 
@@ -1857,12 +1946,15 @@ class ChChatUsers(APIView):
 
     def get(self, request, chat_id, format=None):
         chat = self.get_object(chat_id)
+        response_data = {}
 
         user_data = chat.get_online_users()
 
         serializer = serializers.ChProfileLevel0Serializer(user_data, many=True)
 
-        return Response(serializer.data)
+        response_data['users'] = serializer.data
+
+        return Response(response_data)
 
 
 class ChHiveDetail(APIView):
