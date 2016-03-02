@@ -1193,7 +1193,7 @@ class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
     hive = models.OneToOneField(ChHive, related_name='public_chat', null=True, blank=True)
     deleted = models.BooleanField(default=False)
-    rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
 
 
 class ChCommunityPublicChat(models.Model):
