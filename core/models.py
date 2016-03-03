@@ -1141,7 +1141,7 @@ class ChChat(models.Model):
     def __str__(self):
         slug_ends_with = ''
         if self.type == 'mate_private':
-            slug_ends_with = 'between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ')
+            slug_ends_with = 'between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ') + ' @ ' + self.hive.slug
         if self.type == 'friend_private':
             slug_ends_with = 'between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
         if self.type == 'public':
@@ -1271,7 +1271,8 @@ class ChMessage(models.Model):
         self._count = id
 
     def save(self, *args, **kwargs):
-        self._count = self.chat.count
+        if self._id is None:  # Means that we are creating an object, not updating it
+            self._count = self.chat.count
         super(ChMessage, self).save(*args, **kwargs)
 
     def __str__(self):

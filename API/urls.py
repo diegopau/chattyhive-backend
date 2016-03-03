@@ -71,6 +71,9 @@ urlpatterns = patterns('',
     url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/messages/$',
         views.ChMessageList.as_view(), name="chat_messages"),
 
+    url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/messages/confirmed/$',
+        views.ChMessageConfirmedList.as_view(), name="chat_messages_confirmed"),
+
     url(r'^chats/(?P<chat_id>[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}(-((.+--[\w]+-[\w]+)|([\w]+-[\w]+)))?)/context/$',
         views.ChChatContext.as_view(), name="chat_context"),
 

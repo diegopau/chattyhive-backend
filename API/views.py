@@ -2388,6 +2388,47 @@ class ChMessageList(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+class ChMessageConfirmedList(APIView):
+    """API method: Chat messages confirmed
+
+    """
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatMessages)
+
+    def get_chat(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id, deleted=False)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def post(self, request, chat_id, format=None):
+
+        chat = self.get_chat(chat_id)
+
+        if chat.type == "public":
+            return Response({'error_message': 'This method is only for private chats'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self.check_object_permissions(self.request, chat)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        message_ids = request.data
+
+        with transaction.atomic():
+            for message_id in message_ids:
+                try:
+                    with transaction.atomic():
+                        message = ChMessage.objects.get(_count=message_id, chat=chat)
+                        message.received = True
+                        message.save()
+                except ChMessage.DoesNotExist:
+                    return Response({'error_message': 'At least one of the id was wrong'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
+
+
 class OpenPrivateChat(APIView):
     """API method: Open private chat
 
