@@ -1,8 +1,9 @@
-__author__ = 'lorenzo'
-
 from django import forms
 from core.models import ChProfile
 from datetimewidget.widgets import DateWidget
+
+__author__ = 'lorenzo'
+
 
 class LoginForm(forms.Form):
     login = forms.CharField(max_length=40)
@@ -17,7 +18,7 @@ class RegistrationFormOne(forms.ModelForm):
     class Meta:
         model = ChProfile
         widgets = {
-            # This has been added for django-date-picker. Uses localization and bootstrap 3
+            # This has been added for django-date-widget. Uses localization and bootstrap 3
             'birth_date': DateWidget(attrs={'id': "id_birth_date"}, usel10n=True, bootstrap_version=3)
         }
         fields = ('first_name', 'last_name', 'birth_date', 'sex', '_languages',

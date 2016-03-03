@@ -1,16 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title></title>
-    <script src="{{ STATIC_URL }}js/jquery.min.js"></script>
-    <link href="{{ STATIC_URL }}css/bootstrap.css" rel="stylesheet" type="text/css"/>
-    <script src="{{ STATIC_URL }}js/bootstrap.js"></script>
-    {{ form.media }}
-</head>
-<body>
-<form action="/test-ui/create_user/register1/" method="post">{% csrf_token %}
+{% extends "base_login.html" %}
+
+{% block title %}chattyhive Alpha Web{% endblock %}
+
+{% block more_scripts %}{% endblock %}
+
+{% block content %}
+    <h1>Sign Up - Step 1</h1>
+
+    <form action="/test-ui/create_user/register1/" method="post">{% csrf_token %}
         {{ form.as_p }}
     <input type="submit" value="Submit" />
 </form>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,26 @@
+/* Move down content because we have a fixed navbar that is 50px tall */
+
+a {
+    color: #ff8214
+
+}
+
+a:hover {
+    color: #ffa302
+}
+
+h1 {
+    font-family: 'chattyhiveA',Helvetica,Arial,sans-serif;
+}
+
+.test_ui_main_body {
+
+}
+
+.link-over-black{
+    color: #ffb615 !important;
+}
+
+.link-over-black:hover {
+    color: #ffd800 !important;;
+}

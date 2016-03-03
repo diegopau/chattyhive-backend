@@ -1,19 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>USUARIO</title>
-</head>
-<body>
-    <div align="right">
-        <a href="/admin">Admin site</a><br />
-    </div>
+{% extends "base_login.html" %}
+
+{% block title %}chattyhive Alpha Web{% endblock %}
+
+{% block more_scripts %}{% endblock %}
+
+{% block content %}
     <div align="center">
         <br /><h2>Welcome to ChattyHive!</h2><br />
         <form action="/test-ui/" method="post">{% csrf_token %}
             {{ form.as_p }}
         <input type="submit" value="Submit" />
         </form>
-        <br /><a href="/test-ui/create_user/">Create new user</a>
+        <br /><a href="/test-ui/create_user/">Create new user</a> | <a href="/recover/">Forgot my password</a>
     </div>
-</body>
-</html>
+{% endblock %}

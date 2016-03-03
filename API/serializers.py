@@ -341,9 +341,11 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('tag', )
 
 
-#Serializers define the API representation.
-class ChUserLevel1Serializer(serializers.ModelSerializer):
+class ChUserLevel2Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET user list,
+       Used by the following serializers: --
 
+    """
     related_devices = serializers.SlugRelatedField(slug_field='dev_id', many=True, read_only=True)
 
     class Meta:
@@ -364,12 +366,19 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'chat_id', 'created')
 
 
-class ChMessageLevel1Serializer(serializers.ModelSerializer):
+class ChProfileLevel0Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChProfile
+        fields = ('public_name', 'avatar')
+
+
+class ChMessageSerializer(serializers.ModelSerializer):
     profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
+    id = serializers.IntegerField(source='_count', read_only=True)
 
     class Meta:
         model = ChMessage
-        fields = ('content_type', 'received', 'content', 'profile')
+        fields = ('id', 'received', 'content', 'content_type', 'created', 'profile')
 
 
 # ============================================================ #
@@ -380,7 +389,7 @@ class ChChatLevel2Serializer(serializers.ModelSerializer):
        Used by the following serializers: ChPublicChatLevel3Serializer, ChCommunityPublicChatLevel3Serializer
 
     """
-    last_message = ChMessageLevel1Serializer(many=False, read_only=True)
+    last_message = ChMessageSerializer(many=False, read_only=True)
 
     class Meta:
         model = ChChat
@@ -439,7 +448,7 @@ class ChHiveLevel1Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChHive
-        fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'type', 'category', 'languages',
+        fields = ('name', 'slug', 'description', 'creation_date', 'priority', 'picture', 'type', 'category', 'languages',
                   'creator', 'tags', 'subscribed_users_count', 'public_chat', 'community_public_chats',)
 
 
@@ -461,7 +470,7 @@ class ChChatListLevel2Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat list,
 
     """
-    last_message = ChMessageLevel1Serializer(many=False, read_only=True)
+    last_message = ChMessageSerializer(many=False, read_only=True)
 
     class Meta:
         model = ChChat
@@ -512,9 +521,46 @@ class ChHiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
         fields = ('name', 'languages', 'category', 'creation_date', 'creator', 'description',
-                  'priority', 'rules', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
+                  'priority', 'picture', 'slug', 'tags', 'type', 'subscribed_users_count', 'public_chat',
                   'community_public_chats', 'community')
 
+class ChHiveCreationSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET hive info,
+
+    """
+    category = serializers.SlugRelatedField(read_only=False, queryset=ChCategory.objects.all(), slug_field='code')
+    languages = serializers.SlugRelatedField(source='_languages', many=True, queryset=LanguageModel.objects.all(),
+                                             read_only=False, slug_field='language')
+    visibility_country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(),
+                                                      slug_field='code2')
+
+    # If in the POST we only need to establish the relationship with User model (not update the model itself) we
+    # set read_only to True
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
+
+        # Instantiate the superclass normally
+        super(ChHiveCreationSerializer, self).__init__(*args, **kwargs)
+
+        if fields_to_remove is not None:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields_to_remove:
+                self.fields.pop(field_name)
+
+    def validate(self, data):
+        TYPES = ('Hive', 'Community')
+        if data['type'] not in TYPES:
+            raise ValidationError("The field types does not have a valid value", code="400")
+
+        return data
+
+    class Meta:
+        model = ChHive
+        fields = ('name', 'languages', 'category', 'description', 'visibility_country',
+                  'picture', 'type')
 
 class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,
@@ -527,18 +573,127 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
         fields = ('chat_id', 'community', 'count', 'created', 'type')
 
 
-class ChMessageSerializer(serializers.ModelSerializer):
-    profile = serializers.SlugRelatedField(read_only=True, slug_field='public_name')
-    id = serializers.IntegerField(source='_count', read_only=True)
-
-    class Meta:
-        model = ChMessage
-        fields = ('id', 'received', 'content', 'content_type', 'created', 'profile')
-
-
 # ============================================================ #
 #                       Users & Profiles                       #
 # ============================================================ #
+
+class ChProfileLevel2PatchSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: Update user profile,
+
+    """
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False,
+                                             queryset=LanguageModel.objects.all(), slug_field='language')
+    country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(), slug_field='code2')
+
+    # TODO: IMPORTANT: It should be possible to do some optimization here: because I get all region objects as queryset
+    # it will load every region when it should be possible to restrict the queryset to only Regions of the specified
+    # country... the same (even more relevant) for cities.
+    region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
+    city = serializers.SlugRelatedField(read_only=False, queryset=City.objects.all(), slug_field='name')
+
+    def validate(self, data):
+
+        if 'picture' in data:
+            # The validation for the picture and avatar should go here.. but for now it was easier to have it inside
+            # the view
+            pass
+
+        if 'avatar' in data:
+            if not data['avatar']:
+                raise ValidationError("An avatar URL must be always present", code="400")
+
+        if 'personal_color' in data:
+            # TODO: additional validation ??
+            pass
+
+        if 'private_status' in data:
+            if len(data['private_status']) > 140:
+                raise ValidationError("The status message can be 140 chars long maximum", code="400")
+
+        if 'public_status' in data:
+            if len(data['public_status']) > 140:
+                raise ValidationError("The status message can be 140 chars long maximum", code="400")
+
+        if 'country' in data:
+            if 'region' in data:
+                if 'city' not in data:
+                    data['city'] = None
+            else:
+                if 'city' in data:
+                    raise ValidationError("If there is a city there must be a region defined too", code="400")
+                else:
+                    data['region'] = None
+                    data['city'] = None
+
+        if 'region' in data:
+            if 'country' not in data:
+                raise ValidationError("If there is a region there must be a country defined too", code="400")
+
+        if 'city' in data:
+            if ('country' in data) and ('region' in data):
+                pass
+            else:
+                raise ValidationError("If there is a city there must be a country and region defined too", code="400")
+
+        return data
+
+    class Meta:
+        model = ChProfile
+        fields = ('first_name', 'last_name', 'picture', 'avatar', 'languages', 'city', 'region', 'country',
+                  'birth_date', 'private_show_age', 'public_show_age', 'public_show_sex', 'public_show_location',
+                  'private_show_location', 'personal_color', 'private_status', 'public_status')
+
+
+class ChProfileLevel2Serializer(serializers.ModelSerializer):
+    """Used by the following API methods: Register user,
+
+    """
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=False,
+                                             queryset=LanguageModel.objects.all(), slug_field='language')
+    country = serializers.SlugRelatedField(read_only=False, queryset=Country.objects.all(), slug_field='code2')
+
+    # TODO: IMPORTANT: It should be possible to do some optimization here: because i get all region objects as queryset
+    # it will load every region when it should be possible to restrict the queryset to only Regions of the specified
+    # country... the same (even more relevant) for cities.
+    region = serializers.SlugRelatedField(read_only=False, queryset=Region.objects.all(), slug_field='name')
+    city = serializers.SlugRelatedField(read_only=False, queryset=City.objects.all(), slug_field='name')
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+
+        fields_to_remove = kwargs.pop('fields_to_remove', None)
+
+        # Instantiate the superclass normally
+        super(ChProfileLevel2Serializer, self).__init__(*args, **kwargs)
+
+        if fields_to_remove:
+            # Drop fields that are specified in the `fields` argument.
+            for field_name in fields_to_remove:
+                self.fields.pop(field_name)
+
+    def validate(self, data):
+
+        if 'picture' in data:
+            # The validation for the picture and avatar should go here.. but of now it was easier to have it inside
+            # the view
+            pass
+
+        if 'avatar' in data:
+            if not data['avatar']:
+                raise ValidationError("An avatar URL must be always present", code="400")
+
+        if 'public_name' in data:
+            # We check that this username does not already exist
+            pass
+
+        return data
+
+    class Meta:
+        model = ChProfile
+        fields = ('first_name', 'last_name', 'picture', 'birth_date', 'languages', 'public_name', 'sex', 'city',
+                  'region', 'country', 'avatar', 'private_show_age', 'public_show_age', 'public_show_sex',
+                  'public_show_location')
+
 
 class ChProfileSerializer(serializers.ModelSerializer):
     """Used by the following API methods: GET user profile,
@@ -548,12 +703,12 @@ class ChProfileSerializer(serializers.ModelSerializer):
 
     user = ChUserLevel0Serializer(many=False, read_only=True)
     languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
-    country = serializers.SlugRelatedField(read_only=True, slug_field='code2'.lower())
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
     region = serializers.SlugRelatedField(read_only=True, slug_field='name')
     city = serializers.SlugRelatedField(read_only=True, slug_field='name')
     coordinates = serializers.CharField(source='get_coordinates', read_only=True)
 
-    hives = ChHiveLevel1Serializer(many=True, read_only=True)
+    hive_subscriptions = ChHiveSubscriptionListLevel3Serializer(many=True, read_only=True)
 
     def __init__(self, *args, **kwargs):
         # Don't pass the 'fields' arg up to the superclass
@@ -590,15 +745,15 @@ class ChProfileSerializer(serializers.ModelSerializer):
             basic_fields = {'user', 'public_name', 'avatar', 'personal_color', 'public_status', 'email',
                             'first_name', 'last_name', 'picture', 'private_status'}
             info_fields = {'birth_date', 'sex',
-                           'languages', 'country', 'region', 'city', 'location', 'public_show_age', 'public_show_sex'
+                           'languages', 'country', 'region', 'city', 'coordinates', 'public_show_age', 'public_show_sex',
                            'public_show_location', 'private_show_age', 'private_show_location'}
-            hives_fields = {'hives'}
+            hives_fields = {'hive_subscriptions'}
 
         elif profile_type == 'public':
 
             basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
-            info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'location'}
-            hives_fields = {'hives'}
+            info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'coordinates'}
+            hives_fields = {'hive_subscriptions'}
 
         elif profile_type == 'private':
 
@@ -626,9 +781,8 @@ class ChProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChProfile
-        fields = ('user',  'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
+        fields = ('user', 'public_name', 'avatar', 'personal_color', 'public_status', 'first_name',
                   'last_name', 'picture', 'private_status', 'birth_date', 'sex', 'languages', 'country', 'region',
-                  'location', 'city', 'hives', 'public_show_age', 'public_show_location', 'public_show_sex',
-                  'private_show_age', 'private_show_location', 'created', 'last_activity')
-
+                  'city', 'hive_subscriptions', 'public_show_age', 'public_show_location', 'public_show_sex',
+                  'private_show_age', 'private_show_location', 'created', 'last_activity', 'coordinates')
 

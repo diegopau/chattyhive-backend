@@ -74,7 +74,7 @@ class TagModel(models.Model):
 class GuidelinesModel(models.Model):
     name = models.CharField(max_length=150, unique=True, default='')
     text = models.TextField(max_length=2000, default='')
-    editors = models.ManyToManyField('ChUser', related_name='chat_guidelines', null=True, blank=True)
+    editors = models.ManyToManyField('ChProfile', related_name='chat_guidelines', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -564,10 +564,10 @@ class ChHive(models.Model):
     creator = models.ForeignKey(ChProfile, null=True, related_name='created_hives')
     creation_date = models.DateTimeField(auto_now=False, auto_now_add=False)
     tags = models.ManyToManyField(TagModel, null=True)
-    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
     picture = models.URLField(null=True, blank=True)
     priority = models.IntegerField(default=50, validators=[RegexValidator(r'^(?:100|[1-9]?[0-9])$',
                                                                           'Only integers between 0 - 100 allowed')])
+    visibility_country = models.ForeignKey(Country, null=True, blank=True)
     type = models.CharField(max_length=20, choices=TYPES, default='Hive')
     deleted = models.BooleanField(default=False)
 
@@ -633,15 +633,15 @@ class ChHive(models.Model):
 
         if profile.city is not None:
             users_in_same_city = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, city=profile.city).order_by('-last_activity')
+                hive_subscriptions__in=hive_subscriptions, city=profile.city).order_by('-last_activity')
 
         if profile.region is not None:
             users_in_same_region = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, region=profile.region).order_by('-last_activity')
+                hive_subscriptions__in=hive_subscriptions, region=profile.region).order_by('-last_activity')
 
         if profile.country is not None:
             users_in_same_country = ChProfile.objects.filter(
-                hive_subscription__in=hive_subscriptions, country=profile.country).order_by('-last_activity')
+                hive_subscriptions__in=hive_subscriptions, country=profile.country).order_by('-last_activity')
         else:
             raise IntegrityError("User has no country assigned")
 
@@ -652,8 +652,8 @@ class ChHive(models.Model):
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
-        users_recently_join = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
-            '-hive_subscription__creation_date')
+        users_recently_join = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
+            '-hive_subscriptions__creation_date')
 
         return users_recently_join
 
@@ -664,7 +664,7 @@ class ChHive(models.Model):
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False).exclude(profile=profile)
 
-        users_recently_online = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
+        users_recently_online = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
             '-last_activity')
 
         return users_recently_online
@@ -676,12 +676,12 @@ class ChHive(models.Model):
         """
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False, profile__country=profile.country).exclude(profile=profile)
-        users_list_near = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
-            '-hive_subscription__creation_date')
+        users_list_near = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
+            '-hive_subscriptions__creation_date')
         hive_subscriptions = ChHiveSubscription.objects.select_related('profile').filter(
             hive=self, subscription_state='active', expelled=False).exclude(profile__country=profile.country).exclude(profile=profile)
-        users_list_far = ChProfile.objects.filter(hive_subscription__in=hive_subscriptions).order_by(
-            '-hive_subscription__creation_date')
+        users_list_far = ChProfile.objects.filter(hive_subscriptions__in=hive_subscriptions).order_by(
+            '-hive_subscriptions__creation_date')
         users_list = users_list_near | users_list_far
         return users_list
 
@@ -693,7 +693,7 @@ class ChHive(models.Model):
         if not tags:
             return hives
         else:
-            hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags)
+            hives_by_tags = ChHive.objects.filter(id__in=hives, tags__slug__in=tags).distinct()
             return hives_by_tags
 
     @classmethod
@@ -941,18 +941,20 @@ class ChCommunity(models.Model):
     admins = models.ManyToManyField(ChProfile, null=True, blank=True, related_name='administrates')
     # todo: administrative info?
     deleted = models.BooleanField(_('The owner has deleted it'), default=False)
+    approved = models.BooleanField(_('Is the community approved by the chattyhive team?'), default=False)
 
     def delete_community(self):
         # TODO: Here we have to still decide what to do with the private chats the users have inside this community
         # to suddenly remove them just doesn't feel right!...
         pass
 
-    def new_public_chat(self, name, public_chat_slug_ending, description):
+    def new_public_chat(self, name, public_chat_slug_ending, description, rules):
         chat = ChChat(hive=self.hive, type='public')
         chat.chat_id = ChChat.get_chat_id()
         chat.slug = chat.chat_id + '-' + public_chat_slug_ending
         chat.save()
-        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive)
+        chat_extension = ChCommunityPublicChat(chat=chat, name=name, description=description, hive=self.hive,
+                                               rules=rules)
         chat_extension.save()
         # transaction.commit()
 
@@ -1098,6 +1100,28 @@ class ChChat(models.Model):
             pusher_channel = 'presence-' + self.chat_id
             pusher_object.trigger(pusher_channel, event, json.loads(message_data['json_message']), socket_id_to_exclude)
 
+    def get_online_users(self, limit=-1):
+        pusher_object = Pusher(app_id=getattr(common_settings, 'PUSHER_APP_ID', None),
+                               key=getattr(common_settings, 'PUSHER_APP_KEY', None),
+                               secret=getattr(common_settings, 'PUSHER_SECRET', None),
+                               json_encoder=DjangoJSONEncoder,
+                               ssl=True)
+        users_pusher_dict = pusher_object.users_info('presence-' + self.chat_id)
+        users_public_names = users_pusher_dict["users"]
+        users = ChProfile.objects.none()
+
+        i = 0
+        if users_public_names:
+            users_to_add = []
+            for user in users_public_names:
+                if i == limit:
+                    break
+                users_to_add.append(ChProfile.objects.get(public_name=user["id"]))
+                i += 1
+            users = users_to_add
+
+        return users
+
     @staticmethod
     def confirm_messages(json_chats_array, profile):
         for chat in json.loads(json_chats_array):
@@ -1117,12 +1141,12 @@ class ChChat(models.Model):
     def __str__(self):
         slug_ends_with = ''
         if self.type == 'mate_private':
-            slug_ends_with = ' - between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ')
+            slug_ends_with = 'between - ' + self.slug[self.slug.find('--') + 2:len(self.slug)].replace('-', ' & ') + ' @ ' + self.hive.slug
         if self.type == 'friend_private':
-            slug_ends_with = ' - between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
+            slug_ends_with = 'between - ' + self.slug[self.slug.find('-') + 1:len(self.slug)].replace('-', ' & ')
         if self.type == 'public':
-            slug_ends_with = ''
-        return self.hive.name + '(' + self.type + ')' + slug_ends_with
+            slug_ends_with = self.hive.name
+        return self.type + ' - ' + slug_ends_with
 
 
 class ChChatSubscription(models.Model):
@@ -1162,7 +1186,6 @@ class ChChatSubscription(models.Model):
 
 class ChFriendsGroupChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='friends_group_chat_extra_info')
-    hive = models.ForeignKey(ChHive, related_name="friends_group_chats", null=True, blank=True)
 
 
 class ChHivematesGroupChat(models.Model):
@@ -1174,6 +1197,7 @@ class ChPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='public_chat_extra_info')
     hive = models.OneToOneField(ChHive, related_name='public_chat', null=True, blank=True)
     deleted = models.BooleanField(default=False)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
 
 
 class ChCommunityPublicChat(models.Model):
@@ -1181,20 +1205,21 @@ class ChCommunityPublicChat(models.Model):
     chat = models.OneToOneField(ChChat, related_name='community_public_chat_extra_info')
     name = models.CharField(max_length=80)  # TODO: unique for each community, basic regex
     # slug = models.CharField(max_length=250, unique=True, default='')
-    picture = models.CharField(max_length=200)
+    picture = models.CharField(max_length=200, null=True, blank=True)
     description = models.TextField(max_length=2048)
     hive = models.ForeignKey(ChHive, related_name="community_public_chats", null=True, blank=True)
     deleted = models.BooleanField(_('The owner or administrator has deleted it'), default=False)
-    rules = models.OneToOneField(GuidelinesModel, null=True, blank=True)
+    rules = models.ForeignKey(GuidelinesModel, null=True, blank=True)
 
     def delete_public_chat(self):
         # TODO: delete_public_chat method.
         pass
 
     def save(self, *args, **kwargs):
+
         # We look for any existing ChCommunityPublicChat objects with the same name and we get its ChChat object
         # IMPORTANT: if there is another ChCommunityPublicChat this is OK as long as it belongs to another community...
-        extensions = ChCommunityPublicChat.objects.filter(name=self.name).values('chat')
+        extensions = ChCommunityPublicChat.objects.filter(name=self.name).exclude(id=self.id).values('chat')  # The exclude is in case we are updating an object, not creating it.
         # ... and that is why we check here if this ChChat object belongs to the same community (hive) than the ChChat
         # we are trying to create now.
         chats = ChChat.objects.filter(id__in=extensions, hive=self.chat.hive)
@@ -1214,7 +1239,10 @@ class ChMessage(models.Model):
         ('animation', 'Animation'),
         ('url', 'URL'),
         ('file', 'File'),
-        ('invitation', 'Invitation')
+        ('location', 'Location'),
+        ('invitation', 'Invitation'),
+        ('phone-contact', 'Phone Contact'),
+        ('chatty-contact', 'Chattyhive Contact')
     )
 
     _id = models.AutoField(primary_key=True)
@@ -1243,7 +1271,8 @@ class ChMessage(models.Model):
         self._count = id
 
     def save(self, *args, **kwargs):
-        self._count = self.chat.count
+        if self._id is None:  # Means that we are creating an object, not updating it
+            self._count = self.chat.count
         super(ChMessage, self).save(*args, **kwargs)
 
     def __str__(self):

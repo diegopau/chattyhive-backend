@@ -1,10 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="{{ STATIC_URL }}js/jquery.min.js"></script>
-</head>
-<body>
+{% extends "base_login.html" %}
 
+{% block title %}chattyhive Alpha Web{% endblock %}
+
+{% block more_scripts %}{% endblock %}
+
+{% block content %}
+    <h1>Sign Up in chattyhive</h1>
     <a href="{% url 'social:begin' 'facebook' %}">Facebook OAuth2</a> <br />
 
     <a href="{% url 'social:begin' 'twitter' %}">Twitter OAuth1</a> <br />
@@ -57,8 +58,4 @@
         }
     };
 </script>
-
-</body>
-
-{#{% endcomment %}#}
-</html>
+{% endblock %}

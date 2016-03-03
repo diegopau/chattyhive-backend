@@ -1,19 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>CREATE NEW USER</title>
-</head>
-<body>
+{% extends "base_login.html" %}
 
-{% if error == 'password' %}
-    <p>Passwords don't match</p>
-{% elif error == 'email' %}
-    <p>This email already exists. Please, choose other</p>
-{% endif %}
-<form action="/test-ui/create_user/register3/" method="post">{% csrf_token %}
+{% block title %}chattyhive Alpha Web{% endblock %}
+
+{% block more_scripts %}{% endblock %}
+
+{% block content %}
+    <h1>Sign Up - Step 3</h1>
+    {% if error == 'password' %}
+        <p>Passwords don't match</p>
+    {% elif error == 'email' %}
+        <p>This email already exists. Please, choose other</p>
+    {% endif %}
+    <form action="/test-ui/create_user/register3/" method="post">{% csrf_token %}
         {{ form.as_p }}
-    <input type="submit" value="Submit" />
-</form>
-
-</body>
-</html>
+        <input type="submit" value="Submit" />
+    </form>
+{% endblock %}

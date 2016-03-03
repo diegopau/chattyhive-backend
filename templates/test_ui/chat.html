@@ -2,13 +2,12 @@
 {% block title %}Chat{% endblock %}
 {% block more_scripts %}
     <script src="//js.pusher.com/3.0/pusher.min.js"></script>{% endblock %}
-{% block public_name %}{{ user }}{%  endblock %}
+{% block public_name %}{{ user_public_name }}{%  endblock %}
 
 {% block content %}
 
-    <a href="/test-ui/home/chats/">Home</a>
     <br />
-    Welcome, {{ user }}!  Hive: {{ hive.slug }}
+    Welcome, {{ user_public_name }}!  Hive: {{ hive.slug }}
     <br />
     <br /><br /><button type="button" id="btn_load" style="text-align: right">Load previous messages</button>
         <p id="chat_field">
@@ -27,7 +26,7 @@
  <script type="text/javascript">
 
         var num_rep=0;
-        var user="{{ user }}";
+        var user_public_name="{{ user_public_name }}";
         var key="{{ key }}";
         var hive = "{{ hive.slug }}";
         var channel_name="{{ channel }}";
@@ -48,21 +47,20 @@
 
         // Listening to the channel
         channel.bind(event_name, function(data) {
-
-            if(data.username!=user) write(data.public_name, data.message, data.timestamp, data.timestamp_server);
+            if(data.public_name!=user_public_name) write(data.public_name, data.content, data.server_time);
         });
 
         // AJAX method to write chat answers on screen
-        function write(name_user, text, timestamp, timestamp_server) {
+        function write(name_user, text, timestamp) {
             chat = $('#chat_field').html();
             num_rep ++;
             if (num_rep > 15) {
                 $('#chat_field').text(name_user + " said: " + text + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
-                $('#time').text("Last message on " + timestamp + " &nbsp;&mbsp;&nbsp;&nbsp;&nbsp; Received on server on " + timestamp_server);
+                $('#time').text("Last message on " + timestamp);
                 num_rep = 0;
             } else {
                 $('#chat_field').html(chat + '<br/>' + name_user + " said: " + text + "&nbsp;&nbsp;&nbsp;&nbsp; on: " + timestamp);
-                $('#time').text("Last message: " + timestamp + "   Received on server on " + timestamp_server);
+                $('#time').text("Last message: " + timestamp);
             }
         }
 
@@ -70,14 +68,22 @@
         function reload(messages) {
             var message = messages[0];
             var showname = "";
-            if(message.username==user) showname="you";
-            else showname=message.public_name;
-            $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp);
+            if(message.public_name==user_public_name) {
+                showname = "You";
+            }
+            else {
+                showname = message.public_name;
+            }
+            $('#chat_field').html(showname + " said: " + message.content + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time);
             for(i = 1; i < messages.length; i++){
                 message = messages[i]
-                if(message.username==user) shownname="you";
-                else showname=message.public_name;
-                $('#chat_field').html(showname + " said: " + message.message + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.timestamp + '<br/>' + $('#chat_field').html());
+                if(message.public_name==user_public_name) {
+                    showname = "You";
+                }
+                else {
+                    showname=message.public_name;
+                }
+                $('#chat_field').html(showname + " said: " + message.content + " &nbsp;&nbsp;&nbsp;&nbsp; on: " + message.server_time + '<br/>' + $('#chat_field').html());
             }
             $('#older').html(message.id)
         }
@@ -107,12 +113,11 @@
                 $("#msg_text").val("");
                 var d = new Date();
                 var timestamp = d.toTimeString();
-                var timestamp_server = null;
                 $.ajax({
                     type: "POST",
-                    url: "/test-ui/hive_chat/" + hive + '/' + channel_name + "/",
+                    url: "/test-ui/chat/" + hive + '/' + channel_name + "/",
                     headers: {"X-CSRFToken":csrftoken},
-                    data: {username:"you", timestamp:timestamp, message:text_sent, timestamp_server:timestamp_server, new_chat:new_chat, socket_id:pusher.connection.socket_id},
+                    data: {content:text_sent, new_chat:new_chat, socket_id:pusher.connection.socket_id},
                     success: function(newData){
                         if(newData=="Server Ok") {
                             $("#status").html(newData);
@@ -125,11 +130,11 @@
                         alert(errMsg);
                     }
                 });
-               // write(user, text_sent, timestamp, timestamp_server);
+                write("You", text_sent, timestamp);
                 return false;
             });
 
-            // Button load behaviour when clicked
+            // Button load previous messages behaviour when clicked
             $('#btn_load').on('click', function()
             {
                 older = $('#older').html();
@@ -149,7 +154,7 @@
                 return false;
             });
 
-            // Button recent behaviour when clicked
+            // Button load last messages behaviour when clicked
             $('#btn_recent').on('click', function()
             {
                 $.ajax({

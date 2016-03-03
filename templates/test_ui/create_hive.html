@@ -7,9 +7,9 @@
 {% block public_name %}{{ profile.public_name }}{%  endblock %}
 
 {% block content %}
-    <a href="/test-ui/home/">Home</a>
-    </br>
-    <a href="/test-ui/create_community/">Community</a>
+
+    <h1> New hive </h1>
+    <a href="/test-ui/create_community/">Create a community instead</a>
     <form action="/test-ui/create_hive/" method="post">{% csrf_token %}
             {{ formHive.as_p }}
             {{ formTags.as_p }}

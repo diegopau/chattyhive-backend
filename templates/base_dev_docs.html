@@ -14,6 +14,8 @@
     <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
 
     <link href="{{ STATIC_URL }}css/dev_docs.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/base.css" rel="stylesheet">
+
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -34,18 +36,15 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">Chattyhive Docs</a>
+            <a href="/"><img src="{{ STATIC_URL }}images/logo.png" class="img-responsive logo" alt="chattyhive logo"></a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="#">API</a></li>
-                <li><a href="#">Settings</a></li>
-                <li><a href="#">Profile</a></li>
-                <li><a href="#">Help</a></li>
+                <li><a href="http://join.chattyhive.com/">Launch page</a></li>
+                <li><a href="http://blog.chattyhive.com/">Blog</a></li>
+                <li><a href="/api/summary/">API</a></li>
+                <li><button type="button" class="btn btn-default navbar-btn" id="btn_logout">Logout</button></li>
             </ul>
-            <form class="navbar-form navbar-right">
-                <input type="text" class="form-control" placeholder="Search...">
-            </form>
         </div>
     </div>
 </nav>
@@ -55,38 +54,54 @@
     <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
             <ul class="nav nav-sidebar">
-                <li class="active"><a href="#">Project summary<span class="sr-only">(current)</span></a></li>
-                <li><a href="">API methods</a></li>
-                <li><a href="#">Some Other</a></li>
-                <li><a href="#">And some other</a></li>
+                <li><a href="/api/summary/">Project summary</a></li>
+                <li><a href="/api/methods/">API</a></li>
             </ul>
             <ul class="nav nav-sidebar">
-                <li><a href="">Nav item</a></li>
-                <li><a href="">Nav item again</a></li>
-                <li><a href="">One more nav</a></li>
-                <li><a href="">Another nav item</a></li>
-                <li><a href="">More navigation</a></li>
-            </ul>
-            <ul class="nav nav-sidebar">
-                <li><a href="">Nav item again</a></li>
-                <li><a href="">One more nav</a></li>
-                <li><a href="">Another nav item</a></li>
+                <li><a href="/test-ui/">Test interface</a></li>
+                <li><a href="/admin/">Admin</a></li>
             </ul>
         </div>
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <div id="main_section" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             {% block content %}
 
             {% endblock %}
-
         </div>
     </div>
 </div>
+
 
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
 <script src="{{ STATIC_URL }}js/jquery.min.js"></script>
 <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+<script src="{{ STATIC_URL }}js/js.cookie.js"></script>
+
+<script type="text/javascript">
+    // Buttons behaviour
+    $(document).ready(function () {
+        // Button logout behaviour when clicked
+        $('#btn_logout').on('click', function () {
+            var csrftoken = Cookies.get('csrftoken');
+            $.ajax({
+                type: "POST",
+                url: "/api/logout/",
+                headers: {"X-CSRFToken": csrftoken},
+                data: "",
+                success: function (newData) {
+                    alert(newData);
+                    //$.removeCookie(); TODO toggle to remove browser cookies
+                    location.href = "/";
+                },
+                failure: function (errMsg) {
+                    alert(errMsg);
+                }
+            });
+            return false;
+        });
+    });
+</script>
 
 <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 <script src="{{ STATIC_URL }}js/ie10-viewport-bug-workaround.js"></script>

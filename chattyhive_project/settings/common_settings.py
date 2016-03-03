@@ -5,7 +5,7 @@ from urllib import parse
 from django.utils.translation import ugettext_lazy as _
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 # django-environ initial configuration
@@ -14,6 +14,7 @@ import environ
 
 ROOT_DIR = environ.Path(__file__) - 3  # (/a/b/myfile.py - 3 = /)
 env = environ.Env()
+environ.Env.read_env()  # Reads values from .env file when in local machine
 
 
 
@@ -76,6 +77,7 @@ LOCAL_APPS = (
     'login',
     'email_confirmation',
     'test_ui',
+    'password_reset',
 )
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -124,7 +126,7 @@ CACHES = {
 
     # BECAUSE FREE REDIS HEROKU LAYER NOW ONLY ALLOWS YOU 1 DATABASE THIS IS COMMENTED OUT FOR NOW, IT WILL BE
     # TEMPORALLY ALL HANDLE BY JUST ONE REDIS DATABASE, BUT THE IDEAL SETUP IS TO USE THREE
-    # THIS IS STILL THE IDEAL SETUP
+    # THIS IS STILL THE IDEAL SETUP (REDIS CLOUD IS THE CHEAPEST OPTION RIGHT NOW TO ALLOW 3 DAA
     # "requests": {  # This will be used as cache for incoming requests, it has a short time out (in seconds)
     #      "BACKEND": "django_redis.cache.RedisCache",
     #      "LOCATION": env("REDIS_URL_2", default="redis://127.0.0.1:6379/2"),
@@ -306,11 +308,16 @@ TEMPLATES = [
 # STATIC FILE CONFIGURATION
 # ------------------------------------------------------------------------------
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-root
+
+# This is where permanent static files can be stored
 STATIC_PATH = os.path.join(BASE_DIR, '../static')
 
 STATICFILES_DIRS = (
     STATIC_PATH,
 )
+
+# This is a temp folder for the collectstatic command will collect static files
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
 
 # URL prefix for static files.
 # Example: "http://example.com/static/", "http://static.example.com/"
@@ -434,6 +441,23 @@ ALLOWED_IMAGE_EXTENSIONS = (
     'gif',
 )
 
+ALLOWED_VIDEO_EXTENSIONS = (
+    'avi',
+    'mp4',
+)
+
+ALLOWED_AUDIO_EXTENSIONS = (
+    'mp3',
+    'flac',
+)
+
+ALLOWED_ANIMATION_EXTENSIONS = (
+    'gif',
+)
+
+
+
+
 # GCM
 # ----------------------------------------------------------------
 GCM_SENDER_ID = env('GCM_SENDER_ID')
@@ -555,11 +579,20 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
 
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    ),
+
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.AdminRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer'
+        'rest_framework.renderers.BrowsableAPIRenderer',
+        # 'rest_framework.renderers.AdminRenderer',
     ],
+
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100
 }

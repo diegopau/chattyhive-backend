@@ -7,11 +7,9 @@
 {% block public_name %}{{ profile.public_name }}{%  endblock %}
 
 {% block content %}
-    <a href="/test-ui/profile/my_profile/public">Profile</a>
-    <a href="/test-ui/explore/">Explore</a>
-    <a href="/test-ui/create_hive/">New Hive</a>
-    <br />
-    <br />
+
+    <h1> My hives</h1>
+
     My Hives--<a href="/test-ui/home/chats/">My Chats</a>
     <br />
     {% for hive in hives %}

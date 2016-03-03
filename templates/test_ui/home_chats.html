@@ -8,19 +8,16 @@
 
 {% block content %}
 
-    <a href="/test-ui/profile/my_profile/public">Profile</a>
-    <a href="/test-ui/explore/">Explore</a>
-    <a href="/test-ui/create_hive/">New Hive</a>
-    <br />
-    <br />
+    <h1> My chats</h1>
+
     <a href="/test-ui/home/hives/">My Hives</a>--My Chats
     <br />
     {% for chat in chats %}
       <li>
         {% if chat.type == 'mate_private' %}
-            <a href="/test-ui/hive_chat/{{ chat.hive.slug }}/{{ chat.chat_id }}"> {{ chat.public_names }} in {{ chat.hive }} <i>-- private chat --</i></a>
+            <a href="/test-ui/chat/{{ chat.hive.slug }}/{{ chat.chat_id }}"> {{ chat.public_names }} in {{ chat.hive }} <i>-- private chat --</i></a>
         {% else %}
-            <a href="/test-ui/hive_chat/{{ chat.hive.slug }}/{{ chat.chat_id }}">{{ chat.hive }} <i>-- public chat --</i></a>
+            <a href="/test-ui/chat/{{ chat.hive.slug }}/{{ chat.chat_id }}">{{ chat.hive }} <i>-- public chat --</i></a>
         {% endif %}
       </li>
     {% endfor %}

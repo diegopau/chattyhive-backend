@@ -1,13 +1,13 @@
 from django.utils import timezone
-
-__author__ = 'diego'
-
 import django
 import json
+import re
 from django.contrib.auth import authenticate
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.core import exceptions as Excep; Excep.ObjectDoesNotExist, Excep.MultipleObjectsReturned,\
+                                             Excep.ValidationError
+from django.core.validators import validate_email
 from core.models import ChUser, ChProfile, ChUserManager, ChChatSubscription, ChHiveSubscription, ChHive, ChChat, \
-    ChMessage, Device, ChCategory
+    ChMessage, Device, ChCategory, City, Region, Country, ChPublicChat, ChCommunity, GuidelinesModel
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse, Http404
@@ -16,7 +16,7 @@ from email_confirmation.models import EmailAddress, EmailConfirmation
 from API import serializers
 from API import permissions
 import datetime
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, hashers
 from chattyhive_project.settings import common_settings
 from django.db import IntegrityError, transaction
 from core.models import UnauthorizedException
@@ -24,6 +24,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from uuid import uuid4
 from django.core.cache import cache
+from slugify import slugify
 
 # =================================================================== #
 #                     Django Rest Framework imports                   #
@@ -37,6 +38,12 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError, NotAuthenticated
+
+__author__ = 'diego'
+
+# ============================================================ #
+#                       Support methods                        #
+# ============================================================ #
 
 
 # ============================================================ #
@@ -58,6 +65,7 @@ def start_session(request, format=None):
 
 
 class UserLogin(APIView):
+#TODO: Login does not require csrftoken right now, why?
 
     def get_or_register_device(self, dev_id, dev_type, dev_os, dev_code, new_device, reg_id, user):
 
@@ -180,7 +188,7 @@ class UserLogin(APIView):
                                     # it wasn't so
                                     data_dict['email_verification'] = 'expired'
                                     EmailAddress.objects.check_confirmation(email_address)
-                                    return Response(data_dict, status=status.HTTP_401_UNAUTHORIZED)
+                                    return Response(data_dict, status=status.HTTP_403_FORBIDDEN)
                                 else:
                                     # FIRST EXPIRATION DATE IS DUE and it has been already checked and warned, but the
                                     # extra warning time has not expired,
@@ -319,7 +327,7 @@ class UserLogin(APIView):
                         return Response(data_dict, status=status.HTTP_200_OK)
                 else:
                     print("The password is valid, but the account has been disabled!")
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+                    return Response(status=status.HTTP_403_FORBIDDEN)
             else:
                 # the authentication system was unable to verify the username and password
                 print("The username and password were incorrect.")
@@ -328,9 +336,7 @@ class UserLogin(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-
-# TODO: This permission should be set, but is giving problems
-# @permission_classes(permissions.IsAuthenticated,)
+@permission_classes((permissions.IsAuthenticated,))
 def user_logout(request):
     logout(request)
     return Response(status=status.HTTP_200_OK)
@@ -343,7 +349,7 @@ class CheckAsynchronousServices(APIView):
         try:
             device = Device.objects.get(dev_id=dev_id, active=True)
             if not device.user == user:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+                return Response(status=status.HTTP_403_FORBIDDEN)
         except Device.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -381,8 +387,7 @@ class CheckAsynchronousServices(APIView):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
-# TODO: This permission should be set, but is giving problems (TRY AGAIN TO UNCOMMENT IT! I HAVE MADE SOME CHANGES)
-# @permission_classes((permissions.IsAuthenticated,))
+@permission_classes((permissions.IsAuthenticated,))
 def asynchronous_authentication(request):
     if request.method == 'POST':
 
@@ -406,7 +411,7 @@ def asynchronous_authentication(request):
                 except ChChatSubscription.DoesNotExist:
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
             channel_data = {
-                'user_id': socket_id,
+                'user_id': profile.public_name,
                 'user_info': {
                     'public_name': profile.public_name,
                 }
@@ -432,7 +437,7 @@ def asynchronous_authentication(request):
 @parser_classes((JSONParser,))
 @permission_classes((permissions.IsAuthenticated,))
 def request_upload(request, format=None):
-    """Returns a temporal url for the client where it can upload a file
+    """Returns a temporary url for the client where it can upload a file
     """
     if request.method == 'GET':
 
@@ -461,126 +466,157 @@ def request_upload(request, format=None):
         return Response({"url": url}, status=status.HTTP_200_OK)
 
 
-# ============================================================ #
-#                          Explore                             #
-# ============================================================ #
-
-class ChHiveList(APIView):
-    """Lists hives in Explora or creates new hive
-
-    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
-    (user registration)
-    """
-
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get(self, request, list_order='', category_slug='', category_code='', format=None):
-        """prueba
-        """
-        location = {}
-
-        # Info retrieval
-        profile = request.user.profile
-
-        tags = request.query_params.getlist('tags')
-
-        include_subscribed_string = request.query_params.get('include_subscribed', 'False')
-        include_subscribed = False
-
-        if include_subscribed_string == 'True':
-            include_subscribed = True
-
-        search_string =request.query_params.get('search_string', '')
-
-        coordinates = request.query_params.get('coordinates', '')
-        if coordinates != '':
-            location['coordinates'] = coordinates
-
-        else:  # If we get coordinates we discard anything else
-            country = request.query_params.get('country', '')
-            if country != '':
-                location['country'] = country
-
-            region = request.query_params.get('region', '')
-            if region != '':
-                location['region'] = region
-
-            city = request.query_params.get('city', '')
-            if city != '':
-                location['city'] = region
-
-            # We check if the params are coherent
-            if 'city' in location:
-                if 'region' not in location:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
-            if 'region' in location:
-                if 'country' not in location:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        if list_order and (category_code or category_slug):  # Can not be both present at the same time!
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        elif list_order or (category_code or category_slug):
-            if search_string:
-                return Response({'error_message': 'if search_string is present no other params should be'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            if category_code or category_slug:
-                if category_code:
-                    try:
-                        category_id = ChCategory.objects.get(code=category_code)
-                    except ChCategory.DoesNotExist:
-                        return Response({'error_message': 'Category not found by this code'},
-                                        status=status.HTTP_404_NOT_FOUND)
-                elif category_slug:
-                    try:
-                        category_id = ChCategory.objects.get(slug=category_slug)
-                    except ChCategory.DoesNotExist:
-                        return Response({'error_message': 'Category not found by this slug'},
-                                        status=status.HTTP_404_NOT_FOUND)
-                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location,
-                                                     tags=tags, include_subscribed=include_subscribed)
-            elif list_order:
-                if list_order == 'recommended':
-                    hives = ChHive.get_hives_by_priority(profile=profile, tags=tags,
-                                                         include_subscribed=include_subscribed)
-                elif list_order == 'near':
-                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location,
-                                                                      tags=tags, include_subscribed=include_subscribed)
-                elif list_order == 'recent':
-                    hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
-                elif list_order == 'communities':
-                    hives = ChHive.get_communities(profile=profile, location=location,
-                                                   tags=tags, include_subscribed=include_subscribed)
-                elif list_order == 'top':
-                    hives = ChHive.get_hives_by_subscriptions_number(profile=profile,
-                                                                     tags=tags, include_subscribed=include_subscribed)
-                else:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        else:  # no parameters, we just give back all hives or perform the search if search_string present
-            if search_string:
-                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string,
-                                                    include_subscribed=include_subscribed)
-            else:
-                hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
-
-        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, format=None):
-        """post prueba
-        """
-        serializer = serializers.ChHiveSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 # ============================================================ #
 #                     Users & Profiles                         #
 # ============================================================ #
+
+class EmailCheckSetAndGet(APIView):
+
+    permission_classes = (permissions.IsAuthenticatedForPutOrGet, permissions.CanGetEmail)
+
+    def get_object(self, public_name):
+        try:
+            if len(public_name) == 32:  # This actually is a username instead of a public_name
+                return ChUser.objects.get(username=public_name)
+            else:
+                return ChUser.objects.get(profile__public_name=public_name)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name='', format=None):  # API method: email get
+
+        user = self.get_object(public_name)
+        self.check_permissions(self.request)
+
+        try:
+            # If the user is requesting his/her own email
+            self.check_object_permissions(self.request, user.profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        data_dict = {'email': user.email}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):  # API method: Email check
+
+        if 'email' in request.data:
+            try:
+                validate_email(request.data['email'])
+                ChUser.objects.get(email=request.data['email'])
+            except Excep.ValidationError:
+                return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
+            except ChUser.DoesNotExist:
+                    pass
+            else:
+                return Response({'error_message': 'There is already a registered user for this email address'},
+                                status=status.HTTP_409_CONFLICT)
+        else:
+            return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
+
+    def put(self, request, format=None):  # API method: Email change
+
+        user = request.user
+        self.check_permissions(self.request)
+
+        if 'new_email' in request.data:
+            try:
+                validate_email(request.data['new_email'])
+                ChUser.objects.get(email=request.data['new_email'])
+            except Excep.ValidationError:
+                return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
+            except ChUser.DoesNotExist:
+                if 'password' in request.data:
+                    authenticated_user = authenticate(username=user.username, password=request.data['password'])
+                    if authenticated_user is not None and user == authenticated_user:
+                        # TODO: shouldn't the add_email get a user instead of a profile??
+                        new_email = EmailAddress.objects.add_email(user=user.profile, email=request.data['new_email'])
+                        new_email.set_as_primary()
+                        new_email.save()  # TODO: this save might not be necessary
+
+                        email_address_to_delete = EmailAddress.objects.get(email=user.email)
+
+                        user.email = request.data['new_email']
+                        user.save()
+
+                        email_address_to_delete.delete()
+
+                        return Response(status=status.HTTP_200_OK)
+
+                    else:
+                        # the authentication system was unable to verify the username and password
+                        return Response(status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'There is already a registered user for this email address'},
+                                status=status.HTTP_409_CONFLICT)
+        else:
+            return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PublicNameCheckAndGet(APIView):
+
+    permission_classes = (permissions.IsAuthenticatedForPutOrGet, permissions.CanGetUsername)
+
+    def get_object(self, email):
+        try:
+            return ChUser.objects.get(email=email)
+        except ChUser.DoesNotExist:
+            raise Http404
+
+    def validate_public_name(self, public_name):
+
+        if re.match(r'^[0-9a-zA-Z_]{1,20}$', public_name):
+            return
+        else:
+            return Response({'error_message': 'Malformed public_name'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, format=None):
+
+        email = request.GET.get('email', '')
+        try:
+            validate_email(email)
+        except Excep.ValidationError:
+            return Response({'error_message': 'Email is not present or not well-formed'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = self.get_object(email)
+        except ChUser.DoesNotExist:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        self.check_permissions(self.request)
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, user.profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        data_dict = {'public_name': user.profile.public_name}
+        return Response(data=data_dict, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+
+        if 'public_name' in request.data:
+            try:
+                self.validate_public_name(request.data['public_name'])
+                ChUser.objects.get(profile__public_name=request.data['public_name'])
+            except ChUser.DoesNotExist:
+                    pass
+            else:
+                return Response({'error_message': 'There is already a registered user for with this public name'},
+                                status=status.HTTP_409_CONFLICT)
+        else:
+            return Response({'error_message': 'Public_name is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
 
 
 class ChUserList(APIView):
@@ -590,31 +626,698 @@ class ChUserList(APIView):
     (user registration)
     """
 
+    def check_file_extension(self, folder_plus_file_URL):
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('_file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def get(self, request, format=None):
         """prueba
         """
         users = ChUser.objects.all()
-        serializer = serializers.ChUserSerializer(users, many=True)
+        serializer = serializers.ChUserLevel2Serializer(users, many=True)
         return Response(serializer.data)
 
+    @transaction.atomic
     def post(self, request, format=None):
         """post prueba
         """
-        serializer = serializers.ChUserSerializer(data=request.data)
+
+        if 'password' in request.data:
+            if len(request.data['password']) < 8:
+                return Response({'error_message': 'Password is too short'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Password is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # We check if email is valid and if there is not already a registered user with this email
+        if 'email' in request.data:
+            try:
+                validate_email(request.data['email'])
+                ChUser.objects.get(email=request.data['email'])
+            except Excep.ValidationError:
+                return Response({'error_message': 'Email is not well-formed'}, status=status.HTTP_400_BAD_REQUEST)
+            except ChUser.DoesNotExist:
+                    pass
+            else:
+                return Response({'error_message': 'There is already a registered user for this email address'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Email is not present'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Some fields are not mandatory so they might not be inside the request data
+        fields_to_remove = []
+        if 'city' not in request.data['profile']:
+            fields_to_remove.append('city')
+        if 'region' not in request.data['profile']:
+            fields_to_remove.append('region')
+        if 'picture' not in request.data['profile']:
+            fields_to_remove.append('picture')
+
+        serializer = serializers.ChProfileLevel2Serializer(data=request.data['profile'], fields_to_remove=fields_to_remove)
+
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # PROFILE PICTURE PROCESSING
+            # TODO: this should be moved to a separated method
+
+            if 'picture' in serializer.validated_data:
+                pictureURL = serializer.validated_data['picture']
+                if ('http://' in pictureURL) or ('https://' in pictureURL):
+                    if 'amazonaws.com' in pictureURL:
+                        s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                        '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                        if s3_URL_prefix in pictureURL:
+                            folder_plus_file_URL = pictureURL[len(s3_URL_prefix):len(pictureURL)]
+                            self.check_file_extension(folder_plus_file_URL)
+                            if folder_plus_file_URL.count('/') == 1:
+                                temp_folder_picture = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+
+                                #Temp folder has been named by the client, and the name of it must be the csrf token for the client
+                                #if temp_folder_picture == django.middleware.csrf.get_token(request):
+                                #    pass
+                                #else:
+                                #    return Response({'error_message': 'Bad S3 temp folder name'},
+                                #                    status=status.HTTP_400_BAD_REQUEST)
+
+                                file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')]
+                                file_name_and_extension_picture = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                                file_extension_picture = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                                folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension_picture))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket_picture = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket_picture)
+                                s3_object_key.key = folder_URL + 'file' + file_extension_picture
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'xlarge' + file_extension_picture
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'medium' + file_extension_picture
+                                k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL + 'small' + file_extension_picture
+                                k4 = s3_object_key.exists()
+
+                                if not (k1 and k2 and k3 and k4):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_400_BAD_REQUEST)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+                            else:
+                                return Response({'error_message': 'Bad S3 temp folder URL'},
+                                                status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            return Response({'error_message': 'We only accept images hosted in ' +
+                                                              common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'Content type is image but no URL is present'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                cache.get('')  # TODO: que pinta esto aquí??
+
+
+            # AVATAR PROCESSING
+            # If the an URL is present for the avatar then we have to check if we have a correlation between
+            # this user, the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
+            # folder the client was allowed to upload for this user.
+            # TODO: this should be moved to a separated method
+            avatarURL = serializer.validated_data['avatar']
+            if ('http://' in avatarURL) or ('https://' in avatarURL):
+                if 'amazonaws.com' in avatarURL:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in avatarURL:
+                        folder_plus_file_URL = avatarURL[len(s3_URL_prefix):len(avatarURL)]
+                        self.check_file_extension(folder_plus_file_URL)
+                        if folder_plus_file_URL.count('/') == 1:
+                            temp_folder_avatar = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
+                            file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')]
+                            file_name_and_extension_avatar = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
+                            file_extension_avatar = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                            folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension_avatar))]
+                            # We check now if all files exist in S3
+                            s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                            # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                            temp_bucket_avatar = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                            s3_object_key = Key(temp_bucket_avatar)
+                            s3_object_key.key = folder_URL + 'file' + file_extension_avatar
+                            k5 = s3_object_key.exists()
+                            s3_object_key.key = folder_URL + 'xlarge' + file_extension_avatar
+                            k6 = s3_object_key.exists()
+                            s3_object_key.key = folder_URL + 'medium' + file_extension_avatar
+                            k7 = s3_object_key.exists()
+                            s3_object_key.key = folder_URL + 'small' + file_extension_avatar
+                            k8 = s3_object_key.exists()
+
+                            if not (k5 and k6 and k7 and k8):
+                                return Response({'error_message': 'Files not uploaded correctly'},
+                                                status=status.HTTP_400_BAD_REQUEST)
+
+                            # We check everything is correct, but we won't actually move the file from the
+                            # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                            # So we move the file at the end of the method
+
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept images hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            cache.get('')  # TODO: que pinta esto aquí??
+
+
+            # We create the User object and the Profile object
+
+            # Creating the new user
+            email = request.data['email']
+            password = request.data['password']
+            # For the UserManager is the value of the username is not relevant, we pass the email instead
+            username = email
+            manager = ChUserManager()
+            user = manager.create_user(username, email, password)
+
+            # Creating the profile
+            serializer.validated_data['user'] = user
+            color = ''
+            for ii in range(3):
+                while True:
+                    rgb = uuid4().hex[:2]
+                    if 'EE' > rgb > '20':
+                        break
+                color = color + rgb
+            serializer.validated_data['personal_color'] = '#' + color
+            serializer.validated_data['private_status'] = 'I\'m new in chattyhive!'
+            serializer.validated_data['public_status'] = 'I\'m new in chattyhive!'
+
+            # TODO: esto en teoria ya salva el perfil con todos sus campos.. COMPROBAR
+            profile = serializer.save()
+
+            profile.save()
+
+            #Creating the Email object which will handle email confimation:
+            EmailAddress.objects.add_email(user=user.profile, email=email)
+
+            # PROFILE PICTURE PROCESSING
+            if 'picture' in serializer.validated_data:
+                destination_bucket = common_settings.S3_PRIVATE_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket_picture)
+
+                # We need to move 3 images
+                # 1 file size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'file' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'file' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'xlarge' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'xlarge' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'medium' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 4 small size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                             + 'images' + '/' + 'small' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # We also delete the folder
+                folder_to_remove = temp_folder_picture + '/'
+                s3_object_to_remove = Key(temp_bucket_picture)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # We need to modify the profile with the new picture address
+                profile.picture = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                                  '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
+                                  + '/' + 'images' + '/' + 'file' + file_extension_picture
+
+            # AVATAR PROCESSING
+            destination_bucket = common_settings.S3_PUBLIC_BUCKET
+            dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+            s3_object_to_move = Key(temp_bucket_avatar)
+
+            # We need to move 3 images
+            # 1 file size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'file' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                         + 'images' + '/' + 'file' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 2 xlarge size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'xlarge' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                         + 'images' + '/' + 'xlarge' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 3 medium size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'medium' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                         + 'images' + '/' + 'medium' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # 4 small size
+            s3_object_to_move.key = temp_folder_avatar + '/' + 'small' + file_extension_avatar
+            destination_object_key = Key(dest_bucket)
+            destination_object_key.key = 'profiles' + '/' + profile.public_name + '/' \
+                                         + 'images' + '/' + 'small' + file_extension_avatar
+            dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+            s3_object_to_move.delete()
+
+            # We also delete the folder
+            folder_to_remove = temp_folder_avatar + '/'
+            s3_object_to_remove = Key(temp_bucket_avatar)
+            s3_object_to_remove.key = folder_to_remove
+            s3_object_to_remove.delete()
+
+            # We need to modify the profile with the new picture address
+            profile.avatar = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                              '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile.public_name\
+                              + '/' + 'images' + '/' + 'file' + file_extension_avatar
+
+            profile.save()
+
+            return Response(status=status.HTTP_201_CREATED)
+
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['PUT'])
+@parser_classes((JSONParser,))
+@permission_classes((permissions.IsAuthenticated,))
+def password_change(request):
+    if request.method == 'PUT':
+        user = request.user
+
+        if 'old_password' not in request.data:
+            return Response({"error_message": "old password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if 'new_password' not in request.data:
+            return Response({"error_message": "new password is missing in the request"}, status=status.HTTP_400_BAD_REQUEST)
+
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+
+        if hashers.check_password(old_password, user.password):
+            new_hashed_password = hashers.make_password(new_password)
+            if not hashers.is_password_usable(new_hashed_password):
+                return Response({"error_message": "this new proposed password is not a valid password"}, status=status.HTTP_400_BAD_REQUEST)
+            user.password = new_hashed_password
+            user.save()
+        else:
+            return Response({"error_message": "The old password does not match the password for this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
+
+
+class ChProfileDetail(APIView):
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetProfile, permissions.CanUpdateProfile)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def check_file_extension(self, folder_plus_file_URL):
+
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def remove_restricted_fields(self, user_profile, other_profile, serializer_data, profile_type):
+
+        if profile_type == 'logged_profile':
+            if user_profile == other_profile:
+                pass  # nothing to be excluded!
+            else:
+                raise PermissionDenied
+        elif profile_type == 'private':
+
+            pass  # Code for friends implementation
+
+        elif profile_type == 'public':
+            elements_to_exclude = ['user', 'public_show_age', 'public_show_sex', 'public_show_location',
+                                   'private_show_age', 'private_show_location']
+            if not other_profile.public_show_age:
+                elements_to_exclude.append('birth_date')
+            if not other_profile.public_show_sex:
+                elements_to_exclude.append('sex')
+            if not other_profile.public_show_location:
+                elements_to_exclude.append('country')
+                elements_to_exclude.append('region')
+                elements_to_exclude.append('city')
+                elements_to_exclude.append('location')
+            for key in serializer_data.keys():
+                if key in elements_to_exclude:
+                    del serializer_data[key]
+        else:
+            raise ValidationError
+
+        return serializer_data
+
+    def get(self, request, public_name, profile_type, format=None):
+
+        other_profile = self.get_object(public_name)
+        user_profile = request.user.profile
+
+        if profile_type == "private":
+            try:
+                # If the user is requesting his/her own profile we go on
+                self.check_object_permissions(self.request, other_profile)
+            except PermissionDenied:
+                # TODO: If the request is for the private profile of other user we have to check if the users are friends
+                pass
+            except NotAuthenticated:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+
+        profile_package = request.GET.get('package', '')
+
+        serializer = serializers.ChProfileSerializer(other_profile, type=profile_type, package=profile_package)
+
+        allowed_data = self.remove_restricted_fields(user_profile, other_profile, serializer.data, profile_type)
+
+        return Response(allowed_data)
+
+
+    def patch(self, request, public_name, format=None):
+
+        profile_to_update = self.get_object(public_name)
+        user_profile = request.user.profile
+
+        try:
+            # If the user is requesting his/her own profile we go on
+            self.check_object_permissions(self.request, profile_to_update)
+        except PermissionDenied:
+            return Response({'error_message': 'You can not update other profile than yours'},
+                            status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        fields_to_include = list(request.data.keys())
+
+        if 'avatar' in request.data:
+            avatar = request.data['avatar']
+            if ('http://' in avatar) or ('https://' in avatar):
+                if 'amazonaws.com' in avatar:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in avatar:
+                        folder_plus_file_URL_avatar = avatar[len(s3_URL_prefix):len(avatar)]
+                        self.check_file_extension(folder_plus_file_URL_avatar)
+                        if folder_plus_file_URL_avatar.count('/') == 1:
+                            temp_folder_avatar = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_avatar) == user_profile.public_name:
+                                file_name_and_extension_picture = folder_plus_file_URL_avatar[folder_plus_file_URL_avatar.find('/') + 1:len(folder_plus_file_URL_avatar)]
+                                file_extension_avatar = folder_plus_file_URL_avatar[folder_plus_file_URL_avatar.find('.'): len(folder_plus_file_URL_avatar)]
+                                folder_URL_avatar = folder_plus_file_URL_avatar[0:len(folder_plus_file_URL_avatar)-(len(file_name_and_extension_picture))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket)
+
+                                s3_object_key.key = folder_URL_avatar + 'file' + file_extension_avatar
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_avatar + 'xlarge' + file_extension_avatar
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_avatar + 'medium' + file_extension_avatar
+                                k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_avatar + 'small' + file_extension_avatar
+                                k4 = s3_object_key.exists()
+
+                                if not (k1 and k2 and k3 and k4):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_400_BAD_REQUEST)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept content hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        if 'picture' in request.data:
+            picture = request.data['picture']
+            if ('http://' in picture) or ('https://' in picture):
+                if 'amazonaws.com' in picture:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in picture:
+                        folder_plus_file_URL_picture = picture[len(s3_URL_prefix):len(picture)]
+                        self.check_file_extension(folder_plus_file_URL_picture)
+                        if folder_plus_file_URL_picture.count('/') == 1:
+                            temp_folder_picture = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_picture) == user_profile.public_name:
+                                file_name_and_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('/') + 1:len(folder_plus_file_URL_picture)]
+                                file_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('.'): len(folder_plus_file_URL_picture)]
+                                folder_URL_picture = folder_plus_file_URL_picture[0:len(folder_plus_file_URL_picture)-(len(file_name_and_extension_picture))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket)
+
+                                s3_object_key.key = folder_URL_picture + 'file' + file_extension_picture
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'xlarge' + file_extension_picture
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'medium' + file_extension_picture
+                                k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'small' + file_extension_picture
+                                k4 = s3_object_key.exists()
+
+                                if not (k1 and k2 and k3 and k4):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_400_BAD_REQUEST)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept content hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = serializers.ChProfileLevel2PatchSerializer(profile_to_update, data=request.data, partial=True)
+
+        if serializer.is_valid():
+
+            # We now move the images in case there was a change for avatar or profile picture
+
+            if 'avatar' in request.data:
+                # We need to move 4 images for the avatar
+                destination_bucket = common_settings.S3_PUBLIC_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket)
+
+                # 1 file size
+                s3_object_to_move.key = folder_plus_file_URL_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'file' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder_avatar + '/' + 'xlarge' + file_extension_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'xlarge' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder_avatar + '/' + 'medium' + file_extension_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'medium' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 4 small size
+                s3_object_to_move.key = temp_folder_avatar + '/' + 'small' + file_extension_avatar
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'small' + file_extension_avatar
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # We also delete the folder
+                folder_to_remove = folder_plus_file_URL_avatar[0:folder_plus_file_URL_avatar.find('/') + 1]
+                s3_object_to_remove = Key(temp_bucket)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder_avatar)
+
+                # We need to modify the profile with the new picture address
+                avatar_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                                         '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + \
+                                         profile_to_update.public_name + '/' + 'images' + '/' + 'file' + \
+                                         file_extension_avatar
+
+            if 'picture' in request.data:
+                # We need to move 4 images for the profile picture
+                destination_bucket = common_settings.S3_PRIVATE_BUCKET
+                dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                s3_object_to_move = Key(temp_bucket)
+
+                # 1 file size
+                s3_object_to_move.key = folder_plus_file_URL_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'file' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 2 xlarge size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'xlarge' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'xlarge' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 3 medium size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'medium' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+                # 4 small size
+                s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+                destination_object_key = Key(dest_bucket)
+                destination_object_key.key = 'profiles' + '/' + user_profile.public_name + '/' \
+                                             + 'images' + '/' + 'small' + file_extension_picture
+                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                s3_object_to_move.delete()
+
+
+                # We also delete the folder
+                folder_to_remove = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/') + 1]
+                s3_object_to_remove = Key(temp_bucket)
+                s3_object_to_remove.key = folder_to_remove
+                s3_object_to_remove.delete()
+
+                # And we delete the entry from the cache
+                cache.delete('s3_temp_dir:' + temp_folder_picture)
+
+                # We need to modify the profile with the new picture address
+                picture_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                                  '.amazonaws.com/' + destination_bucket + '/' + 'profiles' + '/' + profile_to_update.public_name\
+                                  + '/' + 'images' + '/' + 'file' + file_extension_picture
+
+            # We finally update the profile with the data from the serializer
+            profile_to_update = serializer.save()
+            if 'picture' in request.data:
+                profile_to_update.picture = picture_destination_URL
+            if 'avatar' in request.data:
+                profile_to_update.avatar = avatar_destination_URL
+            profile_to_update.save()
+
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChUserDetail(APIView):
     """Show user detail, updates user detail or deletes specific user
 
-    User detail is just avaliable from the browsable API, the endpoint is only exposed for a PUT with a new user
+    User detail is just available from the browsable API
     (user registration)
     """
 
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, permissions.IsAuthenticatedOrReadOnly)
 
     def get_object(self, username):
         try:
@@ -624,12 +1327,12 @@ class ChUserDetail(APIView):
 
     def get(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = serializers.ChUserSerializer(user)
+        serializer = serializers.ChUserLevel2Serializer(user)
         return Response(serializer.data)
 
     def put(self, request, username, format=None):
         user = self.get_object(username)
-        serializer = serializers.ChUserSerializer(user, data=request.data)
+        serializer = serializers.ChUserLevel2Serializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -637,7 +1340,7 @@ class ChUserDetail(APIView):
 
     def delete(self, request, username, format=None):
         user = self.get_object(username)
-        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es l
+        # TODO: aquí donde normalmente se llamaría al método user.delete() yo llamo a delete_account() que entiendo es
         # lo indicado para borrar de forma limplia el perfil y demás (realmente este método es dar la cuenta de baja!
         # Falta confirmar esto bien
         user.delete_account()
@@ -699,12 +1402,35 @@ class ChProfileHiveList(APIView):
                             status=status.HTTP_409_CONFLICT)
         except UnauthorizedException:
             return Response({'error_message': 'The user is expelled from the hive'},
-                            status=status.HTTP_401_UNAUTHORIZED)
+                            status=status.HTTP_403_FORBIDDEN)
 
         # Because I don't want Django Rest Framework to treat it as a serializer in this case, I cast it to a dict
         hive_info = dict(serializers.ChHiveSerializer(hive).data)
 
         return Response(hive_info, status=status.HTTP_200_OK)
+
+
+class ChProfileChatList(APIView):
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
+
+    def get_object(self, public_name):
+        try:
+            return ChProfile.objects.select_related().get(public_name=public_name)
+        except ChProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, public_name, format=None):
+        profile = self.get_object(public_name)
+        try:
+            # If the user is requesting his/her own subscriptions we go on
+            self.check_object_permissions(self.request, profile)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        chat_subscriptions = profile.chat_subscriptions
+        serializer = serializers.ChChatSubscriptionListLevel4Serializer(chat_subscriptions, many=True)
+        return Response(serializer.data)
 
 
 class ChProfileHiveDetail(APIView):
@@ -748,86 +1474,339 @@ class ChProfileHiveDetail(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class ChProfileChatList(APIView):
-    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatList)
-
-    def get_object(self, public_name):
-        try:
-            return ChProfile.objects.select_related().get(public_name=public_name)
-        except ChProfile.DoesNotExist:
-            raise Http404
-
-    def get(self, request, public_name, format=None):
-        profile = self.get_object(public_name)
-        try:
-            # If the user is requesting his/her own subscriptions we go on
-            self.check_object_permissions(self.request, profile)
-        except PermissionDenied:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        except NotAuthenticated:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        chat_subscriptions = profile.chat_subscriptions
-        serializer = serializers.ChChatSubscriptionListLevel4Serializer(chat_subscriptions, many=True)
-        return Response(serializer.data)
-
-
-class ChProfileDetail(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get_object(self, public_name):
-        try:
-            return ChProfile.objects.get(public_name=public_name)
-        except ChProfile.DoesNotExist:
-            raise Http404
-
-    def remove_restricted_fields(self, user_profile, other_profile, serializer_data, profile_type):
-
-        if profile_type == 'logged_profile':
-            if user_profile == other_profile:
-                pass  # nothing to be excluded!
-            else:
-                raise PermissionDenied
-        elif profile_type == 'private':
-
-            pass  # Code for friends implementation
-
-        elif profile_type == 'public':
-            elements_to_exclude = ['user', 'public_show_age', 'public_show_sex', 'public_show_location',
-                                   'private_show_age', 'private_show_location']
-            if not other_profile.public_show_age:
-                elements_to_exclude.append('birth_date')
-            if not other_profile.public_show_sex:
-                elements_to_exclude.append('sex')
-            if not other_profile.public_show_location:
-                elements_to_exclude.append('country')
-                elements_to_exclude.append('region')
-                elements_to_exclude.append('city')
-                elements_to_exclude.append('location')
-            for key in serializer_data.keys():
-                if key in elements_to_exclude:
-                    del serializer_data[key]
-        else:
-            raise ValidationError
-
-        return serializer_data
-
-    def get(self, request, public_name, profile_type, format=None):
-
-        other_profile = self.get_object(public_name)
-        user_profile = request.user.profile
-
-        profile_package = request.GET.get('package', '')
-
-        serializer = serializers.ChProfileSerializer(other_profile, type=profile_type, package=profile_package)
-
-        allowed_data = self.remove_restricted_fields(user_profile, other_profile, serializer.data, profile_type)
-
-        return Response(allowed_data)
-
-
 # ============================================================ #
 #                       Hives & Chats                          #
 # ============================================================ #
+
+class ChHiveList(APIView):  # AKA Explore
+    """Lists hives in Explore or creates new hive
+
+    User listing is just avaliable from the browsable API, the endpoint is only exposed for a POST with a new user
+    (user registration)
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def check_file_extension(self, folder_plus_file_URL):
+
+        if folder_plus_file_URL.count('.') == 1:
+            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                if folder_plus_file_URL.count('file') == 1:
+                    return
+                else:
+                    return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error_message': 'Wrong filename'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, list_order='', category_code='', format=None):
+        """prueba
+        """
+        location = {}
+
+        # Info retrieval
+        profile = request.user.profile
+
+        tags = request.query_params.getlist('tags')
+
+        include_subscribed_string = request.query_params.get('include_subscribed', 'False')
+        include_subscribed = False
+
+        if include_subscribed_string == 'True':
+            include_subscribed = True
+
+        search_string =request.query_params.get('search_string', '')
+
+        coordinates = request.query_params.get('coordinates', '')
+        if coordinates != '':
+            location['coordinates'] = coordinates
+
+        else:  # If we get coordinates we discard anything else
+            country = request.query_params.get('country', '')
+            if country != '':
+                location['country'] = country
+
+            region = request.query_params.get('region', '')
+            if region != '':
+                location['region'] = region
+
+            city = request.query_params.get('city', '')
+            if city != '':
+                location['city'] = region
+
+            # We check if the params are coherent
+            if 'city' in location:
+                if 'region' not in location:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+            if 'region' in location:
+                if 'country' not in location:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if list_order and category_code:  # Can not be both present at the same time!
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        elif list_order or category_code:
+            if search_string:
+                return Response({'error_message': 'if search_string is present no other params should be'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if category_code:
+                try:
+                    category_id = ChCategory.objects.get(code=category_code)
+                except ChCategory.DoesNotExist:
+                    return Response({'error_message': 'Category not found by this code'},
+                                    status=status.HTTP_404_NOT_FOUND)
+                hives = ChHive.get_hives_by_category(profile=profile, category=category_id, location=location,
+                                                     tags=tags, include_subscribed=include_subscribed)
+            elif list_order:
+                if list_order == 'recommended':
+                    hives = ChHive.get_hives_by_priority(profile=profile, tags=tags,
+                                                         include_subscribed=include_subscribed)
+                elif list_order == 'near':
+                    hives = ChHive.get_hives_by_proximity_or_location(profile=profile, location=location,
+                                                                      tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'recent':
+                    hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'communities':
+                    hives = ChHive.get_communities(profile=profile, location=location,
+                                                   tags=tags, include_subscribed=include_subscribed)
+                elif list_order == 'top':
+                    hives = ChHive.get_hives_by_subscriptions_number(profile=profile,
+                                                                     tags=tags, include_subscribed=include_subscribed)
+                else:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        else:  # no parameters, we just give back all hives or perform the search if search_string present
+            if search_string:
+                hives = ChHive.get_hives_containing(profile=profile, search_string=search_string,
+                                                    include_subscribed=include_subscribed)
+            else:
+                hives = ChHive.get_hives_by_age(profile=profile, tags=tags, include_subscribed=include_subscribed)
+
+        serializer = serializers.ChHiveLevel1Serializer(hives, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+        """post prueba
+        """
+
+        user = request.user
+        profile = ChProfile.objects.get(user=user)
+        fields_to_remove = []
+
+        if 'visibility_country' not in request.data:
+            fields_to_remove.append('visibility_country')
+
+        if 'tags' in request.data:
+            if len(request.data['tags']) > 5:
+                return Response({'error_message': 'a maximum of 5 tags are allowed'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate tags
+            tagsList = request.data['tags']
+
+            pattern = re.compile("^\w{1,32}$")
+            for tag in tagsList:
+                if not pattern.match(tag):
+                    return Response({'error_message': 'validation error with tags'},
+                                     status=status.HTTP_400_BAD_REQUEST)
+
+        if 'picture' in request.data:
+            picture = request.data['picture']
+            if ('http://' in picture) or ('https://' in picture):
+                if 'amazonaws.com' in picture:
+                    s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
+                                    '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
+                    if s3_URL_prefix in picture:
+                        folder_plus_file_URL_picture = picture[len(s3_URL_prefix):len(picture)]
+                        self.check_file_extension(folder_plus_file_URL_picture)
+                        if folder_plus_file_URL_picture.count('/') == 1:
+                            temp_folder_picture = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/')]
+                            if cache.get('s3_temp_dir:' + temp_folder_picture) == profile.public_name:
+                                file_name_and_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('/') + 1:len(folder_plus_file_URL_picture)]
+                                file_extension_picture = folder_plus_file_URL_picture[folder_plus_file_URL_picture.find('.'): len(folder_plus_file_URL_picture)]
+                                folder_URL_picture = folder_plus_file_URL_picture[0:len(folder_plus_file_URL_picture)-(len(file_name_and_extension_picture))]
+                                # We check now if all files exist in S3
+                                s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
+                                # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
+                                temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
+                                s3_object_key = Key(temp_bucket)
+
+                                s3_object_key.key = folder_URL_picture + 'file' + file_extension_picture
+                                k1 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'large' + file_extension_picture
+                                k2 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'medium' + file_extension_picture
+                                k3 = s3_object_key.exists()
+                                s3_object_key.key = folder_URL_picture + 'small' + file_extension_picture
+                                k4 = s3_object_key.exists()
+
+                                if not (k1 and k2 and k3 and k4):
+                                    return Response({'error_message': 'Files not uploaded correctly'},
+                                                    status=status.HTTP_400_BAD_REQUEST)
+
+                                # We check everything is correct, but we won't actually move the file from the
+                                # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                # So we move the file at the end of the method
+
+                            else:
+                                return Response({'error_message': 'Upload not allowed'},
+                                                status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({'error_message': 'Bad S3 temp folder URL'},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        return Response({'error_message': 'We only accept content hosted in ' +
+                                                          common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error_message': 'Content type is image but no URL is present'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            fields_to_remove.append('picture')
+
+        serializer = serializers.ChHiveCreationSerializer(data=request.data, fields_to_remove=fields_to_remove)
+
+        if serializer.is_valid():
+            with transaction.atomic():
+
+                hive = ChHive(name=serializer.validated_data['name'],
+                              description=serializer.validated_data['description'],
+                              category=serializer.validated_data['category'],
+                              type=serializer.validated_data['type'],
+                              creation_date=timezone.now(),
+                              priority=50
+                              )
+
+                hive.creator = profile
+
+                hive.slug = slugify(serializer.validated_data['name'], translate=None, to_lower=True, separator='-',
+                                    capitalize=False, max_length=250)
+
+                if 'visibility_country' in request.data:
+                    hive.visibility_country = serializer.validated_data['visibility_country']
+
+                if 'picture' in request.data:
+                    hive.picture = serializer.validated_data['picture']
+
+                try:
+                    with transaction.atomic():
+                        ChHive.objects.get(slug=hive.slug)
+                        return Response({'error_message': 'There is already a Hive with this or very similar name'},
+                                        status=status.HTTP_409_CONFLICT)
+                except ChHive.DoesNotExist:
+                    # hive.slug = replace_unicode(hive_name)
+                    hive.save()
+
+                hive.languages = serializer.validated_data['_languages']
+
+                if 'tags' in request.data:
+                    hive.set_tags(tagsList)
+                    hive.save()
+
+                # Adding languages
+                # hive.languages = formHive.cleaned_data['_languages']
+                # hive.save()
+
+                if serializer.validated_data['type'] == 'Hive':
+                    # Creating public chat of hive, step 1: ChChat object
+                    chat = ChChat()
+                    chat.hive = hive
+                    chat.type = 'public'
+                    chat.chat_id = ChChat.get_chat_id()
+                    chat.slug = chat.chat_id + '-' + hive.slug
+                    chat.save()
+
+                    # Creating public chat of hive, step 2: ChPublicChat object
+                    public_chat = ChPublicChat(chat=chat, hive=hive,
+                                               rules=GuidelinesModel.objects.get(name="Base guidelines"))
+                    public_chat.slug = slugify(serializer.validated_data['name'], translate=None, to_lower=True,
+                                               separator='-', capitalize=False, max_length=250)
+                    public_chat.save()
+
+                elif serializer.validated_data['type'] == 'Community':
+                    # Creating community from hive
+                    community = ChCommunity(hive=hive, owner=profile)
+                    community.approved = True  # TODO: This is temporal solution.
+                    community.save()
+
+                    # Creating public chat of hive
+                    community.new_public_chat(name=hive.name, public_chat_slug_ending=hive.slug,
+                                              description=hive.description,
+                                              rules=GuidelinesModel.objects.get(name="Base guidelines"))
+
+                if 'picture' in request.data:
+
+                    # We need to move 4 images for the profile picture
+                    destination_bucket = common_settings.S3_PUBLIC_BUCKET
+                    dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
+                    s3_object_to_move = Key(temp_bucket)
+
+                    # 1 file size
+                    s3_object_to_move.key = folder_plus_file_URL_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'file' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # 2 large size
+                    s3_object_to_move.key = temp_folder_picture + '/' + 'large' + file_extension_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'large' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # 3 medium size
+                    s3_object_to_move.key = temp_folder_picture + '/' + 'medium' + file_extension_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'medium' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # 4 small size
+                    s3_object_to_move.key = temp_folder_picture + '/' + 'small' + file_extension_picture
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'hives' + '/' + hive.slug + '/' \
+                                                 + 'images' + '/' + 'small' + file_extension_picture
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
+
+                    # We also delete the folder
+                    folder_to_remove = folder_plus_file_URL_picture[0:folder_plus_file_URL_picture.find('/') + 1]
+                    s3_object_to_remove = Key(temp_bucket)
+                    s3_object_to_remove.key = folder_to_remove
+                    s3_object_to_remove.delete()
+
+                    # And we delete the entry from the cache
+                    cache.delete('s3_temp_dir:' + temp_folder_picture)
+
+                    # We need to modify the profile with the new picture address
+                    picture_destination_URL = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + \
+                                      '.amazonaws.com/' + destination_bucket + '/' + 'hives' + '/' + hive.slug \
+                                      + '/' + 'images' + '/' + 'file' + file_extension_picture
+
+                    hive.picture = picture_destination_URL
+                    hive.save()
+
+                # Creating subscription
+                hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
+                hive_subscription.save()
+
+                return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ChChatDetail(APIView):
     """API method: GET chat info
@@ -848,6 +1827,134 @@ class ChChatDetail(APIView):
         serializer = serializers.ChChatLevel3Serializer(chat)
 
         return Response(serializer.data)
+
+
+class ChChatContext(APIView):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        images = request.query_params.get('images', '')
+        users = request.query_params.get('users', '')
+
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        regex_int_validator = re.compile("^[1-9][0-9]*$")
+        if regex_int_validator.match(images): # images are requested
+            images_urls = []
+            images_set = ChMessage.objects.filter(chat=chat, content_type='image').order_by('id')[:int(images)]
+            if images_set.exists():
+                for image in images_set:
+                    images_urls.append(image.content)
+            response_data['images'] = images_urls
+
+        if chat.type != 'public':
+            pass
+        else:
+            if hasattr(chat, 'public_chat_extra_info'):  # Its a hive's public chat
+                if chat.public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+            else:  # Then its a community's public chat
+                if chat.community_public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.community_public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+            if regex_int_validator.match(users):  # users are requested
+                user_data = chat.get_online_users(limit=int(users))
+                serializer = serializers.ChProfileLevel0Serializer(user_data, many=True)
+                response_data['users'] = serializer.data
+
+        return Response(response_data)
+
+
+class ChChatRules(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        if chat.type != 'public':
+            return Response({'error_message': 'The target chat should be a public chat to get the rules'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            if hasattr(chat, 'public_chat_extra_info'):  # Its a hive's public chat
+                if chat.public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+            else:  # Then its a community's public chat
+                if chat.community_public_chat_extra_info.rules is not None:
+                    response_data['rules'] = chat.community_public_chat_extra_info.rules.text
+                else:
+                    response_data['rules'] = 'No rules defined for this chat'
+
+        return Response(response_data)
+
+
+class ChChatImages(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        images_urls = []
+        images_set = ChMessage.objects.filter(chat=chat, content_type='image').order_by('id')
+        if images_set.exists():
+            for image in images_set:
+                images_urls.append(image.content)
+        response_data['images'] = images_urls
+
+        return Response(response_data)
+
+
+
+class ChChatUsers(APIView):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+        chat = self.get_object(chat_id)
+        response_data = {}
+
+        user_data = chat.get_online_users()
+
+        serializer = serializers.ChProfileLevel0Serializer(user_data, many=True)
+
+        response_data['users'] = serializer.data
+
+        return Response(response_data)
 
 
 class ChHiveDetail(APIView):
@@ -928,21 +2035,24 @@ class ChMessageList(APIView):
         except ChChat.DoesNotExist:
             raise Http404
 
-    def check_file_extension(self, folder_plus_file_URL):
-        if folder_plus_file_URL.count('.') == 1:
-            extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
-            if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
-                if folder_plus_file_URL.count('_file') == 1:
-                    return
+    def check_file_extension(self, folder_plus_file_URL, content_type):
+
+        if content_type == 'image':
+            if folder_plus_file_URL.count('.') == 1:
+                extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
+                if extension in common_settings.ALLOWED_IMAGE_EXTENSIONS:
+                    if folder_plus_file_URL.count('file') == 1:
+                        return
+                    else:
+                        return Response({'error_message': 'Wrong filename'},
+                                status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({'error_message': 'Wrong filename'},
-                            status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_400_BAD_REQUEST)
+        return
 
     def get(self, request, chat_id, format=None):
         chat = self.get_chat(chat_id)
@@ -981,61 +2091,75 @@ class ChMessageList(APIView):
             # the Amazon S3 folder where the client uploaded claims to have uploaded the file and the actual
             # folder the client was allowed to upload for this user.
             # TODO: this should be moved to a separated method
-            if content_type == 'image':
+
+            if content_type == 'image' or content_type == 'video' or content_type == 'audio' or\
+                            content_type == 'animation' or content_type == 'file':
                 if ('http://' in msg_content) or ('https://' in msg_content):
                     if 'amazonaws.com' in msg_content:
                         s3_URL_prefix = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION +\
                                         '.amazonaws.com/' + common_settings.S3_TEMP_BUCKET + '/'
                         if s3_URL_prefix in msg_content:
                             folder_plus_file_URL = msg_content[len(s3_URL_prefix):len(msg_content)]
-                            self.check_file_extension(folder_plus_file_URL)
+                            self.check_file_extension(folder_plus_file_URL, content_type)
                             if folder_plus_file_URL.count('/') == 1:
                                 temp_folder = folder_plus_file_URL[0:folder_plus_file_URL.find('/')]
                                 if cache.get('s3_temp_dir:' + temp_folder) == profile.public_name:
-                                    file_name = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:folder_plus_file_URL.find('.')-len('_file')]
                                     file_name_and_extension = folder_plus_file_URL[folder_plus_file_URL.find('/') + 1:len(folder_plus_file_URL)]
                                     file_extension = folder_plus_file_URL[folder_plus_file_URL.find('.'): len(folder_plus_file_URL)]
-                                    location_without_ending = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_extension)+len('_file'))]
+                                    folder_URL = folder_plus_file_URL[0:len(folder_plus_file_URL)-(len(file_name_and_extension))]
                                     # We check now if all files exist in S3
                                     s3_connection = S3Connection(common_settings.AWS_ACCESS_KEY_ID, common_settings.AWS_SECRET_ACCESS_KEY)
                                     # With validate=False we save an AWS request, we do this because we are 100% sure the bucket exists
                                     temp_bucket = s3_connection.get_bucket(common_settings.S3_TEMP_BUCKET, validate=False)
                                     s3_object_key = Key(temp_bucket)
-                                    s3_object_key.key = location_without_ending + '_file' + file_extension
-                                    k1 = s3_object_key.exists()
-                                    s3_object_key.key = location_without_ending + '_xlarge' + file_extension
-                                    k2 = s3_object_key.exists()
-                                    s3_object_key.key = location_without_ending + '_medium' + file_extension
-                                    k3 = s3_object_key.exists()
 
-                                    if not (k1 and k2 and k3):
-                                        return Response({'error_message': 'Files not uploaded correctly'},
-                                                        status=status.HTTP_403_FORBIDDEN)
+                                    if content_type == 'image':
 
-                                    # We check everything is correct, but we won't actually move the file from the
-                                    # temp bucket to the final bucket in Amazon S3 without doing additional checks
-                                    # So we move the file at the end of the method
+                                        s3_object_key.key = folder_URL + 'file' + file_extension
+                                        k1 = s3_object_key.exists()
+                                        s3_object_key.key = folder_URL + 'xlarge' + file_extension
+                                        k2 = s3_object_key.exists()
+                                        s3_object_key.key = folder_URL + 'medium' + file_extension
+                                        k3 = s3_object_key.exists()
 
+                                        if not (k1 and k2 and k3):
+                                            return Response({'error_message': 'Files not uploaded correctly'},
+                                                            status=status.HTTP_400_BAD_REQUEST)
+
+                                        # We check everything is correct, but we won't actually move the file from the
+                                        # temp bucket to the final bucket in Amazon S3 without doing additional checks
+                                        # So we move the file at the end of the method
+
+                                    else:  # for any other content-type
+                                        s3_object_key.key = folder_URL + 'file' + file_extension
+                                        k1 = s3_object_key.exists()
+
+                                        if not k1:
+                                            return Response({'error_message': 'Files not uploaded correctly'},
+                                                            status=status.HTTP_403_FORBIDDEN)
                                 else:
                                     return Response({'error_message': 'Upload not allowed'},
                                                     status=status.HTTP_403_FORBIDDEN)
                             else:
-                               return Response({'error_message': 'Bad S3 temp folder URL'},
-                                               status=status.HTTP_400_BAD_REQUEST)
+                                return Response({'error_message': 'Bad S3 temp folder URL'},
+                                                status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            return Response({'error_message': 'We only accept images hosted in ' +
+                            return Response({'error_message': 'We only accept content hosted in ' +
                                                               common_settings.S3_TEMP_BUCKET + 'and in a secure connection'},
                                             status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        return Response({'error_message': 'For now we only accept images hosted in Amazon S3'},
+                        return Response({'error_message': 'For now we only accept content hosted in Amazon S3'},
                                         status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({'error_message': 'Content type is image but no URL is present'},
                                     status=status.HTTP_400_BAD_REQUEST)
-                cache.get('')
-            elif not content_type == 'text':
-                # TODO: This is a temporal check because for now we only allow text or images
-                return Response({'error_message': 'Wrong content_type'}, status=status.HTTP_400_BAD_REQUEST)
+                # cache.get('')  # TODO: que pinta esto aquí??
+
+            elif content_type == 'text':
+                pass
+            else:
+                return Response({'error_message': 'Wrong content_type'},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             # Initialization of the message to be sent
             message_data = {'profile': profile}
@@ -1088,7 +2212,7 @@ class ChMessageList(APIView):
             else:  # new_chat == False
                 try:
                     with transaction.atomic():
-                        # TODO: Aditional checks here if chat is between friends (has the user been blocked by the target user?)
+                        # TODO: Additional checks here if chat is between friends (has the user been blocked by the target user?)
                         chat = ChChat.objects.get(chat_id=chat_id)
                         if chat.slug.find('+') != -1:  # This is a chat between friends
                             pass  # TODO
@@ -1149,8 +2273,9 @@ class ChMessageList(APIView):
                 chat_subscription_profile = ChChatSubscription(chat=chat, profile=profile)
                 chat_subscription_profile.save()
 
-            if content_type == 'image':
-                # We move the file from temp bucket to destination bucket
+            if content_type == 'image' or content_type == 'video' or content_type == 'audio' or\
+                            content_type == 'animation' or content_type == 'file':
+                # We move the files from temp bucket to destination bucket
                 if chat.type == 'public':
                     destination_bucket = common_settings.S3_PUBLIC_BUCKET
                 else:
@@ -1158,46 +2283,77 @@ class ChMessageList(APIView):
                 dest_bucket = s3_connection.get_bucket(destination_bucket, validate=False)
                 s3_object_to_move = Key(temp_bucket)
 
-                # We need to move 3 images
-                # 1 file size
-                s3_object_to_move.key = folder_plus_file_URL
-                destination_object_key = Key(dest_bucket)
-                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'file' + '/' + file_name_and_extension
-                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-                s3_object_to_move.delete()
+                if content_type == 'image':
 
-                # 2 xlarge size
-                s3_object_to_move.key = temp_folder + '/' + file_name + '_xlarge' + file_extension
-                destination_object_key = Key(dest_bucket)
-                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'xlarge' + '/' + file_name + '_xlarge' + file_extension
-                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-                s3_object_to_move.delete()
+                    # We are taking the last 6 digits of the chat count for this message
+                    file_name_unique_id = str(chat.count + 1)
+                    new_file_name = 'IMG_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
 
-                # 3 medium size
-                s3_object_to_move.key = temp_folder + '/' + file_name + '_medium' + file_extension
-                destination_object_key = Key(dest_bucket)
-                destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
-                                             + 'images' + '/' + 'medium' + '/' + file_name + '_medium' + file_extension
-                dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
-                s3_object_to_move.delete()
+                    # We need to move 3 images
+                    # 1 file size
+                    s3_object_to_move.key = folder_plus_file_URL
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + 'images' + '/' + 'file' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
-                # We also delete the folder
-                folder_to_remove = folder_plus_file_URL[0:folder_plus_file_URL.find('/') + 1]
-                s3_object_to_remove = Key(temp_bucket)
-                s3_object_to_remove.key = folder_to_remove
-                s3_object_to_remove.delete()
+                    # 2 xlarge size
+                    s3_object_to_move.key = temp_folder + '/' + 'xlarge' + file_extension
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + 'images' + '/' + 'xlarge' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
-                # And we delete the entry from the cache
-                cache.delete('s3_temp_dir:' + temp_folder)
+                    # 3 medium size
+                    s3_object_to_move.key = temp_folder + '/' + 'medium' + file_extension
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + 'images' + '/' + 'medium' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
-                # We need to modify the message content with the new URL
-                msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
-                              '/' + 'file' + '/' + file_name_and_extension
+                    # We also delete the folder
+                    folder_to_remove = folder_plus_file_URL[0:folder_plus_file_URL.find('/') + 1]
+                    s3_object_to_remove = Key(temp_bucket)
+                    s3_object_to_remove.key = folder_to_remove
+                    s3_object_to_remove.delete()
+
+                    # And we delete the entry from the cache
+                    cache.delete('s3_temp_dir:' + temp_folder)
+
+                    # We need to modify the message content with the new URL
+                    msg_content = 'https://' + common_settings.S3_PREFIX + '-' + common_settings.S3_REGION + '.amazonaws.com/' + destination_bucket + '/' + 'chats' + '/' + chat.chat_id + '/' + 'images' + \
+                                  '/' + 'file' + '/' + new_file_name + file_extension
+
+                else:
+
+                    # We are taking the last 6 digits of the chat count for this message
+                    file_name_unique_id = str(chat.count + 1)
+
+                    if content_type == 'video':
+                        new_file_name = 'VID_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    if content_type == 'audio':
+                        new_file_name = 'AUD_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    if content_type == 'animation':
+                        new_file_name = 'ANI_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    if content_type == 'file':
+                        new_file_name = 'FILE_' + timezone.now().strftime("%Y%m%d_%H%M%S") + '_' + file_name_unique_id[-6:]
+
+                    # We need to move the file to the destination bucket
+                    s3_object_to_move.key = folder_plus_file_URL
+                    destination_object_key = Key(dest_bucket)
+                    destination_object_key.key = 'chats' + '/' + chat.chat_id + '/' \
+                                                 + content_type + 's' + '/' + 'file' + '/' + new_file_name + file_extension
+                    dest_bucket.copy_key(destination_object_key, common_settings.S3_TEMP_BUCKET, s3_object_to_move.key)
+                    s3_object_to_move.delete()
 
             message = chat.new_message(profile=profile,
-                                       content_type='text',
+                                       content_type=content_type,
                                        content=msg_content,)
 
             chat.save()
@@ -1230,6 +2386,76 @@ class ChMessageList(APIView):
         else:
             print("serializer errors: ", serializer.errors)
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChMessageConfirmedList(APIView):
+    """API method: Chat messages confirmed
+
+    """
+    permission_classes = (permissions.IsAuthenticated, permissions.CanGetChatMessages)
+
+    def get_chat(self, chat_id):
+        try:
+            return ChChat.objects.get(chat_id=chat_id, deleted=False)
+        except ChChat.DoesNotExist:
+            raise Http404
+
+    def get(self, request, chat_id, format=None):
+
+        chat = self.get_chat(chat_id)
+
+        if chat.type == "public":
+            return Response({'error_message': 'This method is only for private chats'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self.check_object_permissions(self.request, chat)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        count = request.query_params.get('count', '')
+
+        message_ids = []
+
+        regex_int_validator = re.compile("^[1-9][0-9]*$")
+        if regex_int_validator.match(count): # images are requested
+            messages = ChMessage.objects.filter(chat=chat, received=True).order_by('-_count')[:int(count)]
+        else:
+            messages = ChMessage.objects.filter(chat=chat, received=True).order_by('-_count')[:100]
+
+        if messages.exists():
+            for message in messages:
+                message_ids.append(message.id)
+
+        return Response(message_ids)
+
+    def post(self, request, chat_id, format=None):
+
+        chat = self.get_chat(chat_id)
+
+        if chat.type == "public":
+            return Response({'error_message': 'This method is only for private chats'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self.check_object_permissions(self.request, chat)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        message_ids = request.data
+
+        with transaction.atomic():
+            for message_id in message_ids:
+                try:
+                    with transaction.atomic():
+                        message = ChMessage.objects.get(_count=message_id, chat=chat)
+                        message.received = True
+                        message.save()
+                except ChMessage.DoesNotExist:
+                    return Response({'error_message': 'At least one of the id was wrong'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
 
 
 class OpenPrivateChat(APIView):
@@ -1280,176 +2506,45 @@ class OpenPrivateChat(APIView):
             return Response(data_dict, status=status.HTTP_200_OK)
 
 
-# ============================================================ #
-#                            OLD                               #
-# ============================================================ #
-
-def email_check(request):
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def get_countries(request, format=None):
+    """Returns a list of country codes
     """
-    :param request:
-    :return: JSON with status
+    if request.method == 'GET':
+        country_codes = []
+        for country in Country.objects.all():
+            country_codes.append(country.code2)
+
+        return Response(data=country_codes, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def get_regions(request, country_code, format=None):
+    """Returns a list of country codes
     """
+    if request.method == 'GET':
+        country = Country.objects.get(code2=country_code)
+        region_names = []
 
-    if request.method == 'POST':
+        for region in Region.objects.filter(country=country):
+            region_names.append(region.name)
 
-        # Getting email from POST param
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        email = data['email']
-
-        username = email
-        # print(email + '_ANDROID')  # PRINT
-
-        # Checking already existing user
-        try:
-            if ChUser.objects.get(username=username) is not None:
-                status = "USER_ALREADY_EXISTS"
-            else:
-                status = "NONE"
-        except ObjectDoesNotExist:
-            status = "OK"
-
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
-
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
+        return Response(data=region_names, status=status.HTTP_200_OK)
 
 
-def register(request):
+@api_view(['GET'])
+@parser_classes((JSONParser,))
+def get_cities(request, country_code, region_name, format=None):
+    """Returns a list of country codes
     """
-    :param request:
-    :return: JSON with status and profile
-    """
+    if request.method == 'GET':
+        country = Country.objects.get(code2=country_code)
+        region = Region.objects.get(country=country, name=region_name)
+        city_names = []
 
-    if request.method == 'POST':
+        for city in City.objects.filter(country=country, region=region):
+            city_names.append(city.name)
 
-        # Getting all parameters from POST
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-
-        email = data['email']
-        pass1 = data['pass1']
-        public_name = data['public_name']
-        first_name = data['first_name']
-        last_name = data['last_name']
-        sex = data['sex']
-        language = data['language']
-        private_show_age = data['private_show_age']
-        location = data['location']
-        public_show_age = data['public_show_age']
-        show_location = data['show_location']
-
-        username = email
-        password = pass1
-        # print(username + '_ANDROID')  # PRINT
-
-        try:
-            # Checking already existing user
-            if ChUser.objects.get(username=username) is not None:
-                status = "USER_ALREADY_EXISTS"
-                return HttpResponse(json.dumps({"status": status}))
-
-        except ObjectDoesNotExist:
-
-            # Creating the new user
-            manager = ChUserManager()
-            user = manager.create_user(username, email, password)
-
-            # Creating the profile
-            profile = ChProfile(user=user)
-            profile.save()
-
-            # Inserting info to the profile
-            profile.public_name = public_name
-            profile.first_name = first_name
-            profile.last_name = last_name
-            profile.sex = sex
-            profile.language = language
-            profile.private_show_age = private_show_age
-            profile.public_show_age = public_show_age
-            profile.show_location = show_location
-            profile.set_approximate_location(location)
-            profile.save()
-
-            # Formatting info for sending in json
-            profile_json = json.dumps({"set_public_name": public_name,
-                                       "set_first_name": first_name,
-                                       "set_last_name": last_name,
-                                       "set_sex": sex,
-                                       "set_language": language,
-                                       "set_private_show_age": private_show_age,
-                                       "set_public_show_age": public_show_age,
-                                       "set_show_location": show_location,
-                                       "set_location": location})
-
-            # Sending info to Android device
-            status = "PROFILE_CREATED"
-            return HttpResponse(json.dumps({
-                'status': status,  # Returning OK status
-                'profile': profile_json  # Returning complete Profile
-            }))
-
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}))
-
-
-def join(request):
-    if request.method == 'POST':
-        # Getting params from POST
-        aux = request.body
-        data = json.loads(aux.decode('utf-8'))
-        hive_name = data['hive']
-        username = data['user']
-
-        # Processing params to get info in server
-        user = ChUser.objects.get(username=username)
-        profile = ChProfile.objects.get(user=user)
-        hive_joining = ChHive.objects.get(name=hive_name)
-
-        # Trying to get all the subscriptions of this profile and all the hives he's subscribed to
-        try:
-            subscriptions = ChChatSubscription.objects.filter(profile=profile)
-            hives = []
-            for subscription in subscriptions:
-                # Excluding duplicated hives
-                hive_appeared = False
-                for hive in hives:
-                    if subscription.hive == hive:
-                        hive_appeared = True
-                if not hive_appeared:
-                    # Adding the hive to the hives array (only hives subscribed)
-                    hives.append(subscription.hive.toJSON())
-        except ChChatSubscription.DoesNotExist:
-            return HttpResponse("Subscription not found")
-
-        # Checking if the user is already subscribed to this hive
-        hive_appeared = False
-        for hive_aux in hives:
-            if hive_aux == hive_joining:
-                hive_appeared = True
-
-        # Joining to this hive
-        if not hive_appeared:
-
-            # Getting public chat of hive
-            chat2 = ChChat.objects.get(hive=hive_joining)
-
-            # Creating subscription
-            subscription = ChChatSubscription()
-            subscription.hive = hive_joining
-            subscription.profile = profile
-            subscription.chat = chat2
-            subscription.save()
-
-            status = 'SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
-
-        else:
-            status = 'ALREADY_SUBSCRIBED'
-            return HttpResponse(json.dumps({'status': status}, cls=DjangoJSONEncoder), content_type="application/json")
-    else:
-        status = "INVALID_METHOD"
-        return HttpResponse(json.dumps({'status': status}), content_type="application/json")
-        # raise Http404
+        return Response(data=city_names, status=status.HTTP_200_OK)
