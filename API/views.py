@@ -2400,6 +2400,35 @@ class ChMessageConfirmedList(APIView):
         except ChChat.DoesNotExist:
             raise Http404
 
+    def get(self, request, chat_id, format=None):
+
+        chat = self.get_chat(chat_id)
+
+        if chat.type == "public":
+            return Response({'error_message': 'This method is only for private chats'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self.check_object_permissions(self.request, chat)
+        except PermissionDenied:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        except NotAuthenticated:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        count = request.query_params.get('count', '')
+
+        message_ids = []
+
+        regex_int_validator = re.compile("^[1-9][0-9]*$")
+        if regex_int_validator.match(count): # images are requested
+            messages = ChMessage.objects.filter(chat=chat, received=True).order_by('-_count')[:int(count)]
+        else:
+            messages = ChMessage.objects.filter(chat=chat, received=True).order_by('-_count')[:100]
+
+        if messages.exists():
+            for message in messages:
+                message_ids.append(message.id)
+
+        return Response(message_ids)
+
     def post(self, request, chat_id, format=None):
 
         chat = self.get_chat(chat_id)
