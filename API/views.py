@@ -2027,7 +2027,14 @@ class ChHiveUsersList(APIView):
             if not user.public_show_sex:
                 del profile['sex']
             if not user.public_show_location:
-                del profile['location']
+                if 'country' in profile:
+                    del profile['country']
+                if 'region' in profile:
+                    del profile['country']
+                if 'city' in profile:
+                    del profile['country']
+                if 'coordinates' in profile:
+                    del profile['coordinates']
 
         return Response(serializer.data)
 
