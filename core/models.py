@@ -855,12 +855,14 @@ class ChHive(models.Model):
                         subscription.subscription_state = 'deleted'
                     subscription.last_deleted_or_disabled = unsubscription_datetime
                     if not only_disable:
-                        if subscription.chat.public_chat_extra_info is None:
+                        # We check that this is not a public chat
+                        if not ChPublicChat.objects.filter(chat=subscription.chat).exists() \
+                                and not ChCommunityPublicChat.objects.filter(chat=subscription.chat).exists():
                             chat = subscription.chat
-                            # This is just to know if there is any other subscriptions to this chat
+                            # This is just to know if there are any other subscriptions to this chat
                             # (we won't count the subscription that the user is using and we won't count the
-                            # subscriptions that are marked as deleted) If a subscription is marked as disabled, the chat
-                            # can't be marked as removal unless the hive itself is marked for removal.
+                            # subscriptions that are marked as deleted) If a subscription is marked as disabled,
+                            # the chat can't be marked as removal unless the hive itself is marked for removal.
                             # If no remaining subscriptions for this chat it means this private chat can be deleted.
                             others_subscriptions = ChChatSubscription.objects.filter(
                                 chat=chat).exclude(profile=profile).exclude(subscription_state='deleted')
