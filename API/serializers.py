@@ -786,3 +786,60 @@ class ChProfileSerializer(serializers.ModelSerializer):
                   'city', 'hive_subscriptions', 'public_show_age', 'public_show_location', 'public_show_sex',
                   'private_show_age', 'private_show_location', 'created', 'last_activity', 'coordinates')
 
+
+class ChProfileUserCardSerializer(serializers.ModelSerializer):
+    """Used by the following API methods: GET user profile,
+       Used by the following serializers: --
+
+    """
+
+    languages = serializers.SlugRelatedField(source='_languages', many=True, read_only=True, slug_field='language')
+    country = serializers.SlugRelatedField(read_only=True, slug_field='code2')
+    region = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    city = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    coordinates = serializers.CharField(source='get_coordinates', read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        profile_package = kwargs.pop('package', None)
+
+        PACKAGE_CHOICES = ('basic', 'info', 'basic_info')
+
+        if profile_package is not None:
+            if profile_package not in PACKAGE_CHOICES:
+                raise ValidationError("Wrong package", code="400")
+        else:
+            raise ValidationError("profile_package is missing", code="400")
+
+        # Instantiate the superclass normally
+        super(ChProfileUserCardSerializer, self).__init__(*args, **kwargs)
+
+        # In the related ModelSerializers we will set all possible fields, with this code we will dynamically
+        # drop some of these fields depending on the url path params and the query params of the client request
+        allowed_fields = set()
+        basic_fields = set()
+        info_fields = set()
+        hives_fields = set()
+
+        basic_fields = {'public_name', 'avatar', 'personal_color', 'public_status'}
+        info_fields = {'birth_date', 'sex', 'languages', 'country', 'region', 'city', 'coordinates'}
+
+        if profile_package == 'basic':
+            allowed_fields = basic_fields
+        elif profile_package == 'info':
+            allowed_fields = info_fields
+        elif profile_package == 'basic_info':
+            allowed_fields = basic_fields | info_fields
+        else:
+            raise URLParamsError("The profile_package value doesn't match any API defined value", errors={})
+
+        if allowed_fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            existing = set(self.fields.keys())
+            for field_name in existing - allowed_fields:
+                self.fields.pop(field_name)
+
+    class Meta:
+        model = ChProfile
+        fields = ('public_name', 'avatar', 'personal_color', 'public_status', 'birth_date', 'sex', 'languages',
+                  'country', 'region', 'city', 'created', 'last_activity', 'coordinates')

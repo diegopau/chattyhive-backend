@@ -2018,7 +2018,16 @@ class ChHiveUsersList(APIView):
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = serializers.ChProfileSerializer(profiles, many=True, type='public', package='basic')
+        serializer = serializers.ChProfileUserCardSerializer(profiles, many=True, package='basic_info')
+
+        for profile in serializer.data:
+            user = ChProfile.objects.get(public_name=profile['public_name'])
+            if not user.public_show_age:
+                del profile['birth_date']
+            if not user.public_show_sex:
+                del profile['sex']
+            if not user.public_show_location:
+                del profile['location']
 
         return Response(serializer.data)
 
