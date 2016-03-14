@@ -566,11 +566,11 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,
 
     """
-    community = ChCommunityPublicChatLevel1Serializer(read_only=True)
+    community = ChCommunityPublicChatLevel1Serializer(read_only=True, source='community_public_chat_extra_info')
 
     class Meta:
         model = ChChat
-        fields = ('chat_id', 'community', 'count', 'created', 'type')
+        fields = ('chat_id', 'community', 'count', 'created', 'type', 'slug')
 
 
 # ============================================================ #
