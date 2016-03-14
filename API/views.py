@@ -2030,9 +2030,9 @@ class ChHiveUsersList(APIView):
                 if 'country' in profile:
                     del profile['country']
                 if 'region' in profile:
-                    del profile['country']
+                    del profile['region']
                 if 'city' in profile:
-                    del profile['country']
+                    del profile['city']
                 if 'coordinates' in profile:
                     del profile['coordinates']
 
