@@ -366,10 +366,16 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
         fields = ('count', 'type', 'hive', 'chat_id', 'created')
 
 
+class ChHiveLevel0Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChHive
+        fields = 'slug'
+
+
 class ChProfileLevel0Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChProfile
-        fields = ('public_name', 'avatar')
+        fields = ('public_name', 'avatar', 'personal_color')
 
 
 class ChMessageSerializer(serializers.ModelSerializer):
@@ -567,10 +573,11 @@ class ChChatLevel3Serializer(serializers.ModelSerializer):
 
     """
     community = ChCommunityPublicChatLevel1Serializer(read_only=True, source='community_public_chat_extra_info')
+    hive = ChHiveLevel0Serializer(read_only=True)
 
     class Meta:
         model = ChChat
-        fields = ('chat_id', 'community', 'count', 'created', 'type', 'slug')
+        fields = ('chat_id', 'community', 'hive', 'count', 'created', 'type', 'slug')
 
 
 # ============================================================ #
