@@ -369,13 +369,22 @@ class ChChatLevel0Serializer(serializers.ModelSerializer):
 class ChHiveLevel0Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChHive
-        fields = 'slug'
+        fields = ('slug', )
 
 
 class ChProfileLevel0Serializer(serializers.ModelSerializer):
     class Meta:
         model = ChProfile
         fields = ('public_name', 'avatar', 'personal_color')
+
+
+class ChUserSubscriptionLevel0Serializer(serializers.ModelSerializer):
+
+    profile = ChProfileLevel0Serializer(many=False, read_only=True)
+
+    class Meta:
+        model = ChChatSubscription
+        fields = ('profile', )
 
 
 class ChMessageSerializer(serializers.ModelSerializer):
@@ -568,12 +577,16 @@ class ChHiveCreationSerializer(serializers.ModelSerializer):
         fields = ('name', 'languages', 'category', 'description', 'visibility_country',
                   'picture', 'type')
 
+
 class ChChatLevel3Serializer(serializers.ModelSerializer):
     """Used by the following API methods: GET chat info,
 
     """
     community = ChCommunityPublicChatLevel1Serializer(read_only=True, source='community_public_chat_extra_info')
-    hive = ChHiveLevel0Serializer(read_only=True)
+    hive = ChHiveLevel0Serializer(many=False, read_only=True)
+
+    def validate(self, data):
+        return data
 
     class Meta:
         model = ChChat

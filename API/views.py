@@ -1824,13 +1824,14 @@ class ChChatDetail(APIView):
     def get(self, request, chat_id, format=None):
         chat = self.get_object(chat_id)
 
+        result = {}
+
         serializer = serializers.ChChatLevel3Serializer(chat)
 
         result = serializer.data
         if chat.type != "public":
-            serializer2 = serializers.ChProfileLevel0Serializer(chat.chat_subscriptions, many=True)
-            serializer.data['subscribers'] = serializer2.data
-
+            serializer2 = serializers.ChUserSubscriptionLevel0Serializer(chat.subscriptions, many=True)
+            result['subscriptions'] = serializer2.data
         return Response(result)
 
 
