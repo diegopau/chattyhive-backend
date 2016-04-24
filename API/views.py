@@ -941,7 +941,9 @@ class ChUserList(APIView):
 
             profile.save()
 
-            return Response(status=status.HTTP_201_CREATED)
+            serializer2 = serializers.ChProfileSerializer(profile, type="logged_profile", package="complete")
+
+            return Response(serializer2.data, status=status.HTTP_201_CREATED)
 
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1802,8 +1804,10 @@ class ChHiveList(APIView):  # AKA Explore
                 # Creating subscription
                 hive_subscription = ChHiveSubscription(hive=hive, profile=profile)
                 hive_subscription.save()
+                fields_to_remove = ()
+                serializer = serializers.ChHiveSerializer(hive, fields_to_remove=fields_to_remove)
 
-                return Response(status=status.HTTP_201_CREATED)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
