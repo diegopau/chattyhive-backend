@@ -2408,7 +2408,9 @@ class ChMessageList(APIView):
 
             if new_chat.lower() == 'true':
                 data_dict['chat_id'] = chat_id
-            return Response(data_dict, status=status.HTTP_200_OK)
+
+            serializer = serializers.ChMessageSerializer(message)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             print("serializer errors: ", serializer.errors)
             return Response(status=status.HTTP_400_BAD_REQUEST)
