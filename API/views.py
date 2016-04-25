@@ -2403,7 +2403,8 @@ class ChMessageList(APIView):
                                                       cls=DjangoJSONEncoder)
 
             data_dict = {'id': message.id, 'created': message.created, 'received': message.received,
-                         'content': message.content, 'profile': message.profile, 'content_type': message.content_type}
+                         'content': message.content, 'profile': message.profile.public_name,
+                         'content_type': message.content_type}
 
             chat.send_message(message_data)
 
