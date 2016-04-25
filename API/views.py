@@ -2402,15 +2402,15 @@ class ChMessageList(APIView):
                                                        "server_time": message.created.astimezone()},
                                                       cls=DjangoJSONEncoder)
 
-            data_dict = {'message_id': message.id, 'server_timestamp': message.created}
+            data_dict = {'id': message.id, 'created': message.created, 'received': message.received,
+                         'content': message.content, 'profile': message.profile, 'content_type': message.content_type}
 
             chat.send_message(message_data)
 
             if new_chat.lower() == 'true':
                 data_dict['chat_id'] = chat_id
 
-            serializer = serializers.ChMessageSerializer(message)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(data_dict, status=status.HTTP_200_OK)
         else:
             print("serializer errors: ", serializer.errors)
             return Response(status=status.HTTP_400_BAD_REQUEST)
