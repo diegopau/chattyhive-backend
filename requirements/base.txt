@@ -46,7 +46,7 @@ python-openid==2.2.5
 python-social-auth==0.1.22
 python3-openid==3.0.5
 pytz==2015.4
-PyYAML==3.11
+PyYAML==5.4
 redis==2.10.3
 regex==2015.6.4
 requests==2.7.0
