@@ -62,4 +62,4 @@ static3==0.6.1
 tablib==0.10.0
 tornado==4.2.1
 Unidecode==0.4.19
-urllib3==1.11
+urllib3==1.26.5
